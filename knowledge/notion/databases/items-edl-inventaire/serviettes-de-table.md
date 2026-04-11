@@ -1,0 +1,57 @@
+---
+notion_id: "3251d95b-2f8a-8151-9b12-f40be46ed619"
+notion_url: "https://www.notion.so/3251d95b2f8a81519b12f40be46ed619"
+last_synced: "2026-03-26"
+title: "Serviette(s) de table"
+properties:
+  nom: "Serviette(s) de table"
+  categorie: "Linge"
+  contexte: "Inventaire"
+  source: "Plateforme"
+  qte_par_defaut: null
+  criteres:
+    etat_general: "Masqué"
+    proprete: "Masqué"
+    photos: "Masqué"
+    caracteristiques: "Masqué"
+    couleur: "Optionnel"
+    degradations: "Masqué"
+    fonctionnement: "Masqué"
+    quantite: "Obligatoire"
+  valeurs_caracteristiques: ""
+  valeurs_degradations: ""
+  pieces_count: 3
+  pieces_ids:
+    - "3251d95b-2f8a-819e-807f-cf882ad39661"
+    - "3251d95b-2f8a-8185-ae9a-fda673c59710"
+    - "3251d95b-2f8a-8177-8824-cd1f206400fc"
+  sous_items_count: 0
+  item_parent_count: 0
+---
+
+# Serviette(s) de table
+
+| Propriété | Valeur |
+|---|---|
+| Catégorie | Linge |
+| Contexte | Inventaire |
+| Source | Plateforme |
+
+## Critères d'évaluation
+
+| Critère | Niveau |
+|---|---|
+| État général | Masqué |
+| Propreté | Masqué |
+| Photos | Masqué |
+| Caractéristiques | Masqué |
+| Couleur | Optionnel |
+| Dégradations | Masqué |
+| Fonctionnement | Masqué |
+| Quantité | Obligatoire |
+
+## Pièces liées
+
+- Salle à manger (`3251d95b-2f8a-819e-807f-cf882ad39661`)
+- Cuisine (`3251d95b-2f8a-8185-ae9a-fda673c59710`)
+- Cuisine américaine (`3251d95b-2f8a-8177-8824-cd1f206400fc`)

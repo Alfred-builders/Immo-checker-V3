@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-server/
+.env
+*.log
+.DS_Store
+.vite/
+*.local
+core.*
+
+# AI chat uploads
+.uploads/

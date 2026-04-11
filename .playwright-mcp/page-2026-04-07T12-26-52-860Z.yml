@@ -1,0 +1,464 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "ImmoChecker V2" [level=1] [ref=e3]
+    - paragraph [ref=e4]: 3 propositions de design pour l'application de gestion d'etats des lieux
+  - generic [ref=e5]:
+    - link "A — Minimal Pro" [ref=e6] [cursor=pointer]:
+      - /url: "#option-a"
+    - link "B — Warm Estate" [ref=e7] [cursor=pointer]:
+      - /url: "#option-b"
+    - link "C — Modern Slate" [ref=e8] [cursor=pointer]:
+      - /url: "#option-c"
+  - generic [ref=e9]:
+    - generic [ref=e10]: Option A
+    - generic [ref=e11]: Minimal Pro
+    - generic [ref=e12]: Design epure, fond blanc, accents bleu professionnel. Inspire de Linear et Notion. Ideal pour un outil metier ou la lisibilite prime.
+    - generic [ref=e13]:
+      - generic [ref=e16]: Primary
+      - generic [ref=e19]: Foreground
+      - generic [ref=e22]: Background
+      - generic [ref=e25]: Muted
+      - generic [ref=e28]: Border
+      - generic [ref=e31]: Destructive
+      - generic [ref=e34]: Success
+      - generic [ref=e37]: Warning
+    - generic [ref=e38]:
+      - heading "Clash Display — Titres et headings" [level=3] [ref=e39]
+      - paragraph [ref=e40]: Satoshi — Corps de texte, labels, descriptions. La lisibilite est optimale avec cette combinaison de polices modernes et geometriques.
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Page de connexion
+        - generic [ref=e45]:
+          - generic [ref=e46]: ImmoChecker
+          - generic [ref=e47]: Gestion d'etats des lieux simplifiee
+          - generic [ref=e48]:
+            - generic [ref=e49]: Adresse email
+            - textbox [ref=e50]: jean.dupont@agence.fr
+          - generic [ref=e51]:
+            - generic [ref=e52]: Mot de passe
+            - textbox [ref=e53]: "********"
+          - button "Se connecter" [ref=e54] [cursor=pointer]
+          - generic [ref=e55]: Creer un compte
+      - generic [ref=e56]:
+        - generic [ref=e57]: Fiche batiment
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]: Residence Les Lilas
+              - generic [ref=e62]: 12 rue des Lilas, 75020 Paris
+            - generic [ref=e63]:
+              - button "Modifier" [ref=e64] [cursor=pointer]
+              - button "+ Ajouter un lot" [ref=e65] [cursor=pointer]
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - heading "Informations" [level=3] [ref=e68]
+              - generic [ref=e69]:
+                - generic [ref=e70]: Type
+                - generic [ref=e72]: Immeuble
+              - generic [ref=e73]:
+                - generic [ref=e74]: Reference
+                - generic [ref=e75]: BAT-2024-042
+              - generic [ref=e76]:
+                - generic [ref=e77]: Annee construction
+                - generic [ref=e78]: "1992"
+              - generic [ref=e79]:
+                - generic [ref=e80]: Nombre de lots
+                - generic [ref=e81]: "24"
+            - generic [ref=e82]:
+              - heading "Adresses" [level=3] [ref=e83]
+              - generic [ref=e84]:
+                - generic [ref=e85]: Principale
+                - generic [ref=e86]: 12 rue des Lilas
+              - generic [ref=e87]:
+                - generic [ref=e88]: Code postal
+                - generic [ref=e89]: "75020"
+              - generic [ref=e90]:
+                - generic [ref=e91]: Ville
+                - generic [ref=e92]: Paris
+              - generic [ref=e93]:
+                - generic [ref=e94]: Secondaire
+                - generic [ref=e95]: 14 rue des Lilas
+      - generic [ref=e96]:
+        - generic [ref=e97]: Parc immobilier — Liste des batiments
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]: EDL Express Paris
+              - generic [ref=e102]: Societe d'EDL
+            - generic [ref=e103]:
+              - generic [ref=e104]: Referentiel
+              - generic [ref=e105] [cursor=pointer]: Parc immobilier
+              - generic [ref=e107] [cursor=pointer]: Tiers
+              - generic [ref=e109] [cursor=pointer]: Templates
+            - generic [ref=e111]:
+              - generic [ref=e112]: Operationnel
+              - generic [ref=e113] [cursor=pointer]: Missions
+              - generic [ref=e115] [cursor=pointer]: Tableau de bord
+            - generic [ref=e117]:
+              - generic [ref=e118]: Administration
+              - generic [ref=e119] [cursor=pointer]: Parametres
+          - generic [ref=e121]:
+            - generic [ref=e122]: Referentiel / Parc immobilier
+            - generic [ref=e123]:
+              - generic [ref=e124]: Parc immobilier
+              - generic [ref=e125]:
+                - button "Importer CSV" [ref=e126] [cursor=pointer]
+                - button "+ Nouveau batiment" [ref=e127] [cursor=pointer]
+            - generic [ref=e128]:
+              - textbox "Rechercher un batiment, une adresse..." [ref=e129]
+              - button "+ Filtre" [ref=e130] [cursor=pointer]
+              - button "Colonnes" [ref=e131] [cursor=pointer]
+            - table [ref=e132]:
+              - rowgroup [ref=e133]:
+                - row "Designation Type Adresse Lots Reference" [ref=e134]:
+                  - columnheader "Designation" [ref=e135]
+                  - columnheader "Type" [ref=e136]
+                  - columnheader "Adresse" [ref=e137]
+                  - columnheader "Lots" [ref=e138]
+                  - columnheader "Reference" [ref=e139]
+              - rowgroup [ref=e140]:
+                - row "Residence Les Lilas Immeuble 12 rue des Lilas, 75020 Paris 24 BAT-2024-042" [ref=e141]:
+                  - cell "Residence Les Lilas" [ref=e142]
+                  - cell "Immeuble" [ref=e143]:
+                    - generic [ref=e144]: Immeuble
+                  - cell "12 rue des Lilas, 75020 Paris" [ref=e145]
+                  - cell "24" [ref=e146]
+                  - cell "BAT-2024-042" [ref=e147]
+                - row "Villa Beausoleil Maison 8 allee des Chenes, 92100 Boulogne 1 BAT-2024-043" [ref=e148]:
+                  - cell "Villa Beausoleil" [ref=e149]
+                  - cell "Maison" [ref=e150]:
+                    - generic [ref=e151]: Maison
+                  - cell "8 allee des Chenes, 92100 Boulogne" [ref=e152]
+                  - cell "1" [ref=e153]
+                  - cell "BAT-2024-043" [ref=e154]
+                - row "Immeuble Voltaire Immeuble 45 bd Voltaire, 75011 Paris 18 BAT-2024-044" [ref=e155]:
+                  - cell "Immeuble Voltaire" [ref=e156]
+                  - cell "Immeuble" [ref=e157]:
+                    - generic [ref=e158]: Immeuble
+                  - cell "45 bd Voltaire, 75011 Paris" [ref=e159]
+                  - cell "18" [ref=e160]
+                  - cell "BAT-2024-044" [ref=e161]
+                - row "Local Commercial Bastille Commercial 3 place de la Bastille, 75004 Paris 3 BAT-2024-045" [ref=e162]:
+                  - cell "Local Commercial Bastille" [ref=e163]
+                  - cell "Commercial" [ref=e164]:
+                    - generic [ref=e165]: Commercial
+                  - cell "3 place de la Bastille, 75004 Paris" [ref=e166]
+                  - cell "3" [ref=e167]
+                  - cell "BAT-2024-045" [ref=e168]
+                - row "Residence du Parc Immeuble 22 avenue du Parc, 93300 Aubervilliers 36 BAT-2024-046" [ref=e169]:
+                  - cell "Residence du Parc" [ref=e170]
+                  - cell "Immeuble" [ref=e171]:
+                    - generic [ref=e172]: Immeuble
+                  - cell "22 avenue du Parc, 93300 Aubervilliers" [ref=e173]
+                  - cell "36" [ref=e174]
+                  - cell "BAT-2024-046" [ref=e175]
+  - generic [ref=e176]:
+    - generic [ref=e177]: Option B
+    - generic [ref=e178]: Warm Estate
+    - generic [ref=e179]: Tons chauds, fond sombre, accents ambre/or. Premium et chaleureux. Ideal pour un produit a forte identite dans l'immobilier.
+    - generic [ref=e180]:
+      - generic [ref=e183]: Primary
+      - generic [ref=e186]: Foreground
+      - generic [ref=e189]: Background
+      - generic [ref=e192]: Card
+      - generic [ref=e195]: Border
+      - generic [ref=e198]: Destructive
+      - generic [ref=e201]: Success
+      - generic [ref=e204]: Info
+    - generic [ref=e205]:
+      - heading "Clash Display — Titres et headings" [level=3] [ref=e206]
+      - paragraph [ref=e207]: Satoshi — Corps de texte, labels, descriptions. Sur fond sombre, le contraste reste excellent avec des tons stone naturels.
+    - generic [ref=e208]:
+      - generic [ref=e209]:
+        - generic [ref=e210]: Page de connexion
+        - generic [ref=e212]:
+          - generic [ref=e213]: ImmoChecker
+          - generic [ref=e214]: Gestion d'etats des lieux simplifiee
+          - generic [ref=e215]:
+            - generic [ref=e216]: Adresse email
+            - textbox [ref=e217]: jean.dupont@agence.fr
+          - generic [ref=e218]:
+            - generic [ref=e219]: Mot de passe
+            - textbox [ref=e220]: "********"
+          - button "Se connecter" [ref=e221] [cursor=pointer]
+          - generic [ref=e222]: ou
+          - generic [ref=e223]: Creer un compte
+      - generic [ref=e224]:
+        - generic [ref=e225]: Fiche batiment
+        - generic [ref=e226]:
+          - generic [ref=e227]:
+            - generic [ref=e228]:
+              - generic [ref=e229]: Residence Les Lilas
+              - generic [ref=e230]: 12 rue des Lilas, 75020 Paris
+            - generic [ref=e231]:
+              - button "Modifier" [ref=e232] [cursor=pointer]
+              - button "+ Ajouter un lot" [ref=e233] [cursor=pointer]
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - heading "Informations" [level=3] [ref=e236]
+              - generic [ref=e237]:
+                - generic [ref=e238]: Type
+                - generic [ref=e240]: Immeuble
+              - generic [ref=e241]:
+                - generic [ref=e242]: Reference
+                - generic [ref=e243]: BAT-2024-042
+              - generic [ref=e244]:
+                - generic [ref=e245]: Annee construction
+                - generic [ref=e246]: "1992"
+              - generic [ref=e247]:
+                - generic [ref=e248]: Nombre de lots
+                - generic [ref=e249]: "24"
+            - generic [ref=e250]:
+              - heading "Adresses" [level=3] [ref=e251]
+              - generic [ref=e252]:
+                - generic [ref=e253]: Principale
+                - generic [ref=e254]: 12 rue des Lilas
+              - generic [ref=e255]:
+                - generic [ref=e256]: Code postal
+                - generic [ref=e257]: "75020"
+              - generic [ref=e258]:
+                - generic [ref=e259]: Ville
+                - generic [ref=e260]: Paris
+              - generic [ref=e261]:
+                - generic [ref=e262]: Secondaire
+                - generic [ref=e263]: 14 rue des Lilas
+      - generic [ref=e264]:
+        - generic [ref=e265]: Parc immobilier — Liste des batiments
+        - generic [ref=e266]:
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - generic [ref=e269]: EP
+              - generic [ref=e270]: EDL Express Paris
+              - generic [ref=e271]: Societe d'EDL
+            - generic [ref=e272]:
+              - generic [ref=e273]: Referentiel
+              - generic [ref=e274] [cursor=pointer]: Parc immobilier
+              - generic [ref=e276] [cursor=pointer]: Tiers
+              - generic [ref=e278] [cursor=pointer]: Templates
+            - generic [ref=e280]:
+              - generic [ref=e281]: Operationnel
+              - generic [ref=e282] [cursor=pointer]: Missions
+              - generic [ref=e284] [cursor=pointer]: Tableau de bord
+            - generic [ref=e286]:
+              - generic [ref=e287]: Administration
+              - generic [ref=e288] [cursor=pointer]: Parametres
+          - generic [ref=e290]:
+            - generic [ref=e291]: Referentiel / Parc immobilier
+            - generic [ref=e292]:
+              - generic [ref=e293]: Parc immobilier
+              - generic [ref=e294]:
+                - button "Importer CSV" [ref=e295] [cursor=pointer]
+                - button "+ Nouveau batiment" [ref=e296] [cursor=pointer]
+            - generic [ref=e297]:
+              - generic [ref=e298]:
+                - generic [ref=e299]: "82"
+                - generic [ref=e300]: Batiments
+              - generic [ref=e301]:
+                - generic [ref=e302]: "347"
+                - generic [ref=e303]: Lots actifs
+              - generic [ref=e304]:
+                - generic [ref=e305]: "12"
+                - generic [ref=e306]: Archives
+            - generic [ref=e307]:
+              - textbox "Rechercher un batiment, une adresse..." [ref=e308]
+              - button "+ Filtre" [ref=e309] [cursor=pointer]
+              - button "Colonnes" [ref=e310] [cursor=pointer]
+            - table [ref=e311]:
+              - rowgroup [ref=e312]:
+                - row "Designation Type Adresse Lots Reference" [ref=e313]:
+                  - columnheader "Designation" [ref=e314]
+                  - columnheader "Type" [ref=e315]
+                  - columnheader "Adresse" [ref=e316]
+                  - columnheader "Lots" [ref=e317]
+                  - columnheader "Reference" [ref=e318]
+              - rowgroup [ref=e319]:
+                - row "Residence Les Lilas Immeuble 12 rue des Lilas, 75020 Paris 24 BAT-2024-042" [ref=e320]:
+                  - cell "Residence Les Lilas" [ref=e321]
+                  - cell "Immeuble" [ref=e322]:
+                    - generic [ref=e323]: Immeuble
+                  - cell "12 rue des Lilas, 75020 Paris" [ref=e324]
+                  - cell "24" [ref=e325]
+                  - cell "BAT-2024-042" [ref=e326]
+                - row "Villa Beausoleil Maison 8 allee des Chenes, 92100 Boulogne 1 BAT-2024-043" [ref=e327]:
+                  - cell "Villa Beausoleil" [ref=e328]
+                  - cell "Maison" [ref=e329]:
+                    - generic [ref=e330]: Maison
+                  - cell "8 allee des Chenes, 92100 Boulogne" [ref=e331]
+                  - cell "1" [ref=e332]
+                  - cell "BAT-2024-043" [ref=e333]
+                - row "Immeuble Voltaire Immeuble 45 bd Voltaire, 75011 Paris 18 BAT-2024-044" [ref=e334]:
+                  - cell "Immeuble Voltaire" [ref=e335]
+                  - cell "Immeuble" [ref=e336]:
+                    - generic [ref=e337]: Immeuble
+                  - cell "45 bd Voltaire, 75011 Paris" [ref=e338]
+                  - cell "18" [ref=e339]
+                  - cell "BAT-2024-044" [ref=e340]
+                - row "Local Commercial Bastille Commercial 3 place de la Bastille, 75004 Paris 3 BAT-2024-045" [ref=e341]:
+                  - cell "Local Commercial Bastille" [ref=e342]
+                  - cell "Commercial" [ref=e343]:
+                    - generic [ref=e344]: Commercial
+                  - cell "3 place de la Bastille, 75004 Paris" [ref=e345]
+                  - cell "3" [ref=e346]
+                  - cell "BAT-2024-045" [ref=e347]
+                - row "Residence du Parc Immeuble 22 avenue du Parc, 93300 Aubervilliers 36 BAT-2024-046" [ref=e348]:
+                  - cell "Residence du Parc" [ref=e349]
+                  - cell "Immeuble" [ref=e350]:
+                    - generic [ref=e351]: Immeuble
+                  - cell "22 avenue du Parc, 93300 Aubervilliers" [ref=e352]
+                  - cell "36" [ref=e353]
+                  - cell "BAT-2024-046" [ref=e354]
+  - generic [ref=e355]:
+    - generic [ref=e356]: Option C
+    - generic [ref=e357]: Modern Slate
+    - generic [ref=e358]: Design sombre profond, accents violet/indigo, effets glassmorphism. SaaS moderne et premium. Ideal pour se demarquer des outils immobiliers classiques.
+    - generic [ref=e359]:
+      - generic [ref=e362]: Primary
+      - generic [ref=e365]: Foreground
+      - generic [ref=e368]: Background
+      - generic [ref=e371]: Card
+      - generic [ref=e374]: Border
+      - generic [ref=e377]: Destructive
+      - generic [ref=e380]: Success
+      - generic [ref=e383]: Warning
+    - generic [ref=e384]:
+      - heading "Clash Display — Titres et headings" [level=3] [ref=e385]
+      - paragraph [ref=e386]: Satoshi — Corps de texte, labels, descriptions. Le glassmorphism et les degradations subtiles donnent de la profondeur a l'interface.
+    - generic [ref=e387]:
+      - generic [ref=e388]:
+        - generic [ref=e389]: Page de connexion
+        - generic [ref=e391]:
+          - generic [ref=e392]: ImmoChecker
+          - generic [ref=e393]: Gestion d'etats des lieux simplifiee
+          - generic [ref=e394]:
+            - generic [ref=e395]: Adresse email
+            - textbox [ref=e396]: jean.dupont@agence.fr
+          - generic [ref=e397]:
+            - generic [ref=e398]: Mot de passe
+            - textbox [ref=e399]: "********"
+          - button "Se connecter" [ref=e400] [cursor=pointer]
+          - generic [ref=e401]: Creer un compte
+      - generic [ref=e402]:
+        - generic [ref=e403]: Fiche batiment
+        - generic [ref=e404]:
+          - generic [ref=e405]:
+            - generic [ref=e406]:
+              - generic [ref=e407]: Residence Les Lilas
+              - generic [ref=e408]: 12 rue des Lilas, 75020 Paris
+            - generic [ref=e409]:
+              - button "Modifier" [ref=e410] [cursor=pointer]
+              - button "+ Ajouter un lot" [ref=e411] [cursor=pointer]
+          - generic [ref=e412]:
+            - generic [ref=e413]:
+              - heading "Informations" [level=3] [ref=e414]
+              - generic [ref=e415]:
+                - generic [ref=e416]: Type
+                - generic [ref=e418]: Immeuble
+              - generic [ref=e419]:
+                - generic [ref=e420]: Reference
+                - generic [ref=e421]: BAT-2024-042
+              - generic [ref=e422]:
+                - generic [ref=e423]: Annee construction
+                - generic [ref=e424]: "1992"
+              - generic [ref=e425]:
+                - generic [ref=e426]: Nombre de lots
+                - generic [ref=e427]: "24"
+            - generic [ref=e428]:
+              - heading "Adresses" [level=3] [ref=e429]
+              - generic [ref=e430]:
+                - generic [ref=e431]: Principale
+                - generic [ref=e432]: 12 rue des Lilas
+              - generic [ref=e433]:
+                - generic [ref=e434]: Code postal
+                - generic [ref=e435]: "75020"
+              - generic [ref=e436]:
+                - generic [ref=e437]: Ville
+                - generic [ref=e438]: Paris
+              - generic [ref=e439]:
+                - generic [ref=e440]: Secondaire
+                - generic [ref=e441]: 14 rue des Lilas
+      - generic [ref=e442]:
+        - generic [ref=e443]: Parc immobilier — Liste des batiments
+        - generic [ref=e444]:
+          - generic [ref=e445]:
+            - generic [ref=e446]:
+              - generic [ref=e447]: EP
+              - generic [ref=e448]: EDL Express Paris
+              - generic [ref=e449]: Societe d'EDL
+            - generic [ref=e450]:
+              - generic [ref=e451]: Referentiel
+              - generic [ref=e452] [cursor=pointer]: Parc immobilier
+              - generic [ref=e454] [cursor=pointer]: Tiers
+              - generic [ref=e456] [cursor=pointer]: Templates
+            - generic [ref=e458]:
+              - generic [ref=e459]: Operationnel
+              - generic [ref=e460] [cursor=pointer]: Missions
+              - generic [ref=e462] [cursor=pointer]: Tableau de bord
+            - generic [ref=e464]:
+              - generic [ref=e465]: Administration
+              - generic [ref=e466] [cursor=pointer]: Parametres
+          - generic [ref=e468]:
+            - generic [ref=e469]: Referentiel / Parc immobilier
+            - generic [ref=e470]:
+              - generic [ref=e471]: Parc immobilier
+              - generic [ref=e472]:
+                - button "Importer CSV" [ref=e473] [cursor=pointer]
+                - button "+ Nouveau batiment" [ref=e474] [cursor=pointer]
+            - generic [ref=e475]:
+              - generic [ref=e476]:
+                - generic [ref=e477]: "82"
+                - generic [ref=e478]: Batiments
+              - generic [ref=e479]:
+                - generic [ref=e480]: "347"
+                - generic [ref=e481]: Lots actifs
+              - generic [ref=e482]:
+                - generic [ref=e483]: "12"
+                - generic [ref=e484]: Archives
+            - generic [ref=e485]:
+              - textbox "Rechercher un batiment, une adresse..." [ref=e486]
+              - button "+ Filtre" [ref=e487] [cursor=pointer]
+              - button "Colonnes" [ref=e488] [cursor=pointer]
+            - table [ref=e489]:
+              - rowgroup [ref=e490]:
+                - row "Designation Type Adresse Lots Reference" [ref=e491]:
+                  - columnheader "Designation" [ref=e492]
+                  - columnheader "Type" [ref=e493]
+                  - columnheader "Adresse" [ref=e494]
+                  - columnheader "Lots" [ref=e495]
+                  - columnheader "Reference" [ref=e496]
+              - rowgroup [ref=e497]:
+                - row "Residence Les Lilas Immeuble 12 rue des Lilas, 75020 Paris 24 BAT-2024-042" [ref=e498]:
+                  - cell "Residence Les Lilas" [ref=e499]
+                  - cell "Immeuble" [ref=e500]:
+                    - generic [ref=e501]: Immeuble
+                  - cell "12 rue des Lilas, 75020 Paris" [ref=e502]
+                  - cell "24" [ref=e503]
+                  - cell "BAT-2024-042" [ref=e504]
+                - row "Villa Beausoleil Maison 8 allee des Chenes, 92100 Boulogne 1 BAT-2024-043" [ref=e505]:
+                  - cell "Villa Beausoleil" [ref=e506]
+                  - cell "Maison" [ref=e507]:
+                    - generic [ref=e508]: Maison
+                  - cell "8 allee des Chenes, 92100 Boulogne" [ref=e509]
+                  - cell "1" [ref=e510]
+                  - cell "BAT-2024-043" [ref=e511]
+                - row "Immeuble Voltaire Immeuble 45 bd Voltaire, 75011 Paris 18 BAT-2024-044" [ref=e512]:
+                  - cell "Immeuble Voltaire" [ref=e513]
+                  - cell "Immeuble" [ref=e514]:
+                    - generic [ref=e515]: Immeuble
+                  - cell "45 bd Voltaire, 75011 Paris" [ref=e516]
+                  - cell "18" [ref=e517]
+                  - cell "BAT-2024-044" [ref=e518]
+                - row "Local Commercial Bastille Commercial 3 place de la Bastille, 75004 Paris 3 BAT-2024-045" [ref=e519]:
+                  - cell "Local Commercial Bastille" [ref=e520]
+                  - cell "Commercial" [ref=e521]:
+                    - generic [ref=e522]: Commercial
+                  - cell "3 place de la Bastille, 75004 Paris" [ref=e523]
+                  - cell "3" [ref=e524]
+                  - cell "BAT-2024-045" [ref=e525]
+                - row "Residence du Parc Immeuble 22 avenue du Parc, 93300 Aubervilliers 36 BAT-2024-046" [ref=e526]:
+                  - cell "Residence du Parc" [ref=e527]
+                  - cell "Immeuble" [ref=e528]:
+                    - generic [ref=e529]: Immeuble
+                  - cell "22 avenue du Parc, 93300 Aubervilliers" [ref=e530]
+                  - cell "36" [ref=e531]
+                  - cell "BAT-2024-046" [ref=e532]
+  - generic [ref=e533]: ImmoChecker V2 — Design Proposals — April 2026

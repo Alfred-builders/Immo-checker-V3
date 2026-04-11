@@ -1,0 +1,67 @@
+---
+notion_id: "3251d95b-2f8a-81a7-b131-faad096839b4"
+notion_url: "https://www.notion.so/3251d95b2f8a81a7b131faad096839b4"
+last_synced: "2026-03-26"
+title: "Grille-pain"
+properties:
+  nom: "Grille-pain"
+  categorie: "Électroménager"
+  contexte: "Inventaire"
+  source: "Plateforme"
+  qte_par_defaut: null
+  criteres:
+    etat_general: "Masqué"
+    proprete: "Masqué"
+    photos: "Masqué"
+    caracteristiques: "Masqué"
+    couleur: "Masqué"
+    degradations: "Masqué"
+    fonctionnement: "Recommandé"
+    quantite: "Recommandé"
+  valeurs_caracteristiques: "2 fentes, 4 fentes, Avec réchauffe-viennoiseries"
+  valeurs_degradations: "Noirci, Bloque, Levier cassé"
+  pieces_count: 2
+  pieces_ids:
+    - "3251d95b-2f8a-8185-ae9a-fda673c59710"
+    - "3251d95b-2f8a-8177-8824-cd1f206400fc"
+  sous_items_count: 0
+  item_parent_count: 0
+---
+
+# Grille-pain
+
+| Propriété | Valeur |
+|---|---|
+| Catégorie | Électroménager |
+| Contexte | Inventaire |
+| Source | Plateforme |
+
+## Critères d'évaluation
+
+| Critère | Niveau |
+|---|---|
+| État général | Masqué |
+| Propreté | Masqué |
+| Photos | Masqué |
+| Caractéristiques | Masqué |
+| Couleur | Masqué |
+| Dégradations | Masqué |
+| Fonctionnement | Recommandé |
+| Quantité | Recommandé |
+
+## Valeurs Caractéristiques
+
+- 2 fentes
+- 4 fentes
+- Avec réchauffe-viennoiseries
+
+## Valeurs Dégradations
+
+- Noirci
+- Bloque
+- Levier cassé
+
+## Pièces liées
+
+- Cuisine (`3251d95b-2f8a-8185-ae9a-fda673c59710`)
+- Cuisine américaine (`3251d95b-2f8a-8177-8824-cd1f206400fc`)

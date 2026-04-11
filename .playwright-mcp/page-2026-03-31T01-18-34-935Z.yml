@@ -1,0 +1,459 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - button "Toggle Menu" [ref=e5] [cursor=pointer]:
+        - img
+        - generic [ref=e6]: Toggle Menu
+      - generic [ref=e7]:
+        - link "Home" [ref=e8] [cursor=pointer]:
+          - /url: https://coss.com/
+          - text: coss.com
+        - generic [ref=e9]: ui
+      - generic [ref=e10]:
+        - button "⌘ K" [ref=e12] [cursor=pointer]:
+          - img
+          - generic [ref=e13]:
+            - generic: ⌘
+            - generic: K
+        - separator [ref=e14]
+        - button "Products" [ref=e15] [cursor=pointer]:
+          - text: Products
+          - img
+        - link "9.5k" [ref=e16] [cursor=pointer]:
+          - /url: https://github.com/cosscom/coss
+          - img
+          - generic [ref=e17]: 9.5k
+        - button "Toggle theme" [ref=e18] [cursor=pointer]:
+          - img
+          - generic [ref=e19]: Toggle theme
+  - generic [ref=e22]:
+    - heading "A new, modern UI component library built on top of Base UI." [level=1] [ref=e23]
+    - paragraph [ref=e24]: Built for developers and AI.
+    - generic [ref=e25]:
+      - link "Get started" [ref=e26] [cursor=pointer]:
+        - /url: /ui/docs
+      - link "Browse 473 particles" [ref=e27] [cursor=pointer]:
+        - /url: /ui/particles
+  - generic [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - heading "Accordion" [level=2] [ref=e33]:
+          - link "Accordion" [ref=e34] [cursor=pointer]:
+            - /url: /ui/docs/components/accordion
+        - paragraph [ref=e35]: A set of collapsible panels with headings and content.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - img
+              - generic:
+                - generic:
+                  - img
+              - generic:
+                - generic:
+                  - img
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - heading "Alert" [level=2] [ref=e38]:
+          - link "Alert" [ref=e39] [cursor=pointer]:
+            - /url: /ui/docs/components/alert
+        - paragraph [ref=e40]: A callout for displaying important information.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+    - generic [ref=e42]:
+      - heading "Alert Dialog" [level=2] [ref=e43]:
+        - link "Alert Dialog" [ref=e44] [cursor=pointer]:
+          - /url: /ui/docs/components/alert-dialog
+      - paragraph [ref=e45]: A dialog that requires user response to proceed.
+    - generic [ref=e46]:
+      - generic [ref=e47]:
+        - heading "Autocomplete" [level=2] [ref=e48]:
+          - link "Autocomplete" [ref=e49] [cursor=pointer]:
+            - /url: /ui/docs/components/autocomplete
+        - paragraph [ref=e50]: An input that suggests options as you type.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - heading "Avatar" [level=2] [ref=e53]:
+          - link "Avatar" [ref=e54] [cursor=pointer]:
+            - /url: /ui/docs/components/avatar
+        - paragraph [ref=e55]: An image element with a fallback for representing the user.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e57]:
+      - heading "Badge" [level=2] [ref=e58]:
+        - link "Badge" [ref=e59] [cursor=pointer]:
+          - /url: /ui/docs/components/badge
+      - paragraph [ref=e60]: A badge or a component that looks like a badge.
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - heading "Breadcrumb" [level=2] [ref=e63]:
+          - link "Breadcrumb" [ref=e64] [cursor=pointer]:
+            - /url: /ui/docs/components/breadcrumb
+        - paragraph [ref=e65]: Displays the path to the current resource using a hierarchy of links.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+              - img
+    - generic [ref=e67]:
+      - heading "Button" [level=2] [ref=e68]:
+        - link "Button" [ref=e69] [cursor=pointer]:
+          - /url: /ui/docs/components/button
+      - paragraph [ref=e70]: A button or a component that looks like a button.
+    - generic [ref=e71]:
+      - generic [ref=e72]:
+        - heading "Calendar" [level=2] [ref=e73]:
+          - link "Calendar" [ref=e74] [cursor=pointer]:
+            - /url: /ui/docs/components/calendar
+        - paragraph [ref=e75]: A date picker component with range and multi-select support.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+                - img
+    - generic [ref=e77]:
+      - heading "Card" [level=2] [ref=e78]:
+        - link "Card" [ref=e79] [cursor=pointer]:
+          - /url: /ui/docs/components/card
+      - paragraph [ref=e80]: A content container for grouping related information.
+    - generic [ref=e82]:
+      - heading "Checkbox" [level=2] [ref=e83]:
+        - link "Checkbox" [ref=e84] [cursor=pointer]:
+          - /url: /ui/docs/components/checkbox
+      - paragraph [ref=e85]: A control allowing the user to toggle between checked and not checked.
+    - generic [ref=e87]:
+      - heading "Checkbox Group" [level=2] [ref=e88]:
+        - link "Checkbox Group" [ref=e89] [cursor=pointer]:
+          - /url: /ui/docs/components/checkbox-group
+      - paragraph [ref=e90]: Provides shared state to a series of checkboxes.
+    - generic [ref=e91]:
+      - generic [ref=e92]:
+        - heading "Collapsible" [level=2] [ref=e93]:
+          - link "Collapsible" [ref=e94] [cursor=pointer]:
+            - /url: /ui/docs/components/collapsible
+        - paragraph [ref=e95]: A collapsible panel controlled by a button trigger.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - heading "Combobox" [level=2] [ref=e98]:
+          - link "Combobox" [ref=e99] [cursor=pointer]:
+            - /url: /ui/docs/components/combobox
+        - paragraph [ref=e100]: An input combined with a list of predefined items to select.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+              - generic:
+                - img
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - heading "Command" [level=2] [ref=e103]:
+          - link "Command" [ref=e104] [cursor=pointer]:
+            - /url: /ui/docs/components/command
+        - paragraph [ref=e105]: A command palette component built with Dialog and Autocomplete for searching and executing commands.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e106]:
+      - generic [ref=e107]:
+        - heading "Date Picker" [level=2] [ref=e108]:
+          - link "Date Picker" [ref=e109] [cursor=pointer]:
+            - /url: /ui/docs/components/date-picker
+        - paragraph [ref=e110]: A date picker component built with Calendar and Popover.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+    - generic [ref=e112]:
+      - heading "Dialog" [level=2] [ref=e113]:
+        - link "Dialog" [ref=e114] [cursor=pointer]:
+          - /url: /ui/docs/components/dialog
+      - paragraph [ref=e115]: A popup that opens on top of the entire page.
+    - generic [ref=e116]:
+      - generic [ref=e117]:
+        - heading "Drawer" [level=2] [ref=e118]:
+          - link "Drawer" [ref=e119] [cursor=pointer]:
+            - /url: /ui/docs/components/drawer
+        - paragraph [ref=e120]: A panel that slides in from the edge of the screen with swipe gestures, snap points, and nested drawer support.
+      - generic:
+        - generic: New
+    - generic [ref=e122]:
+      - heading "Empty" [level=2] [ref=e123]:
+        - link "Empty" [ref=e124] [cursor=pointer]:
+          - /url: /ui/docs/components/empty
+      - paragraph [ref=e125]: A container for displaying empty state information.
+    - generic [ref=e127]:
+      - heading "Field" [level=2] [ref=e128]:
+        - link "Field" [ref=e129] [cursor=pointer]:
+          - /url: /ui/docs/components/field
+      - paragraph [ref=e130]: A component that provides labelling and validation for form controls.
+    - generic [ref=e132]:
+      - heading "Fieldset" [level=2] [ref=e133]:
+        - link "Fieldset" [ref=e134] [cursor=pointer]:
+          - /url: /ui/docs/components/fieldset
+      - paragraph [ref=e135]: A native fieldset element with a legend.
+    - generic [ref=e137]:
+      - heading "Form" [level=2] [ref=e138]:
+        - link "Form" [ref=e139] [cursor=pointer]:
+          - /url: /ui/docs/components/form
+      - paragraph [ref=e140]: A form wrapper component that simplifies validation and submission.
+    - generic [ref=e142]:
+      - heading "Frame" [level=2] [ref=e143]:
+        - link "Frame" [ref=e144] [cursor=pointer]:
+          - /url: /ui/docs/components/frame
+      - paragraph [ref=e145]: A framed container for grouping related information.
+    - generic [ref=e147]:
+      - heading "Group" [level=2] [ref=e148]:
+        - link "Group" [ref=e149] [cursor=pointer]:
+          - /url: /ui/docs/components/group
+      - paragraph [ref=e150]: A component for visually grouping a series of controls.
+    - generic [ref=e152]:
+      - heading "Input" [level=2] [ref=e153]:
+        - link "Input" [ref=e154] [cursor=pointer]:
+          - /url: /ui/docs/components/input
+      - paragraph [ref=e155]: A native input element.
+    - generic [ref=e156]:
+      - generic [ref=e157]:
+        - heading "Input Group" [level=2] [ref=e158]:
+          - link "Input Group" [ref=e159] [cursor=pointer]:
+            - /url: /ui/docs/components/input-group
+        - paragraph [ref=e160]: A flexible component for grouping inputs with addons, buttons, and other elements.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e161]:
+      - generic [ref=e162]:
+        - heading "Input Otp" [level=2] [ref=e163]:
+          - link "Input Otp" [ref=e164] [cursor=pointer]:
+            - /url: /ui/docs/components/input-otp
+        - paragraph [ref=e165]: A segmented input for one-time passwords and verification codes.
+      - generic:
+        - generic: New
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e166]:
+      - generic [ref=e167]:
+        - heading "Kbd" [level=2] [ref=e168]:
+          - link "Kbd" [ref=e169] [cursor=pointer]:
+            - /url: /ui/docs/components/kbd
+        - paragraph [ref=e170]: A component for displaying keyboard keys and shortcuts.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic: ⌘
+            - generic:
+              - generic: K
+    - generic [ref=e172]:
+      - heading "Label" [level=2] [ref=e173]:
+        - link "Label" [ref=e174] [cursor=pointer]:
+          - /url: /ui/docs/components/label
+      - paragraph [ref=e175]: Renders an accessible label associated with controls.
+    - generic [ref=e176]:
+      - generic [ref=e177]:
+        - heading "Menu" [level=2] [ref=e178]:
+          - link "Menu" [ref=e179] [cursor=pointer]:
+            - /url: /ui/docs/components/menu
+        - paragraph [ref=e180]: A list of actions in a dropdown, enhanced with keyboard navigation.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - generic:
+                - generic:
+                  - img
+    - generic [ref=e182]:
+      - heading "Meter" [level=2] [ref=e183]:
+        - link "Meter" [ref=e184] [cursor=pointer]:
+          - /url: /ui/docs/components/meter
+      - paragraph [ref=e185]: A graphical display of a numeric value within a range.
+    - generic [ref=e186]:
+      - generic [ref=e187]:
+        - heading "Number Field" [level=2] [ref=e188]:
+          - link "Number Field" [ref=e189] [cursor=pointer]:
+            - /url: /ui/docs/components/number-field
+        - paragraph [ref=e190]: A numeric input element with increment and decrement buttons, and a scrub area.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img
+              - img
+    - generic [ref=e191]:
+      - generic [ref=e192]:
+        - heading "Pagination" [level=2] [ref=e193]:
+          - link "Pagination" [ref=e194] [cursor=pointer]:
+            - /url: /ui/docs/components/pagination
+        - paragraph [ref=e195]: A pagination with page navigation, next and previous links.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e197]:
+      - heading "Popover" [level=2] [ref=e198]:
+        - link "Popover" [ref=e199] [cursor=pointer]:
+          - /url: /ui/docs/components/popover
+      - paragraph [ref=e200]: An accessible popup anchored to a button.
+    - generic [ref=e202]:
+      - heading "Preview Card" [level=2] [ref=e203]:
+        - link "Preview Card" [ref=e204] [cursor=pointer]:
+          - /url: /ui/docs/components/preview-card
+      - paragraph [ref=e205]: A popup that appears when a link is hovered, showing a preview for sighted users.
+    - generic [ref=e207]:
+      - heading "Progress" [level=2] [ref=e208]:
+        - link "Progress" [ref=e209] [cursor=pointer]:
+          - /url: /ui/docs/components/progress
+      - paragraph [ref=e210]: Displays the status of a task that takes a long time.
+    - generic [ref=e212]:
+      - heading "Radio Group" [level=2] [ref=e213]:
+        - link "Radio Group" [ref=e214] [cursor=pointer]:
+          - /url: /ui/docs/components/radio-group
+      - paragraph [ref=e215]: A set of checkable buttons where no more than one of the buttons can be checked at a time.
+    - generic [ref=e217]:
+      - heading "Scroll Area" [level=2] [ref=e218]:
+        - link "Scroll Area" [ref=e219] [cursor=pointer]:
+          - /url: /ui/docs/components/scroll-area
+      - paragraph [ref=e220]: A native scroll container with custom scrollbars.
+    - generic [ref=e221]:
+      - generic [ref=e222]:
+        - heading "Select" [level=2] [ref=e223]:
+          - link "Select" [ref=e224] [cursor=pointer]:
+            - /url: /ui/docs/components/select
+        - paragraph [ref=e225]: A common form component for choosing a predefined value in a dropdown menu.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e227]:
+      - heading "Separator" [level=2] [ref=e228]:
+        - link "Separator" [ref=e229] [cursor=pointer]:
+          - /url: /ui/docs/components/separator
+      - paragraph [ref=e230]: A separator element accessible to screen readers.
+    - generic [ref=e232]:
+      - heading "Sheet" [level=2] [ref=e233]:
+        - link "Sheet" [ref=e234] [cursor=pointer]:
+          - /url: /ui/docs/components/sheet
+      - paragraph [ref=e235]: A flyout that opens from the side of the screen, based on the dialog component.
+    - generic [ref=e237]:
+      - heading "Skeleton" [level=2] [ref=e238]:
+        - link "Skeleton" [ref=e239] [cursor=pointer]:
+          - /url: /ui/docs/components/skeleton
+      - paragraph [ref=e240]: A loading state skeleton for your components.
+    - generic [ref=e242]:
+      - heading "Slider" [level=2] [ref=e243]:
+        - link "Slider" [ref=e244] [cursor=pointer]:
+          - /url: /ui/docs/components/slider
+      - paragraph [ref=e245]: An input where the user selects a value from within a given range.
+    - generic [ref=e247]:
+      - heading "Spinner" [level=2] [ref=e248]:
+        - link "Spinner" [ref=e249] [cursor=pointer]:
+          - /url: /ui/docs/components/spinner
+      - paragraph [ref=e250]: An indicator that can be used to show a loading state.
+    - generic [ref=e252]:
+      - heading "Switch" [level=2] [ref=e253]:
+        - link "Switch" [ref=e254] [cursor=pointer]:
+          - /url: /ui/docs/components/switch
+      - paragraph [ref=e255]: A control that indicates whether a setting is on or off.
+    - generic [ref=e257]:
+      - heading "Table" [level=2] [ref=e258]:
+        - link "Table" [ref=e259] [cursor=pointer]:
+          - /url: /ui/docs/components/table
+      - paragraph [ref=e260]: A simple table component for displaying tabular data.
+    - generic [ref=e262]:
+      - heading "Tabs" [level=2] [ref=e263]:
+        - link "Tabs" [ref=e264] [cursor=pointer]:
+          - /url: /ui/docs/components/tabs
+      - paragraph [ref=e265]: A component for toggling between related panels on the same page.
+    - generic [ref=e267]:
+      - heading "Textarea" [level=2] [ref=e268]:
+        - link "Textarea" [ref=e269] [cursor=pointer]:
+          - /url: /ui/docs/components/textarea
+      - paragraph [ref=e270]: A native textarea element.
+    - generic [ref=e271]:
+      - generic [ref=e272]:
+        - heading "Toast" [level=2] [ref=e273]:
+          - link "Toast" [ref=e274] [cursor=pointer]:
+            - /url: /ui/docs/components/toast
+        - paragraph [ref=e275]: A temporary notification that appears on screen to inform users.
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img
+    - generic [ref=e277]:
+      - heading "Toggle" [level=2] [ref=e278]:
+        - link "Toggle" [ref=e279] [cursor=pointer]:
+          - /url: /ui/docs/components/toggle
+      - paragraph [ref=e280]: A two-state button that can be toggled on or off.
+    - generic [ref=e282]:
+      - heading "Toggle Group" [level=2] [ref=e283]:
+        - link "Toggle Group" [ref=e284] [cursor=pointer]:
+          - /url: /ui/docs/components/toggle-group
+      - paragraph [ref=e285]: Provides a shared state to a series of toggle buttons.
+    - generic [ref=e287]:
+      - heading "Toolbar" [level=2] [ref=e288]:
+        - link "Toolbar" [ref=e289] [cursor=pointer]:
+          - /url: /ui/docs/components/toolbar
+      - paragraph [ref=e290]: A container for grouping a set of buttons and controls.
+    - generic [ref=e291]:
+      - generic [ref=e292]:
+        - heading "Tooltip" [level=2] [ref=e293]:
+          - link "Tooltip" [ref=e294] [cursor=pointer]:
+            - /url: /ui/docs/components/tooltip
+        - paragraph [ref=e295]: A popup that appears when an element is hovered or focused, showing a hint for sighted users.
+      - generic:
+        - generic:
+          - generic:
+            - img
+  - contentinfo [ref=e296]:
+    - paragraph [ref=e298]:
+      - text: © 2026
+      - link "coss.com" [ref=e299] [cursor=pointer]:
+        - /url: /ui
+      - text: – open source, open heart, open mind.

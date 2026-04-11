@@ -1,0 +1,395 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "Vercel wordmark Tremor is joining Vercel. Read more about our journey" [ref=e3] [cursor=pointer]:
+      - /url: https://vercel.com/blog/vercel-acquires-tremor?utm_source=tremor-site&utm_medium=banner&utm_campaign=tremor-acquisition
+      - generic [ref=e4]:
+        - img "Vercel wordmark" [ref=e5]
+        - generic [ref=e6]:
+          - generic [ref=e7]:
+            - text: Tremor is joining Vercel.
+            - generic [ref=e8]: Read more about our journey
+          - img [ref=e9]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - link "Tremor Logo and Home Link" [ref=e22] [cursor=pointer]:
+          - /url: /
+          - img [ref=e23]
+        - combobox [ref=e26] [cursor=pointer]:
+          - generic [ref=e27]: Tremor
+          - img [ref=e28]
+      - navigation [ref=e30]:
+        - button "Open main menu" [ref=e32] [cursor=pointer]:
+          - generic [ref=e33]: Open main menu
+          - img [ref=e34]
+  - generic [ref=e36]:
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic:
+          - generic:
+            - generic:
+              - text: Blocks & Templates are now
+              - generic: free and
+              - text: open-source
+      - generic [ref=e40]:
+        - heading "Everything you need to build great apps" [level=1] [ref=e41]:
+          - generic [ref=e43]: Everything you need to build great apps
+        - paragraph [ref=e44]:
+          - generic [ref=e46]: Get access to 300+ carefully crafted blocks and every template to build dashboards, apps, and websites even faster.
+        - generic [ref=e47]:
+          - link "Browse Blocks" [ref=e48] [cursor=pointer]:
+            - /url: /blocks
+          - link "Explore Templates" [ref=e49] [cursor=pointer]:
+            - /url: /templates
+            - text: Explore Templates
+            - img [ref=e50]
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e58]:
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - img [ref=e63]
+              - generic [ref=e65]: Operational
+            - heading "Emma's Online-Shop" [level=3] [ref=e66]
+          - generic [ref=e99]:
+            - generic [ref=e100]: 30 days ago
+            - generic [ref=e101]: Today
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - generic [ref=e107]: 9.3%
+            - img [ref=e109]
+          - generic [ref=e111]:
+            - generic [ref=e112]: 3.3%
+            - img [ref=e114]
+      - generic [ref=e119]:
+        - heading "Portfolio Value" [level=3] [ref=e120]
+        - paragraph [ref=e121]: $310,238.70
+        - img [ref=e125]:
+          - generic [ref=e129]:
+            - generic [ref=e131]: Aug 25
+            - generic [ref=e133]: Sep 17
+      - generic [ref=e186]:
+        - img [ref=e190]:
+          - generic [ref=e191]: $25,280
+          - generic [ref=e192]:
+            - img [ref=e194]
+            - img [ref=e196]
+            - img [ref=e198]
+            - img [ref=e200]
+        - paragraph [ref=e201]:
+          - generic [ref=e202]: Expenses
+          - generic [ref=e203]: Amount
+        - list [ref=e204]:
+          - listitem [ref=e205]:
+            - generic [ref=e208]: Travel
+            - generic [ref=e210]: $15,730
+          - listitem [ref=e211]:
+            - generic [ref=e214]: IT & equipment
+            - generic [ref=e216]: $4,420
+          - listitem [ref=e217]:
+            - generic [ref=e220]: Training & development
+            - generic [ref=e222]: $3,920
+          - listitem [ref=e223]:
+            - generic [ref=e226]: Office supplies
+            - generic [ref=e228]: $1,210
+      - generic [ref=e232]:
+        - heading "Online payments" [level=3] [ref=e233]
+        - generic [ref=e234]:
+          - tablist [ref=e235]:
+            - tab "Europe" [selected] [ref=e236] [cursor=pointer]:
+              - generic [ref=e237]: Europe
+            - tab "North America" [ref=e238] [cursor=pointer]:
+              - generic [ref=e239]: North America
+          - generic [ref=e241]:
+            - img [ref=e245]:
+              - generic [ref=e249]:
+                - generic [ref=e251]: Jan 23
+                - generic [ref=e253]: Dec 23
+            - list [ref=e306]:
+              - listitem [ref=e307]:
+                - generic [ref=e310]: Successful
+                - generic [ref=e311]: "263"
+              - listitem [ref=e312]:
+                - generic [ref=e315]: Refunded
+                - generic [ref=e316]: "18"
+  - generic [ref=e324]:
+    - generic [ref=e325]:
+      - generic [ref=e326]:
+        - heading "Blocks" [level=2] [ref=e327]
+        - paragraph [ref=e328]:
+          - generic [ref=e329]: Blocks that will make you love building UI
+        - paragraph [ref=e330]:
+          - generic [ref=e332]: We have created the blocks we wished for when building dashboards, apps and more. From charts to billing pages, build your next idea quickly.
+      - generic [ref=e333]:
+        - list [ref=e334]:
+          - listitem [ref=e335]:
+            - link "Thumbnail Bar Charts Bar Charts 12 blocks Updated" [ref=e336] [cursor=pointer]:
+              - /url: /blocks/bar-charts
+              - generic [ref=e337]:
+                - img "Thumbnail Bar Charts" [ref=e340]
+                - generic [ref=e341]:
+                  - heading "Bar Charts" [level=3] [ref=e343]:
+                    - text: Bar Charts
+                    - img [ref=e345]
+                  - paragraph [ref=e347]: 12 blocks
+                  - generic [ref=e348]: Updated
+          - listitem [ref=e349]:
+            - link "Thumbnail Chart Tooltips Chart Tooltips 21 blocks" [ref=e350] [cursor=pointer]:
+              - /url: /blocks/chart-tooltips
+              - generic [ref=e351]:
+                - img "Thumbnail Chart Tooltips" [ref=e354]
+                - generic [ref=e355]:
+                  - heading "Chart Tooltips" [level=3] [ref=e357]:
+                    - text: Chart Tooltips
+                    - img [ref=e359]
+                  - paragraph [ref=e361]: 21 blocks
+          - listitem [ref=e362]:
+            - link "Thumbnail Chart Compositions Chart Compositions 15 blocks" [ref=e363] [cursor=pointer]:
+              - /url: /blocks/chart-compositions
+              - generic [ref=e364]:
+                - img "Thumbnail Chart Compositions" [ref=e367]
+                - generic [ref=e368]:
+                  - heading "Chart Compositions" [level=3] [ref=e370]:
+                    - text: Chart Compositions
+                    - img [ref=e372]
+                  - paragraph [ref=e374]: 15 blocks
+          - listitem [ref=e375]:
+            - link "Thumbnail KPI Cards KPI Cards 29 blocks Updated" [ref=e376] [cursor=pointer]:
+              - /url: /blocks/kpi-cards
+              - generic [ref=e377]:
+                - img "Thumbnail KPI Cards" [ref=e380]
+                - generic [ref=e381]:
+                  - heading "KPI Cards" [level=3] [ref=e383]:
+                    - text: KPI Cards
+                    - img [ref=e385]
+                  - paragraph [ref=e387]: 29 blocks
+                  - generic [ref=e388]: Updated
+          - listitem [ref=e389]:
+            - link "Thumbnail Form Layouts Form Layouts 6 blocks" [ref=e390] [cursor=pointer]:
+              - /url: /blocks/form-layouts
+              - generic [ref=e391]:
+                - img "Thumbnail Form Layouts" [ref=e394]
+                - generic [ref=e395]:
+                  - heading "Form Layouts" [level=3] [ref=e397]:
+                    - text: Form Layouts
+                    - img [ref=e399]
+                  - paragraph [ref=e401]: 6 blocks
+          - listitem [ref=e402]:
+            - link "Thumbnail Banners Banners 5 blocks" [ref=e403] [cursor=pointer]:
+              - /url: /blocks/banners
+              - generic [ref=e404]:
+                - img "Thumbnail Banners" [ref=e407]
+                - generic [ref=e408]:
+                  - heading "Banners" [level=3] [ref=e410]:
+                    - text: Banners
+                    - img [ref=e412]
+                  - paragraph [ref=e414]: 5 blocks
+        - link "Show more" [ref=e416] [cursor=pointer]:
+          - /url: /blocks
+    - generic [ref=e417]:
+      - heading "Based on our own open-source tech" [level=2] [ref=e418]
+      - paragraph [ref=e419]:
+        - generic [ref=e421]: Blocks entirely built with Tremor components and Tailwind CSS
+      - list [ref=e422]:
+        - listitem [ref=e423]:
+          - generic [ref=e424]:
+            - img [ref=e425]
+            - heading "Built with Tailwind CSS" [level=4] [ref=e432]
+            - paragraph [ref=e433]: Copy and paste production-ready blocks. Customize them to your needs solely using Tailwind CSS.
+        - listitem [ref=e434]:
+          - generic [ref=e435]:
+            - img [ref=e436]
+            - heading "15K+ GitHub stars" [level=4] [ref=e442]
+            - paragraph [ref=e443]: Core parts of our blocks are based on our open-source components supported by thousands of developers.
+        - listitem [ref=e444]:
+          - generic [ref=e445]:
+            - img [ref=e446]
+            - heading "300+ Blocks" [level=4] [ref=e452]
+            - paragraph [ref=e453]: From charts to billing pages, we covered all parts when it comes to building dashbords.
+        - listitem [ref=e454]:
+          - generic [ref=e455]:
+            - img [ref=e456]
+            - heading "Light and dark mode" [level=4] [ref=e464]
+            - paragraph [ref=e465]: All of our blocks come with a light and dark mode by default, all based on our Tremor theme.
+    - generic [ref=e467]:
+      - heading "Tailwind CSS Templates" [level=2] [ref=e468]
+      - paragraph [ref=e469]:
+        - generic [ref=e470]: Production-ready templates to launch tomorrow
+      - paragraph [ref=e471]:
+        - generic [ref=e473]: Carefully crafted templates built by experts with the latest technology stack based on React and Next.js. Get templates for anything to build and launch your idea.
+      - generic [ref=e474]:
+        - link "Screenshot of dashboard template Dashboard Template Analytical interfaces that allow your audience to better understand their data. Drive revenue and provide an advanced data visualization experience. View Templates" [ref=e475] [cursor=pointer]:
+          - /url: /templates#template-dashboard
+          - img "Screenshot of dashboard template" [ref=e477]
+          - generic [ref=e478]:
+            - generic:
+              - heading "Dashboard Template" [level=3]
+              - paragraph: Analytical interfaces that allow your audience to better understand their data. Drive revenue and provide an advanced data visualization experience.
+            - button "View Templates" [ref=e480]
+        - link "Screenshots of database template SaaS Marketing Website Launch your next idea with a beautiful website template. View Templates" [ref=e481] [cursor=pointer]:
+          - /url: /templates#template-database
+          - img "Screenshots of database template" [ref=e483]
+          - generic [ref=e484]:
+            - generic:
+              - heading "SaaS Marketing Website" [level=3]
+              - paragraph: Launch your next idea with a beautiful website template.
+            - button "View Templates" [ref=e486]
+        - link "Screenshots of overview template Report Pages Overview dashboard pages to summarize data. View Templates" [ref=e487] [cursor=pointer]:
+          - /url: /templates#template-overview
+          - img "Screenshots of overview template" [ref=e489]
+          - generic [ref=e490]:
+            - generic:
+              - heading "Report Pages" [level=3]
+              - paragraph: Overview dashboard pages to summarize data.
+            - button "View Templates" [ref=e492]
+        - link "Screenshots of insights template SaaS Template Feed and track your data in the best way possible. Everything you need to build your first data application. View Templates" [ref=e493] [cursor=pointer]:
+          - /url: /templates#template-insights
+          - img "Screenshots of insights template" [ref=e495]
+          - generic [ref=e496]:
+            - generic:
+              - heading "SaaS Template" [level=3]
+              - paragraph: Feed and track your data in the best way possible. Everything you need to build your first data application.
+            - button "View Templates" [ref=e498]
+        - link "Screenshots of solar template One-Pager Website Launch your next idea with a beautiful website template. Delight in beautifully crafted illustrations, already built with Tailwind CSS v4. View Template" [ref=e499] [cursor=pointer]:
+          - /url: /templates#template-solar
+          - img "Screenshots of solar template" [ref=e501]
+          - generic [ref=e502]:
+            - generic:
+              - heading "One-Pager Website" [level=3]
+              - paragraph: Launch your next idea with a beautiful website template. Delight in beautifully crafted illustrations, already built with Tailwind CSS v4.
+            - button "View Template" [ref=e504]
+        - link "Screenshots of planner template Dashboard Template Simple interfaces designed to present data easily. View Template" [ref=e505] [cursor=pointer]:
+          - /url: /templates#template-planner
+          - img "Screenshots of planner template" [ref=e507]
+          - generic [ref=e508]:
+            - generic:
+              - heading "Dashboard Template" [level=3]
+              - paragraph: Simple interfaces designed to present data easily.
+            - button "View Template" [ref=e510]
+  - contentinfo [ref=e511]:
+    - generic [ref=e512]:
+      - heading "Footer" [level=2] [ref=e513]
+      - generic [ref=e514]:
+        - generic [ref=e515]:
+          - heading "Charts & Helpers" [level=3] [ref=e516]
+          - list [ref=e517]:
+            - listitem [ref=e518]:
+              - link "Area Charts" [ref=e519] [cursor=pointer]:
+                - /url: /blocks/area-charts
+            - listitem [ref=e520]:
+              - link "Line Charts" [ref=e521] [cursor=pointer]:
+                - /url: /blocks/line-charts
+            - listitem [ref=e522]:
+              - link "Bar Charts" [ref=e523] [cursor=pointer]:
+                - /url: /blocks/bar-charts
+            - listitem [ref=e524]:
+              - link "Donut Charts" [ref=e525] [cursor=pointer]:
+                - /url: /blocks/donut-charts
+            - listitem [ref=e526]:
+              - link "Chart Tooltips" [ref=e527] [cursor=pointer]:
+                - /url: /blocks/chart-tooltips
+        - generic [ref=e528]:
+          - heading "Advanced Visualizations" [level=3] [ref=e529]
+          - list [ref=e530]:
+            - listitem [ref=e531]:
+              - link "Bar Lists" [ref=e532] [cursor=pointer]:
+                - /url: /blocks/bar-lists
+            - listitem [ref=e533]:
+              - link "Status Monitoring" [ref=e534] [cursor=pointer]:
+                - /url: /blocks/status-monitoring
+            - listitem [ref=e535]:
+              - link "Spark Charts" [ref=e536] [cursor=pointer]:
+                - /url: /blocks/spark-charts
+            - listitem [ref=e537]:
+              - link "KPI Cards" [ref=e538] [cursor=pointer]:
+                - /url: /blocks/kpi-cards
+            - listitem [ref=e539]:
+              - link "Chart Compositions" [ref=e540] [cursor=pointer]:
+                - /url: /blocks/chart-compositions
+        - generic [ref=e541]:
+          - heading "Inputs & Forms" [level=3] [ref=e542]
+          - list [ref=e543]:
+            - listitem [ref=e544]:
+              - link "Standard Forms" [ref=e545] [cursor=pointer]:
+                - /url: /blocks/form-layouts
+            - listitem [ref=e546]:
+              - link "File Uploads" [ref=e547] [cursor=pointer]:
+                - /url: /blocks/file-upload
+        - generic [ref=e548]:
+          - heading "Tables" [level=3] [ref=e549]
+          - list [ref=e550]:
+            - listitem [ref=e551]:
+              - link "Standard Tables" [ref=e552] [cursor=pointer]:
+                - /url: /blocks/tables
+            - listitem [ref=e553]:
+              - link "Table Actions" [ref=e554] [cursor=pointer]:
+                - /url: /blocks/table-actions
+            - listitem [ref=e555]:
+              - link "Table Pagination" [ref=e556] [cursor=pointer]:
+                - /url: /blocks/table-pagination
+        - generic [ref=e557]:
+          - heading "Layout & Forms" [level=3] [ref=e558]
+          - list [ref=e559]:
+            - listitem [ref=e560]:
+              - link "Page Shells" [ref=e561] [cursor=pointer]:
+                - /url: /blocks/page-shells
+            - listitem [ref=e562]:
+              - link "Filterbar" [ref=e563] [cursor=pointer]:
+                - /url: /blocks/filterbar
+            - listitem [ref=e564]:
+              - link "Empty States" [ref=e565] [cursor=pointer]:
+                - /url: /blocks/empty-states
+            - listitem [ref=e566]:
+              - link "Dialogs" [ref=e567] [cursor=pointer]:
+                - /url: /blocks/dialogs
+            - listitem [ref=e568]:
+              - link "Grid Lists" [ref=e569] [cursor=pointer]:
+                - /url: /blocks/grid-lists
+            - listitem [ref=e570]:
+              - link "Banner" [ref=e571] [cursor=pointer]:
+                - /url: /blocks/banners
+            - listitem [ref=e572]:
+              - link "Badges" [ref=e573] [cursor=pointer]:
+                - /url: /blocks/badges
+        - generic [ref=e574]:
+          - heading "Marketing" [level=3] [ref=e575]
+          - list [ref=e576]:
+            - listitem [ref=e577]:
+              - link "Pricing Sections" [ref=e578] [cursor=pointer]:
+                - /url: /blocks/pricing-sections
+            - listitem [ref=e579]:
+              - link "Logins" [ref=e580] [cursor=pointer]:
+                - /url: /blocks/logins
+            - listitem [ref=e581]:
+              - link "User Management" [ref=e582] [cursor=pointer]:
+                - /url: /blocks/account-and-user-management
+            - listitem [ref=e583]:
+              - link "Onboarding & Feed" [ref=e584] [cursor=pointer]:
+                - /url: /blocks/onboarding-feed
+            - listitem [ref=e585]:
+              - link "Billing & Usage" [ref=e586] [cursor=pointer]:
+                - /url: /blocks/billing-usage
+      - generic [ref=e589]:
+        - paragraph [ref=e590]: © 2026 Tremor Labs, Inc. All rights reserved.
+        - generic [ref=e591]:
+          - generic [ref=e592]:
+            - link "Changelog" [ref=e593] [cursor=pointer]:
+              - /url: /changelog
+            - link "License" [ref=e596] [cursor=pointer]:
+              - /url: /license
+            - link "Support" [ref=e599] [cursor=pointer]:
+              - /url: /support
+            - link "Imprint" [ref=e602] [cursor=pointer]:
+              - /url: https://tremor.so/imprint
+            - link "Privacy" [ref=e605] [cursor=pointer]:
+              - /url: https://tremor.so/privacy
+          - generic [ref=e606]:
+            - link "X" [ref=e607] [cursor=pointer]:
+              - /url: https://twitter.com/tremorlabs
+              - generic [ref=e608]: X
+              - img [ref=e609]
+            - link "GitHub" [ref=e611] [cursor=pointer]:
+              - /url: https://github.com/tremorlabs/tremor
+              - generic [ref=e612]: GitHub
+              - img [ref=e613]
+  - alert [ref=e615]
+  - generic [ref=e616]: Jan 23

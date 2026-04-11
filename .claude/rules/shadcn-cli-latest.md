@@ -1,0 +1,1 @@
+Toujours utiliser 'npx shadcn@latest' pour les commandes CLI afin de bénéficier des dernières définitions de composants.

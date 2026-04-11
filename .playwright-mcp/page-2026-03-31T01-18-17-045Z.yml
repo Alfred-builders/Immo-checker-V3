@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - region "Notifications alt+T"
+  - generic [ref=e4]:
+    - link "Kiranism/next-shadcn-dashboard-starter on GitHub — 6,185 stars" [ref=e5] [cursor=pointer]:
+      - /url: https://github.com/kiranism/next-shadcn-dashboard-starter
+      - img [ref=e6]
+      - generic [ref=e8]: Kiranism/next-shadcn-dashboard-starter
+      - generic [ref=e10]: 6.2k
+    - generic [ref=e11]:
+      - paragraph [ref=e12]:
+        - text: This is an
+        - link "open-source project" [ref=e13] [cursor=pointer]:
+          - /url: /about
+        - text: for demo purposes. Authentication is handled securely by Clerk.
+      - paragraph [ref=e14]:
+        - link "View on GitHub" [ref=e15] [cursor=pointer]:
+          - /url: https://github.com/kiranism/next-shadcn-dashboard-starter
+    - paragraph [ref=e16]:
+      - text: By clicking continue, you agree to our
+      - link "Terms of Service" [ref=e17] [cursor=pointer]:
+        - /url: /terms-of-service
+      - text: and
+      - link "Privacy Policy" [ref=e18] [cursor=pointer]:
+        - /url: /privacy-policy
+      - text: .
+  - alert [ref=e19]

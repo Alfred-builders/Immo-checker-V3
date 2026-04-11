@@ -1,0 +1,27 @@
+- generic [ref=e2]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img [ref=e8]
+      - heading "ImmoChecker" [level=1] [ref=e12]
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "Connexion" [level=2] [ref=e15]
+        - paragraph [ref=e16]: Accédez à votre espace de travail
+      - generic [ref=e28]: Session expired
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Email
+          - textbox "Email" [ref=e20]:
+            - /placeholder: admin@flatchecker.fr
+            - text: admin@flatchecker.fr
+        - generic [ref=e21]:
+          - generic [ref=e22]: Mot de passe
+          - textbox "Mot de passe" [ref=e23]:
+            - /placeholder: ••••••••
+            - text: Admin123!
+        - button "Se connecter" [ref=e24]
+      - generic [ref=e25]:
+        - link "Mot de passe oublie ?" [ref=e26] [cursor=pointer]:
+          - /url: /forgot-password
+        - paragraph [ref=e27]: Pas de compte ? Contactez votre administrateur.
+  - region "Notifications alt+T"

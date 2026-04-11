@@ -1,0 +1,912 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link "mxkaske" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: mxkaske
+      - generic [ref=e8]:
+        - link "Home" [ref=e9] [cursor=pointer]:
+          - /url: https://www.mxkaske.dev
+        - text: ·
+        - link "Craft" [ref=e10] [cursor=pointer]:
+          - /url: https://craft.mxkaske.dev
+        - text: ·
+        - link "Brew" [ref=e11] [cursor=pointer]:
+          - /url: https://brew.mxkaske.dev
+    - main [ref=e12]:
+      - generic [ref=e13]:
+        - heading "Never. Stop. Crafting." [level=1] [ref=e14]
+        - generic [ref=e15]:
+          - paragraph [ref=e17]: July 2025
+          - generic [ref=e19]:
+            - button "Feedback F" [ref=e23] [cursor=pointer]:
+              - text: Feedback
+              - generic [ref=e24]: F
+            - link "Feedback Popover Just another feedback form. Kept simple." [ref=e25] [cursor=pointer]:
+              - /url: /post/feedback-popover
+              - generic [ref=e26]:
+                - paragraph [ref=e27]: Feedback Popover
+                - paragraph [ref=e28]: Just another feedback form. Kept simple.
+          - paragraph [ref=e30]: June 2025
+          - generic [ref=e32]:
+            - button "pnpm dlx shadcn@latest add localhost/r/ form-card.json" [ref=e36] [cursor=pointer]:
+              - generic [ref=e37]:
+                - generic [ref=e38]: pnpm dlx shadcn@latest add localhost/r/
+                - listbox "Select option" [ref=e40]:
+                  - generic [ref=e42]:
+                    - option [disabled] [ref=e43]
+                    - option "metric-card.json" [ref=e44]:
+                      - generic [ref=e45]: metric-card.json
+                    - option "action-card.json" [ref=e46]:
+                      - generic [ref=e47]: action-card.json
+                    - option "form-card.json" [selected] [ref=e48]:
+                      - generic [ref=e49]: form-card.json
+                    - option "section.json" [ref=e50]:
+                      - generic [ref=e51]: section.json
+                    - option "empty-state.json" [ref=e52]:
+                      - generic [ref=e53]: empty-state.json
+                    - option [disabled] [ref=e54]
+              - img [ref=e56]
+            - link "Wheel Picker A different way to select an item from a list." [ref=e59] [cursor=pointer]:
+              - /url: /post/wheel-picker
+              - generic [ref=e60]:
+                - paragraph [ref=e61]: Wheel Picker
+                - paragraph [ref=e62]: A different way to select an item from a list.
+          - paragraph [ref=e64]: February 2025
+          - generic [ref=e66]:
+            - combobox [expanded] [ref=e72]
+            - link "Google Places Autocomplete A combobox for your next address form." [ref=e73] [cursor=pointer]:
+              - /url: /post/google-autocomplete
+              - generic [ref=e74]:
+                - paragraph [ref=e75]: Google Places Autocomplete
+                - paragraph [ref=e76]: A combobox for your next address form.
+          - paragraph [ref=e78]: January 2025
+          - generic [ref=e80]:
+            - generic [ref=e84]:
+              - generic [ref=e85]:
+                - table [ref=e87]:
+                  - rowgroup [ref=e88]:
+                    - row "Jan Feb Mar Apr May Jun" [ref=e89]:
+                      - columnheader [ref=e90]
+                      - columnheader "Jan" [ref=e91]
+                      - columnheader "Feb" [ref=e92]
+                      - columnheader "Mar" [ref=e93]
+                      - columnheader "Apr" [ref=e94]
+                      - columnheader "May" [ref=e95]
+                      - columnheader "Jun" [ref=e96]
+                  - rowgroup [ref=e97]:
+                    - row "2 activities - Jan 05, 2025 1 activity - Jan 12, 2025 1 activity - Jan 19, 2025 3 activities - Jan 26, 2025 1 activity - Feb 02, 2025 4 activities - Feb 09, 2025 2 activities - Feb 16, 2025 4 activities - Feb 23, 2025 3 activities - Mar 02, 2025 3 activities - Mar 09, 2025 4 activities - Mar 16, 2025 1 activity - Mar 23, 2025 3 activities - Mar 30, 2025 2 activities - Apr 06, 2025 4 activities - Apr 13, 2025 1 activity - Apr 20, 2025 4 activities - Apr 27, 2025 3 activities - May 04, 2025 4 activities - May 11, 2025 0 activity - May 18, 2025 5 activities - May 25, 2025 1 activity - Jun 01, 2025 3 activities - Jun 08, 2025 0 activity - Jun 15, 2025" [ref=e98]:
+                      - cell [ref=e99]
+                      - cell [ref=e100]
+                      - cell "2 activities - Jan 05, 2025" [ref=e101]:
+                        - generic [ref=e103]:
+                          - generic [ref=e104]: 2 activities
+                          - text: "- Jan 05, 2025"
+                      - cell "1 activity - Jan 12, 2025" [ref=e105]:
+                        - generic [ref=e107]:
+                          - generic [ref=e108]: 1 activity
+                          - text: "- Jan 12, 2025"
+                      - cell "1 activity - Jan 19, 2025" [ref=e109]:
+                        - generic [ref=e111]:
+                          - generic [ref=e112]: 1 activity
+                          - text: "- Jan 19, 2025"
+                      - cell "3 activities - Jan 26, 2025" [ref=e113]:
+                        - generic [ref=e115]:
+                          - generic [ref=e116]: 3 activities
+                          - text: "- Jan 26, 2025"
+                      - cell "1 activity - Feb 02, 2025" [ref=e117]:
+                        - generic [ref=e119]:
+                          - generic [ref=e120]: 1 activity
+                          - text: "- Feb 02, 2025"
+                      - cell "4 activities - Feb 09, 2025" [ref=e121]:
+                        - generic [ref=e123]:
+                          - generic [ref=e124]: 4 activities
+                          - text: "- Feb 09, 2025"
+                      - cell "2 activities - Feb 16, 2025" [ref=e125]:
+                        - generic [ref=e127]:
+                          - generic [ref=e128]: 2 activities
+                          - text: "- Feb 16, 2025"
+                      - cell "4 activities - Feb 23, 2025" [ref=e129]:
+                        - generic [ref=e131]:
+                          - generic [ref=e132]: 4 activities
+                          - text: "- Feb 23, 2025"
+                      - cell "3 activities - Mar 02, 2025" [ref=e133]:
+                        - generic [ref=e135]:
+                          - generic [ref=e136]: 3 activities
+                          - text: "- Mar 02, 2025"
+                      - cell "3 activities - Mar 09, 2025" [ref=e137]:
+                        - generic [ref=e139]:
+                          - generic [ref=e140]: 3 activities
+                          - text: "- Mar 09, 2025"
+                      - cell "4 activities - Mar 16, 2025" [ref=e141]:
+                        - generic [ref=e143]:
+                          - generic [ref=e144]: 4 activities
+                          - text: "- Mar 16, 2025"
+                      - cell "1 activity - Mar 23, 2025" [ref=e145]:
+                        - generic [ref=e147]:
+                          - generic [ref=e148]: 1 activity
+                          - text: "- Mar 23, 2025"
+                      - cell "3 activities - Mar 30, 2025" [ref=e149]:
+                        - generic [ref=e151]:
+                          - generic [ref=e152]: 3 activities
+                          - text: "- Mar 30, 2025"
+                      - cell "2 activities - Apr 06, 2025" [ref=e153]:
+                        - generic [ref=e155]:
+                          - generic [ref=e156]: 2 activities
+                          - text: "- Apr 06, 2025"
+                      - cell "4 activities - Apr 13, 2025" [ref=e157]:
+                        - generic [ref=e159]:
+                          - generic [ref=e160]: 4 activities
+                          - text: "- Apr 13, 2025"
+                      - cell "1 activity - Apr 20, 2025" [ref=e161]:
+                        - generic [ref=e163]:
+                          - generic [ref=e164]: 1 activity
+                          - text: "- Apr 20, 2025"
+                      - cell "4 activities - Apr 27, 2025" [ref=e165]:
+                        - generic [ref=e167]:
+                          - generic [ref=e168]: 4 activities
+                          - text: "- Apr 27, 2025"
+                      - cell "3 activities - May 04, 2025" [ref=e169]:
+                        - generic [ref=e171]:
+                          - generic [ref=e172]: 3 activities
+                          - text: "- May 04, 2025"
+                      - cell "4 activities - May 11, 2025" [ref=e173]:
+                        - generic [ref=e175]:
+                          - generic [ref=e176]: 4 activities
+                          - text: "- May 11, 2025"
+                      - cell "0 activity - May 18, 2025" [ref=e177]:
+                        - generic [ref=e179]:
+                          - generic [ref=e180]: 0 activity
+                          - text: "- May 18, 2025"
+                      - cell "5 activities - May 25, 2025" [ref=e181]:
+                        - generic [ref=e183]:
+                          - generic [ref=e184]: 5 activities
+                          - text: "- May 25, 2025"
+                      - cell "1 activity - Jun 01, 2025" [ref=e185]:
+                        - generic [ref=e187]:
+                          - generic [ref=e188]: 1 activity
+                          - text: "- Jun 01, 2025"
+                      - cell "3 activities - Jun 08, 2025" [ref=e189]:
+                        - generic [ref=e191]:
+                          - generic [ref=e192]: 3 activities
+                          - text: "- Jun 08, 2025"
+                      - cell "0 activity - Jun 15, 2025" [ref=e193]:
+                        - generic [ref=e195]:
+                          - generic [ref=e196]: 0 activity
+                          - text: "- Jun 15, 2025"
+                    - row "Mon 4 activities - Jan 06, 2025 4 activities - Jan 13, 2025 2 activities - Jan 20, 2025 1 activity - Jan 27, 2025 1 activity - Feb 03, 2025 0 activity - Feb 10, 2025 3 activities - Feb 17, 2025 1 activity - Feb 24, 2025 0 activity - Mar 03, 2025 2 activities - Mar 10, 2025 4 activities - Mar 17, 2025 4 activities - Mar 24, 2025 3 activities - Mar 31, 2025 4 activities - Apr 07, 2025 0 activity - Apr 14, 2025 4 activities - Apr 21, 2025 0 activity - Apr 28, 2025 3 activities - May 05, 2025 3 activities - May 12, 2025 1 activity - May 19, 2025 4 activities - May 26, 2025 4 activities - Jun 02, 2025 5 activities - Jun 09, 2025 1 activity - Jun 16, 2025" [ref=e197]:
+                      - cell "Mon" [ref=e198]
+                      - cell [ref=e199]
+                      - cell "4 activities - Jan 06, 2025" [ref=e200]:
+                        - generic [ref=e202]:
+                          - generic [ref=e203]: 4 activities
+                          - text: "- Jan 06, 2025"
+                      - cell "4 activities - Jan 13, 2025" [ref=e204]:
+                        - generic [ref=e206]:
+                          - generic [ref=e207]: 4 activities
+                          - text: "- Jan 13, 2025"
+                      - cell "2 activities - Jan 20, 2025" [ref=e208]:
+                        - generic [ref=e210]:
+                          - generic [ref=e211]: 2 activities
+                          - text: "- Jan 20, 2025"
+                      - cell "1 activity - Jan 27, 2025" [ref=e212]:
+                        - generic [ref=e214]:
+                          - generic [ref=e215]: 1 activity
+                          - text: "- Jan 27, 2025"
+                      - cell "1 activity - Feb 03, 2025" [ref=e216]:
+                        - generic [ref=e218]:
+                          - generic [ref=e219]: 1 activity
+                          - text: "- Feb 03, 2025"
+                      - cell "0 activity - Feb 10, 2025" [ref=e220]:
+                        - generic [ref=e222]:
+                          - generic [ref=e223]: 0 activity
+                          - text: "- Feb 10, 2025"
+                      - cell "3 activities - Feb 17, 2025" [ref=e224]:
+                        - generic [ref=e226]:
+                          - generic [ref=e227]: 3 activities
+                          - text: "- Feb 17, 2025"
+                      - cell "1 activity - Feb 24, 2025" [ref=e228]:
+                        - generic [ref=e230]:
+                          - generic [ref=e231]: 1 activity
+                          - text: "- Feb 24, 2025"
+                      - cell "0 activity - Mar 03, 2025" [ref=e232]:
+                        - generic [ref=e234]:
+                          - generic [ref=e235]: 0 activity
+                          - text: "- Mar 03, 2025"
+                      - cell "2 activities - Mar 10, 2025" [ref=e236]:
+                        - generic [ref=e238]:
+                          - generic [ref=e239]: 2 activities
+                          - text: "- Mar 10, 2025"
+                      - cell "4 activities - Mar 17, 2025" [ref=e240]:
+                        - generic [ref=e242]:
+                          - generic [ref=e243]: 4 activities
+                          - text: "- Mar 17, 2025"
+                      - cell "4 activities - Mar 24, 2025" [ref=e244]:
+                        - generic [ref=e246]:
+                          - generic [ref=e247]: 4 activities
+                          - text: "- Mar 24, 2025"
+                      - cell "3 activities - Mar 31, 2025" [ref=e248]:
+                        - generic [ref=e250]:
+                          - generic [ref=e251]: 3 activities
+                          - text: "- Mar 31, 2025"
+                      - cell "4 activities - Apr 07, 2025" [ref=e252]:
+                        - generic [ref=e254]:
+                          - generic [ref=e255]: 4 activities
+                          - text: "- Apr 07, 2025"
+                      - cell "0 activity - Apr 14, 2025" [ref=e256]:
+                        - generic [ref=e258]:
+                          - generic [ref=e259]: 0 activity
+                          - text: "- Apr 14, 2025"
+                      - cell "4 activities - Apr 21, 2025" [ref=e260]:
+                        - generic [ref=e262]:
+                          - generic [ref=e263]: 4 activities
+                          - text: "- Apr 21, 2025"
+                      - cell "0 activity - Apr 28, 2025" [ref=e264]:
+                        - generic [ref=e266]:
+                          - generic [ref=e267]: 0 activity
+                          - text: "- Apr 28, 2025"
+                      - cell "3 activities - May 05, 2025" [ref=e268]:
+                        - generic [ref=e270]:
+                          - generic [ref=e271]: 3 activities
+                          - text: "- May 05, 2025"
+                      - cell "3 activities - May 12, 2025" [ref=e272]:
+                        - generic [ref=e274]:
+                          - generic [ref=e275]: 3 activities
+                          - text: "- May 12, 2025"
+                      - cell "1 activity - May 19, 2025" [ref=e276]:
+                        - generic [ref=e278]:
+                          - generic [ref=e279]: 1 activity
+                          - text: "- May 19, 2025"
+                      - cell "4 activities - May 26, 2025" [ref=e280]:
+                        - generic [ref=e282]:
+                          - generic [ref=e283]: 4 activities
+                          - text: "- May 26, 2025"
+                      - cell "4 activities - Jun 02, 2025" [ref=e284]:
+                        - generic [ref=e286]:
+                          - generic [ref=e287]: 4 activities
+                          - text: "- Jun 02, 2025"
+                      - cell "5 activities - Jun 09, 2025" [ref=e288]:
+                        - generic [ref=e290]:
+                          - generic [ref=e291]: 5 activities
+                          - text: "- Jun 09, 2025"
+                      - cell "1 activity - Jun 16, 2025" [ref=e292]:
+                        - generic [ref=e294]:
+                          - generic [ref=e295]: 1 activity
+                          - text: "- Jun 16, 2025"
+                    - row "1 activity - Jan 07, 2025 3 activities - Jan 14, 2025 1 activity - Jan 21, 2025 0 activity - Jan 28, 2025 0 activity - Feb 04, 2025 4 activities - Feb 11, 2025 0 activity - Feb 18, 2025 1 activity - Feb 25, 2025 4 activities - Mar 04, 2025 1 activity - Mar 11, 2025 2 activities - Mar 18, 2025 4 activities - Mar 25, 2025 5 activities - Apr 01, 2025 3 activities - Apr 08, 2025 1 activity - Apr 15, 2025 3 activities - Apr 22, 2025 0 activity - Apr 29, 2025 0 activity - May 06, 2025 4 activities - May 13, 2025 4 activities - May 20, 2025 4 activities - May 27, 2025 1 activity - Jun 03, 2025 0 activity - Jun 10, 2025" [ref=e296]:
+                      - cell [ref=e297]
+                      - cell [ref=e298]
+                      - cell "1 activity - Jan 07, 2025" [ref=e299]:
+                        - generic [ref=e301]:
+                          - generic [ref=e302]: 1 activity
+                          - text: "- Jan 07, 2025"
+                      - cell "3 activities - Jan 14, 2025" [ref=e303]:
+                        - generic [ref=e305]:
+                          - generic [ref=e306]: 3 activities
+                          - text: "- Jan 14, 2025"
+                      - cell "1 activity - Jan 21, 2025" [ref=e307]:
+                        - generic [ref=e309]:
+                          - generic [ref=e310]: 1 activity
+                          - text: "- Jan 21, 2025"
+                      - cell "0 activity - Jan 28, 2025" [ref=e311]:
+                        - generic [ref=e313]:
+                          - generic [ref=e314]: 0 activity
+                          - text: "- Jan 28, 2025"
+                      - cell "0 activity - Feb 04, 2025" [ref=e315]:
+                        - generic [ref=e317]:
+                          - generic [ref=e318]: 0 activity
+                          - text: "- Feb 04, 2025"
+                      - cell "4 activities - Feb 11, 2025" [ref=e319]:
+                        - generic [ref=e321]:
+                          - generic [ref=e322]: 4 activities
+                          - text: "- Feb 11, 2025"
+                      - cell "0 activity - Feb 18, 2025" [ref=e323]:
+                        - generic [ref=e325]:
+                          - generic [ref=e326]: 0 activity
+                          - text: "- Feb 18, 2025"
+                      - cell "1 activity - Feb 25, 2025" [ref=e327]:
+                        - generic [ref=e329]:
+                          - generic [ref=e330]: 1 activity
+                          - text: "- Feb 25, 2025"
+                      - cell "4 activities - Mar 04, 2025" [ref=e331]:
+                        - generic [ref=e333]:
+                          - generic [ref=e334]: 4 activities
+                          - text: "- Mar 04, 2025"
+                      - cell "1 activity - Mar 11, 2025" [ref=e335]:
+                        - generic [ref=e337]:
+                          - generic [ref=e338]: 1 activity
+                          - text: "- Mar 11, 2025"
+                      - cell "2 activities - Mar 18, 2025" [ref=e339]:
+                        - generic [ref=e341]:
+                          - generic [ref=e342]: 2 activities
+                          - text: "- Mar 18, 2025"
+                      - cell "4 activities - Mar 25, 2025" [ref=e343]:
+                        - generic [ref=e345]:
+                          - generic [ref=e346]: 4 activities
+                          - text: "- Mar 25, 2025"
+                      - cell "5 activities - Apr 01, 2025" [ref=e347]:
+                        - generic [ref=e349]:
+                          - generic [ref=e350]: 5 activities
+                          - text: "- Apr 01, 2025"
+                      - cell "3 activities - Apr 08, 2025" [ref=e351]:
+                        - generic [ref=e353]:
+                          - generic [ref=e354]: 3 activities
+                          - text: "- Apr 08, 2025"
+                      - cell "1 activity - Apr 15, 2025" [ref=e355]:
+                        - generic [ref=e357]:
+                          - generic [ref=e358]: 1 activity
+                          - text: "- Apr 15, 2025"
+                      - cell "3 activities - Apr 22, 2025" [ref=e359]:
+                        - generic [ref=e361]:
+                          - generic [ref=e362]: 3 activities
+                          - text: "- Apr 22, 2025"
+                      - cell "0 activity - Apr 29, 2025" [ref=e363]:
+                        - generic [ref=e365]:
+                          - generic [ref=e366]: 0 activity
+                          - text: "- Apr 29, 2025"
+                      - cell "0 activity - May 06, 2025" [ref=e367]:
+                        - generic [ref=e369]:
+                          - generic [ref=e370]: 0 activity
+                          - text: "- May 06, 2025"
+                      - cell "4 activities - May 13, 2025" [ref=e371]:
+                        - generic [ref=e373]:
+                          - generic [ref=e374]: 4 activities
+                          - text: "- May 13, 2025"
+                      - cell "4 activities - May 20, 2025" [ref=e375]:
+                        - generic [ref=e377]:
+                          - generic [ref=e378]: 4 activities
+                          - text: "- May 20, 2025"
+                      - cell "4 activities - May 27, 2025" [ref=e379]:
+                        - generic [ref=e381]:
+                          - generic [ref=e382]: 4 activities
+                          - text: "- May 27, 2025"
+                      - cell "1 activity - Jun 03, 2025" [ref=e383]:
+                        - generic [ref=e385]:
+                          - generic [ref=e386]: 1 activity
+                          - text: "- Jun 03, 2025"
+                      - cell "0 activity - Jun 10, 2025" [ref=e387]:
+                        - generic [ref=e389]:
+                          - generic [ref=e390]: 0 activity
+                          - text: "- Jun 10, 2025"
+                      - cell [ref=e391]
+                    - row "Wed 1 activity - Jan 01, 2025 3 activities - Jan 08, 2025 0 activity - Jan 15, 2025 4 activities - Jan 22, 2025 0 activity - Jan 29, 2025 4 activities - Feb 05, 2025 5 activities - Feb 12, 2025 2 activities - Feb 19, 2025 2 activities - Feb 26, 2025 2 activities - Mar 05, 2025 2 activities - Mar 12, 2025 5 activities - Mar 19, 2025 4 activities - Mar 26, 2025 1 activity - Apr 02, 2025 3 activities - Apr 09, 2025 0 activity - Apr 16, 2025 1 activity - Apr 23, 2025 1 activity - Apr 30, 2025 0 activity - May 07, 2025 2 activities - May 14, 2025 4 activities - May 21, 2025 1 activity - May 28, 2025 1 activity - Jun 04, 2025 1 activity - Jun 11, 2025" [ref=e392]:
+                      - cell "Wed" [ref=e393]
+                      - cell "1 activity - Jan 01, 2025" [ref=e394]:
+                        - generic [ref=e396]:
+                          - generic [ref=e397]: 1 activity
+                          - text: "- Jan 01, 2025"
+                      - cell "3 activities - Jan 08, 2025" [ref=e398]:
+                        - generic [ref=e400]:
+                          - generic [ref=e401]: 3 activities
+                          - text: "- Jan 08, 2025"
+                      - cell "0 activity - Jan 15, 2025" [ref=e402]:
+                        - generic [ref=e404]:
+                          - generic [ref=e405]: 0 activity
+                          - text: "- Jan 15, 2025"
+                      - cell "4 activities - Jan 22, 2025" [ref=e406]:
+                        - generic [ref=e408]:
+                          - generic [ref=e409]: 4 activities
+                          - text: "- Jan 22, 2025"
+                      - cell "0 activity - Jan 29, 2025" [ref=e410]:
+                        - generic [ref=e412]:
+                          - generic [ref=e413]: 0 activity
+                          - text: "- Jan 29, 2025"
+                      - cell "4 activities - Feb 05, 2025" [ref=e414]:
+                        - generic [ref=e416]:
+                          - generic [ref=e417]: 4 activities
+                          - text: "- Feb 05, 2025"
+                      - cell "5 activities - Feb 12, 2025" [ref=e418]:
+                        - generic [ref=e420]:
+                          - generic [ref=e421]: 5 activities
+                          - text: "- Feb 12, 2025"
+                      - cell "2 activities - Feb 19, 2025" [ref=e422]:
+                        - generic [ref=e424]:
+                          - generic [ref=e425]: 2 activities
+                          - text: "- Feb 19, 2025"
+                      - cell "2 activities - Feb 26, 2025" [ref=e426]:
+                        - generic [ref=e428]:
+                          - generic [ref=e429]: 2 activities
+                          - text: "- Feb 26, 2025"
+                      - cell "2 activities - Mar 05, 2025" [ref=e430]:
+                        - generic [ref=e432]:
+                          - generic [ref=e433]: 2 activities
+                          - text: "- Mar 05, 2025"
+                      - cell "2 activities - Mar 12, 2025" [ref=e434]:
+                        - generic [ref=e436]:
+                          - generic [ref=e437]: 2 activities
+                          - text: "- Mar 12, 2025"
+                      - cell "5 activities - Mar 19, 2025" [ref=e438]:
+                        - generic [ref=e440]:
+                          - generic [ref=e441]: 5 activities
+                          - text: "- Mar 19, 2025"
+                      - cell "4 activities - Mar 26, 2025" [ref=e442]:
+                        - generic [ref=e444]:
+                          - generic [ref=e445]: 4 activities
+                          - text: "- Mar 26, 2025"
+                      - cell "1 activity - Apr 02, 2025" [ref=e446]:
+                        - generic [ref=e448]:
+                          - generic [ref=e449]: 1 activity
+                          - text: "- Apr 02, 2025"
+                      - cell "3 activities - Apr 09, 2025" [ref=e450]:
+                        - generic [ref=e452]:
+                          - generic [ref=e453]: 3 activities
+                          - text: "- Apr 09, 2025"
+                      - cell "0 activity - Apr 16, 2025" [ref=e454]:
+                        - generic [ref=e456]:
+                          - generic [ref=e457]: 0 activity
+                          - text: "- Apr 16, 2025"
+                      - cell "1 activity - Apr 23, 2025" [ref=e458]:
+                        - generic [ref=e460]:
+                          - generic [ref=e461]: 1 activity
+                          - text: "- Apr 23, 2025"
+                      - cell "1 activity - Apr 30, 2025" [ref=e462]:
+                        - generic [ref=e464]:
+                          - generic [ref=e465]: 1 activity
+                          - text: "- Apr 30, 2025"
+                      - cell "0 activity - May 07, 2025" [ref=e466]:
+                        - generic [ref=e468]:
+                          - generic [ref=e469]: 0 activity
+                          - text: "- May 07, 2025"
+                      - cell "2 activities - May 14, 2025" [ref=e470]:
+                        - generic [ref=e472]:
+                          - generic [ref=e473]: 2 activities
+                          - text: "- May 14, 2025"
+                      - cell "4 activities - May 21, 2025" [ref=e474]:
+                        - generic [ref=e476]:
+                          - generic [ref=e477]: 4 activities
+                          - text: "- May 21, 2025"
+                      - cell "1 activity - May 28, 2025" [ref=e478]:
+                        - generic [ref=e480]:
+                          - generic [ref=e481]: 1 activity
+                          - text: "- May 28, 2025"
+                      - cell "1 activity - Jun 04, 2025" [ref=e482]:
+                        - generic [ref=e484]:
+                          - generic [ref=e485]: 1 activity
+                          - text: "- Jun 04, 2025"
+                      - cell "1 activity - Jun 11, 2025" [ref=e486]:
+                        - generic [ref=e488]:
+                          - generic [ref=e489]: 1 activity
+                          - text: "- Jun 11, 2025"
+                      - cell [ref=e490]
+                    - row "1 activity - Jan 02, 2025 3 activities - Jan 09, 2025 3 activities - Jan 16, 2025 1 activity - Jan 23, 2025 3 activities - Jan 30, 2025 4 activities - Feb 06, 2025 2 activities - Feb 13, 2025 3 activities - Feb 20, 2025 3 activities - Feb 27, 2025 3 activities - Mar 06, 2025 0 activity - Mar 13, 2025 4 activities - Mar 20, 2025 3 activities - Mar 27, 2025 3 activities - Apr 03, 2025 4 activities - Apr 10, 2025 4 activities - Apr 17, 2025 3 activities - Apr 24, 2025 3 activities - May 01, 2025 2 activities - May 08, 2025 3 activities - May 15, 2025 4 activities - May 22, 2025 0 activity - May 29, 2025 2 activities - Jun 05, 2025 4 activities - Jun 12, 2025" [ref=e491]:
+                      - cell [ref=e492]
+                      - cell "1 activity - Jan 02, 2025" [ref=e493]:
+                        - generic [ref=e495]:
+                          - generic [ref=e496]: 1 activity
+                          - text: "- Jan 02, 2025"
+                      - cell "3 activities - Jan 09, 2025" [ref=e497]:
+                        - generic [ref=e499]:
+                          - generic [ref=e500]: 3 activities
+                          - text: "- Jan 09, 2025"
+                      - cell "3 activities - Jan 16, 2025" [ref=e501]:
+                        - generic [ref=e503]:
+                          - generic [ref=e504]: 3 activities
+                          - text: "- Jan 16, 2025"
+                      - cell "1 activity - Jan 23, 2025" [ref=e505]:
+                        - generic [ref=e507]:
+                          - generic [ref=e508]: 1 activity
+                          - text: "- Jan 23, 2025"
+                      - cell "3 activities - Jan 30, 2025" [ref=e509]:
+                        - generic [ref=e511]:
+                          - generic [ref=e512]: 3 activities
+                          - text: "- Jan 30, 2025"
+                      - cell "4 activities - Feb 06, 2025" [ref=e513]:
+                        - generic [ref=e515]:
+                          - generic [ref=e516]: 4 activities
+                          - text: "- Feb 06, 2025"
+                      - cell "2 activities - Feb 13, 2025" [ref=e517]:
+                        - generic [ref=e519]:
+                          - generic [ref=e520]: 2 activities
+                          - text: "- Feb 13, 2025"
+                      - cell "3 activities - Feb 20, 2025" [ref=e521]:
+                        - generic [ref=e523]:
+                          - generic [ref=e524]: 3 activities
+                          - text: "- Feb 20, 2025"
+                      - cell "3 activities - Feb 27, 2025" [ref=e525]:
+                        - generic [ref=e527]:
+                          - generic [ref=e528]: 3 activities
+                          - text: "- Feb 27, 2025"
+                      - cell "3 activities - Mar 06, 2025" [ref=e529]:
+                        - generic [ref=e531]:
+                          - generic [ref=e532]: 3 activities
+                          - text: "- Mar 06, 2025"
+                      - cell "0 activity - Mar 13, 2025" [ref=e533]:
+                        - generic [ref=e535]:
+                          - generic [ref=e536]: 0 activity
+                          - text: "- Mar 13, 2025"
+                      - cell "4 activities - Mar 20, 2025" [ref=e537]:
+                        - generic [ref=e539]:
+                          - generic [ref=e540]: 4 activities
+                          - text: "- Mar 20, 2025"
+                      - cell "3 activities - Mar 27, 2025" [ref=e541]:
+                        - generic [ref=e543]:
+                          - generic [ref=e544]: 3 activities
+                          - text: "- Mar 27, 2025"
+                      - cell "3 activities - Apr 03, 2025" [ref=e545]:
+                        - generic [ref=e547]:
+                          - generic [ref=e548]: 3 activities
+                          - text: "- Apr 03, 2025"
+                      - cell "4 activities - Apr 10, 2025" [ref=e549]:
+                        - generic [ref=e551]:
+                          - generic [ref=e552]: 4 activities
+                          - text: "- Apr 10, 2025"
+                      - cell "4 activities - Apr 17, 2025" [ref=e553]:
+                        - generic [ref=e555]:
+                          - generic [ref=e556]: 4 activities
+                          - text: "- Apr 17, 2025"
+                      - cell "3 activities - Apr 24, 2025" [ref=e557]:
+                        - generic [ref=e559]:
+                          - generic [ref=e560]: 3 activities
+                          - text: "- Apr 24, 2025"
+                      - cell "3 activities - May 01, 2025" [ref=e561]:
+                        - generic [ref=e563]:
+                          - generic [ref=e564]: 3 activities
+                          - text: "- May 01, 2025"
+                      - cell "2 activities - May 08, 2025" [ref=e565]:
+                        - generic [ref=e567]:
+                          - generic [ref=e568]: 2 activities
+                          - text: "- May 08, 2025"
+                      - cell "3 activities - May 15, 2025" [ref=e569]:
+                        - generic [ref=e571]:
+                          - generic [ref=e572]: 3 activities
+                          - text: "- May 15, 2025"
+                      - cell "4 activities - May 22, 2025" [ref=e573]:
+                        - generic [ref=e575]:
+                          - generic [ref=e576]: 4 activities
+                          - text: "- May 22, 2025"
+                      - cell "0 activity - May 29, 2025" [ref=e577]:
+                        - generic [ref=e579]:
+                          - generic [ref=e580]: 0 activity
+                          - text: "- May 29, 2025"
+                      - cell "2 activities - Jun 05, 2025" [ref=e581]:
+                        - generic [ref=e583]:
+                          - generic [ref=e584]: 2 activities
+                          - text: "- Jun 05, 2025"
+                      - cell "4 activities - Jun 12, 2025" [ref=e585]:
+                        - generic [ref=e587]:
+                          - generic [ref=e588]: 4 activities
+                          - text: "- Jun 12, 2025"
+                      - cell [ref=e589]
+                    - row "Fri 3 activities - Jan 03, 2025 4 activities - Jan 10, 2025 1 activity - Jan 17, 2025 0 activity - Jan 24, 2025 3 activities - Jan 31, 2025 1 activity - Feb 07, 2025 0 activity - Feb 14, 2025 2 activities - Feb 21, 2025 3 activities - Feb 28, 2025 0 activity - Mar 07, 2025 1 activity - Mar 14, 2025 3 activities - Mar 21, 2025 2 activities - Mar 28, 2025 1 activity - Apr 04, 2025 0 activity - Apr 11, 2025 1 activity - Apr 18, 2025 0 activity - Apr 25, 2025 1 activity - May 02, 2025 0 activity - May 09, 2025 5 activities - May 16, 2025 1 activity - May 23, 2025 4 activities - May 30, 2025 3 activities - Jun 06, 2025 1 activity - Jun 13, 2025" [ref=e590]:
+                      - cell "Fri" [ref=e591]
+                      - cell "3 activities - Jan 03, 2025" [ref=e592]:
+                        - generic [ref=e594]:
+                          - generic [ref=e595]: 3 activities
+                          - text: "- Jan 03, 2025"
+                      - cell "4 activities - Jan 10, 2025" [ref=e596]:
+                        - generic [ref=e598]:
+                          - generic [ref=e599]: 4 activities
+                          - text: "- Jan 10, 2025"
+                      - cell "1 activity - Jan 17, 2025" [ref=e600]:
+                        - generic [ref=e602]:
+                          - generic [ref=e603]: 1 activity
+                          - text: "- Jan 17, 2025"
+                      - cell "0 activity - Jan 24, 2025" [ref=e604]:
+                        - generic [ref=e606]:
+                          - generic [ref=e607]: 0 activity
+                          - text: "- Jan 24, 2025"
+                      - cell "3 activities - Jan 31, 2025" [ref=e608]:
+                        - generic [ref=e610]:
+                          - generic [ref=e611]: 3 activities
+                          - text: "- Jan 31, 2025"
+                      - cell "1 activity - Feb 07, 2025" [ref=e612]:
+                        - generic [ref=e614]:
+                          - generic [ref=e615]: 1 activity
+                          - text: "- Feb 07, 2025"
+                      - cell "0 activity - Feb 14, 2025" [ref=e616]:
+                        - generic [ref=e618]:
+                          - generic [ref=e619]: 0 activity
+                          - text: "- Feb 14, 2025"
+                      - cell "2 activities - Feb 21, 2025" [ref=e620]:
+                        - generic [ref=e622]:
+                          - generic [ref=e623]: 2 activities
+                          - text: "- Feb 21, 2025"
+                      - cell "3 activities - Feb 28, 2025" [ref=e624]:
+                        - generic [ref=e626]:
+                          - generic [ref=e627]: 3 activities
+                          - text: "- Feb 28, 2025"
+                      - cell "0 activity - Mar 07, 2025" [ref=e628]:
+                        - generic [ref=e630]:
+                          - generic [ref=e631]: 0 activity
+                          - text: "- Mar 07, 2025"
+                      - cell "1 activity - Mar 14, 2025" [ref=e632]:
+                        - generic [ref=e634]:
+                          - generic [ref=e635]: 1 activity
+                          - text: "- Mar 14, 2025"
+                      - cell "3 activities - Mar 21, 2025" [ref=e636]:
+                        - generic [ref=e638]:
+                          - generic [ref=e639]: 3 activities
+                          - text: "- Mar 21, 2025"
+                      - cell "2 activities - Mar 28, 2025" [ref=e640]:
+                        - generic [ref=e642]:
+                          - generic [ref=e643]: 2 activities
+                          - text: "- Mar 28, 2025"
+                      - cell "1 activity - Apr 04, 2025" [ref=e644]:
+                        - generic [ref=e646]:
+                          - generic [ref=e647]: 1 activity
+                          - text: "- Apr 04, 2025"
+                      - cell "0 activity - Apr 11, 2025" [ref=e648]:
+                        - generic [ref=e650]:
+                          - generic [ref=e651]: 0 activity
+                          - text: "- Apr 11, 2025"
+                      - cell "1 activity - Apr 18, 2025" [ref=e652]:
+                        - generic [ref=e654]:
+                          - generic [ref=e655]: 1 activity
+                          - text: "- Apr 18, 2025"
+                      - cell "0 activity - Apr 25, 2025" [ref=e656]:
+                        - generic [ref=e658]:
+                          - generic [ref=e659]: 0 activity
+                          - text: "- Apr 25, 2025"
+                      - cell "1 activity - May 02, 2025" [ref=e660]:
+                        - generic [ref=e662]:
+                          - generic [ref=e663]: 1 activity
+                          - text: "- May 02, 2025"
+                      - cell "0 activity - May 09, 2025" [ref=e664]:
+                        - generic [ref=e666]:
+                          - generic [ref=e667]: 0 activity
+                          - text: "- May 09, 2025"
+                      - cell "5 activities - May 16, 2025" [ref=e668]:
+                        - generic [ref=e670]:
+                          - generic [ref=e671]: 5 activities
+                          - text: "- May 16, 2025"
+                      - cell "1 activity - May 23, 2025" [ref=e672]:
+                        - generic [ref=e674]:
+                          - generic [ref=e675]: 1 activity
+                          - text: "- May 23, 2025"
+                      - cell "4 activities - May 30, 2025" [ref=e676]:
+                        - generic [ref=e678]:
+                          - generic [ref=e679]: 4 activities
+                          - text: "- May 30, 2025"
+                      - cell "3 activities - Jun 06, 2025" [ref=e680]:
+                        - generic [ref=e682]:
+                          - generic [ref=e683]: 3 activities
+                          - text: "- Jun 06, 2025"
+                      - cell "1 activity - Jun 13, 2025" [ref=e684]:
+                        - generic [ref=e686]:
+                          - generic [ref=e687]: 1 activity
+                          - text: "- Jun 13, 2025"
+                      - cell [ref=e688]
+                    - row "2 activities - Jan 04, 2025 2 activities - Jan 11, 2025 4 activities - Jan 18, 2025 3 activities - Jan 25, 2025 4 activities - Feb 01, 2025 0 activity - Feb 08, 2025 2 activities - Feb 15, 2025 4 activities - Feb 22, 2025 5 activities - Mar 01, 2025 4 activities - Mar 08, 2025 4 activities - Mar 15, 2025 2 activities - Mar 22, 2025 1 activity - Mar 29, 2025 0 activity - Apr 05, 2025 1 activity - Apr 12, 2025 0 activity - Apr 19, 2025 2 activities - Apr 26, 2025 0 activity - May 03, 2025 5 activities - May 10, 2025 4 activities - May 17, 2025 0 activity - May 24, 2025 0 activity - May 31, 2025 0 activity - Jun 07, 2025 1 activity - Jun 14, 2025" [ref=e689]:
+                      - cell [ref=e690]
+                      - cell "2 activities - Jan 04, 2025" [ref=e691]:
+                        - generic [ref=e693]:
+                          - generic [ref=e694]: 2 activities
+                          - text: "- Jan 04, 2025"
+                      - cell "2 activities - Jan 11, 2025" [ref=e695]:
+                        - generic [ref=e697]:
+                          - generic [ref=e698]: 2 activities
+                          - text: "- Jan 11, 2025"
+                      - cell "4 activities - Jan 18, 2025" [ref=e699]:
+                        - generic [ref=e701]:
+                          - generic [ref=e702]: 4 activities
+                          - text: "- Jan 18, 2025"
+                      - cell "3 activities - Jan 25, 2025" [ref=e703]:
+                        - generic [ref=e705]:
+                          - generic [ref=e706]: 3 activities
+                          - text: "- Jan 25, 2025"
+                      - cell "4 activities - Feb 01, 2025" [ref=e707]:
+                        - generic [ref=e709]:
+                          - generic [ref=e710]: 4 activities
+                          - text: "- Feb 01, 2025"
+                      - cell "0 activity - Feb 08, 2025" [ref=e711]:
+                        - generic [ref=e713]:
+                          - generic [ref=e714]: 0 activity
+                          - text: "- Feb 08, 2025"
+                      - cell "2 activities - Feb 15, 2025" [ref=e715]:
+                        - generic [ref=e717]:
+                          - generic [ref=e718]: 2 activities
+                          - text: "- Feb 15, 2025"
+                      - cell "4 activities - Feb 22, 2025" [ref=e719]:
+                        - generic [ref=e721]:
+                          - generic [ref=e722]: 4 activities
+                          - text: "- Feb 22, 2025"
+                      - cell "5 activities - Mar 01, 2025" [ref=e723]:
+                        - generic [ref=e725]:
+                          - generic [ref=e726]: 5 activities
+                          - text: "- Mar 01, 2025"
+                      - cell "4 activities - Mar 08, 2025" [ref=e727]:
+                        - generic [ref=e729]:
+                          - generic [ref=e730]: 4 activities
+                          - text: "- Mar 08, 2025"
+                      - cell "4 activities - Mar 15, 2025" [ref=e731]:
+                        - generic [ref=e733]:
+                          - generic [ref=e734]: 4 activities
+                          - text: "- Mar 15, 2025"
+                      - cell "2 activities - Mar 22, 2025" [ref=e735]:
+                        - generic [ref=e737]:
+                          - generic [ref=e738]: 2 activities
+                          - text: "- Mar 22, 2025"
+                      - cell "1 activity - Mar 29, 2025" [ref=e739]:
+                        - generic [ref=e741]:
+                          - generic [ref=e742]: 1 activity
+                          - text: "- Mar 29, 2025"
+                      - cell "0 activity - Apr 05, 2025" [ref=e743]:
+                        - generic [ref=e745]:
+                          - generic [ref=e746]: 0 activity
+                          - text: "- Apr 05, 2025"
+                      - cell "1 activity - Apr 12, 2025" [ref=e747]:
+                        - generic [ref=e749]:
+                          - generic [ref=e750]: 1 activity
+                          - text: "- Apr 12, 2025"
+                      - cell "0 activity - Apr 19, 2025" [ref=e751]:
+                        - generic [ref=e753]:
+                          - generic [ref=e754]: 0 activity
+                          - text: "- Apr 19, 2025"
+                      - cell "2 activities - Apr 26, 2025" [ref=e755]:
+                        - generic [ref=e757]:
+                          - generic [ref=e758]: 2 activities
+                          - text: "- Apr 26, 2025"
+                      - cell "0 activity - May 03, 2025" [ref=e759]:
+                        - generic [ref=e761]:
+                          - generic [ref=e762]: 0 activity
+                          - text: "- May 03, 2025"
+                      - cell "5 activities - May 10, 2025" [ref=e763]:
+                        - generic [ref=e765]:
+                          - generic [ref=e766]: 5 activities
+                          - text: "- May 10, 2025"
+                      - cell "4 activities - May 17, 2025" [ref=e767]:
+                        - generic [ref=e769]:
+                          - generic [ref=e770]: 4 activities
+                          - text: "- May 17, 2025"
+                      - cell "0 activity - May 24, 2025" [ref=e771]:
+                        - generic [ref=e773]:
+                          - generic [ref=e774]: 0 activity
+                          - text: "- May 24, 2025"
+                      - cell "0 activity - May 31, 2025" [ref=e775]:
+                        - generic [ref=e777]:
+                          - generic [ref=e778]: 0 activity
+                          - text: "- May 31, 2025"
+                      - cell "0 activity - Jun 07, 2025" [ref=e779]:
+                        - generic [ref=e781]:
+                          - generic [ref=e782]: 0 activity
+                          - text: "- Jun 07, 2025"
+                      - cell "1 activity - Jun 14, 2025" [ref=e783]:
+                        - generic [ref=e785]:
+                          - generic [ref=e786]: 1 activity
+                          - text: "- Jun 14, 2025"
+                      - cell [ref=e787]
+                - generic [ref=e788]:
+                  - generic [ref=e789]: Less
+                  - generic [ref=e796]: More
+              - generic [ref=e797]:
+                - generic [ref=e798]:
+                  - text: Date Range
+                  - button "Date Range" [ref=e800] [cursor=pointer]:
+                    - img [ref=e801]
+                    - text: Jan 02, 2025 - Jun 17, 2025
+                  - paragraph [ref=e803]: The date range to display the grid for.
+                - generic [ref=e804]:
+                  - text: Color
+                  - combobox "Color" [ref=e805] [cursor=pointer]:
+                    - img [ref=e806]
+                  - combobox [ref=e808]
+                  - paragraph [ref=e809]: Grid theme
+                - generic [ref=e810]:
+                  - text: Gap
+                  - spinbutton "Gap" [ref=e811]: "2"
+                  - paragraph [ref=e812]: Gap between cells
+                - generic [ref=e813]:
+                  - text: Size
+                  - spinbutton "Size" [ref=e814]: "14"
+                  - paragraph [ref=e815]: Cell size
+                - generic [ref=e816]:
+                  - generic [ref=e817]:
+                    - text: Week Days
+                    - paragraph [ref=e818]: Select the days of the week you want to display in the grid.
+                  - generic [ref=e819]:
+                    - checkbox "Sunday" [ref=e820] [cursor=pointer]
+                    - checkbox
+                    - generic [ref=e821]: Sunday
+                  - generic [ref=e822]:
+                    - checkbox "Monday" [checked] [ref=e823] [cursor=pointer]:
+                      - generic:
+                        - img
+                    - checkbox [checked]
+                    - generic [ref=e824]: Monday
+                  - generic [ref=e825]:
+                    - checkbox "Tuesday" [ref=e826] [cursor=pointer]
+                    - checkbox
+                    - generic [ref=e827]: Tuesday
+                  - generic [ref=e828]:
+                    - checkbox "Wednesday" [checked] [ref=e829] [cursor=pointer]:
+                      - generic:
+                        - img
+                    - checkbox [checked]
+                    - generic [ref=e830]: Wednesday
+                  - generic [ref=e831]:
+                    - checkbox "Thursday" [ref=e832] [cursor=pointer]
+                    - checkbox
+                    - generic [ref=e833]: Thursday
+                  - generic [ref=e834]:
+                    - checkbox "Friday" [checked] [ref=e835] [cursor=pointer]:
+                      - generic:
+                        - img
+                    - checkbox [checked]
+                    - generic [ref=e836]: Friday
+                  - generic [ref=e837]:
+                    - checkbox "Saturday" [ref=e838] [cursor=pointer]
+                    - checkbox
+                    - generic [ref=e839]: Saturday
+            - link "Activity Calendar A customizable GitHub Activity Calendar Grid component." [ref=e840] [cursor=pointer]:
+              - /url: /post/activity-calendar
+              - generic [ref=e841]:
+                - paragraph [ref=e842]: Activity Calendar
+                - paragraph [ref=e843]: A customizable GitHub Activity Calendar Grid component.
+          - paragraph [ref=e845]: August 2024
+          - generic [ref=e847]:
+            - img "data-table" [ref=e850]
+            - link "Data Table A data table with controls and cmdk filters." [ref=e851] [cursor=pointer]:
+              - /url: /post/data-table
+              - generic [ref=e852]:
+                - paragraph [ref=e853]: Data Table
+                - paragraph [ref=e854]: A data table with controls and cmdk filters.
+          - paragraph [ref=e856]: June 2023
+          - generic [ref=e857]:
+            - generic [ref=e858]:
+              - generic [ref=e862]:
+                - generic [ref=e865]:
+                  - generic [ref=e866]:
+                    - text: SvelteKit
+                    - button [ref=e867] [cursor=pointer]:
+                      - img [ref=e868]
+                  - combobox [expanded] [ref=e871]
+                - generic:
+                  - listbox "Suggestions"
+              - link "Fancy Multi Select A simple Multi Select Input control for your next React Application. Build with cmdk." [ref=e872] [cursor=pointer]:
+                - /url: /post/fancy-multi-select
+                - generic [ref=e873]:
+                  - paragraph [ref=e874]: Fancy Multi Select
+                  - paragraph [ref=e875]: A simple Multi Select Input control for your next React Application. Build with cmdk.
+            - link "Server Actions and the experimental useFormStatus hook A dead simple waitlist form with pending state. Powered by Server Actions." [ref=e879] [cursor=pointer]:
+              - /url: /post/server-action-experimental-hook
+              - generic [ref=e880]:
+                - paragraph [ref=e881]: Server Actions and the experimental useFormStatus hook
+                - paragraph [ref=e882]: A dead simple waitlist form with pending state. Powered by Server Actions.
+          - paragraph [ref=e884]: May 2023
+          - generic [ref=e885]:
+            - generic [ref=e886]:
+              - generic [ref=e890]:
+                - tablist [ref=e891]:
+                  - tab "Write" [selected] [ref=e892] [cursor=pointer]
+                  - tab "Preview" [ref=e893] [cursor=pointer]
+                - tabpanel "Write" [ref=e894]:
+                  - generic [ref=e895]:
+                    - textbox [ref=e896]: Build by @mxkaske, _powered by_ @shadcn **ui**. Supports raw <code>html</code>.
+                    - paragraph [ref=e897]: Supports markdown.
+              - link "Fancy Area A markdown textarea with mention support including hover cards in the preview. Just like GitHub." [ref=e898] [cursor=pointer]:
+                - /url: /post/fancy-area
+                - generic [ref=e899]:
+                  - paragraph [ref=e900]: Fancy Area
+                  - paragraph [ref=e901]: A markdown textarea with mention support including hover cards in the preview. Just like GitHub.
+            - generic [ref=e902]:
+              - generic [ref=e906]:
+                - combobox [ref=e907] [cursor=pointer]:
+                  - generic [ref=e908]: Next.js
+                  - img [ref=e909]
+                - generic [ref=e913]: Next.js
+              - link "Fancy Box A multi-select combobox with label creation and editing options. Like GitHub." [ref=e914] [cursor=pointer]:
+                - /url: /post/fancy-box
+                - generic [ref=e915]:
+                  - paragraph [ref=e916]: Fancy Box
+                  - paragraph [ref=e917]: A multi-select combobox with label creation and editing options. Like GitHub.
+    - contentinfo [ref=e918]:
+      - generic [ref=e919]:
+        - link "X" [ref=e920] [cursor=pointer]:
+          - /url: https://x.com/mxkaske
+          - text: X
+          - img [ref=e921]
+        - text: ·
+        - link "GitHub" [ref=e924] [cursor=pointer]:
+          - /url: https://github.com/mxkaske/mxkaske.dev
+          - text: GitHub
+          - img [ref=e925]
+        - text: ·
+        - link "OpenStatus" [ref=e928] [cursor=pointer]:
+          - /url: https://openstatus.dev
+          - text: OpenStatus
+          - img [ref=e929]
+      - button "Toggle theme" [ref=e933] [cursor=pointer]:
+        - img [ref=e934]
+        - img
+        - generic [ref=e940]: Toggle theme
+  - region "Notifications alt+T"

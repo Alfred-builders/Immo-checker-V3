@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "mcp__railway__*",
+      "Bash(psql *)",
+      "Bash(node *db*)",
+      "Bash(node *migrate*)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "mcp__notion__*",
+      "Bash(npx shadcn@latest *)",
+      "ReadFile(components.json)",
+      "WriteFile(components/ui/*)",
+      "WriteFile(lib/utils.ts)"
+    ]
+  },
+  "_archonse_stack_permissions": {
+    "allow": [
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "mcp__railway__*",
+      "Bash(psql *)",
+      "Bash(node *db*)",
+      "Bash(node *migrate*)",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "mcp__notion__*",
+      "Bash(npx shadcn@latest *)",
+      "ReadFile(components.json)",
+      "WriteFile(components/ui/*)",
+      "WriteFile(lib/utils.ts)"
+    ],
+    "deny": []
+  }
+}

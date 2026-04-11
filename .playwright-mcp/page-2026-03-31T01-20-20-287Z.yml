@@ -1,0 +1,13 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link [ref=e3] [cursor=pointer]:
+      - /url: /
+      - img [ref=e4]
+    - paragraph [ref=e7]: "404"
+    - heading "Page not found" [level=1] [ref=e8]
+    - paragraph [ref=e9]: Sorry, we couldn’t find the page you’re looking for.
+    - link "Go to the home page" [ref=e10] [cursor=pointer]:
+      - /url: /
+      - text: Go to the home page
+      - img [ref=e11]
+  - alert [ref=e13]

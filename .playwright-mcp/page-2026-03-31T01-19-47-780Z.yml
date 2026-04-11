@@ -1,0 +1,7 @@
+- generic [active]:
+  - img
+  - alert [ref=e1]
+  - generic:
+    - region "Notifications"
+  - generic:
+    - region "Notifications"

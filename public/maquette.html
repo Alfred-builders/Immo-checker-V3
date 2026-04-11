@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImmoChecker — Maquette UI/UX</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #07070a;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #18181b;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Style A — Shadcn Modern */
+    .style-a { font-family: 'Geist', system-ui, -apple-system, sans-serif; }
+    .style-a .page-bg { background: #fafafa; }
+    .style-a .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      border-radius: 8px;
+    }
+    .style-a .sidebar-shell {
+      background: #fff;
+      border-right: 1px solid #e5e7eb;
+    }
+    .style-a .nav-item {
+      border-radius: 6px;
+      color: #71717a;
+      font-weight: 500;
+    }
+    .style-a .nav-item:hover { background: #f4f4f5; color: #18181b; }
+    .style-a .nav-item.active { background: #f4f4f5; color: #18181b; font-weight: 600; }
+    .style-a .btn-primary {
+      background: #18181b;
+      color: #fff;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .style-a .btn-primary:hover { background: #27272a; }
+    .style-a .badge-planifiee { background: #dbeafe; color: #1d4ed8; }
+    .style-a .badge-assignee { background: #fef3c7; color: #b45309; }
+    .style-a .badge-terminee { background: #dcfce7; color: #15803d; }
+    .style-a .badge-annulee { background: #fee2e2; color: #b91c1c; }
+    .style-a .badge-brouillon { background: #f3f4f6; color: #6b7280; }
+    .style-a .accent { color: #3b82f6; }
+    .style-a .accent-bg { background: #3b82f6; }
+    .style-a .table-header { background: #fafafa; border-bottom: 1px solid #e5e7eb; }
+    .style-a .table-row { border-bottom: 1px solid #f4f4f5; }
+    .style-a .table-row:hover { background: #fafafa; }
+    .style-a .input-field {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .style-a .topbar-border { border-bottom: 1px solid #e5e7eb; }
+    .style-a .logo-text { color: #18181b; font-weight: 700; }
+    .style-a .text-secondary { color: #71717a; }
+    .style-a .text-primary { color: #18181b; }
+    .style-a .section-title { color: #18181b; font-weight: 600; }
+    .style-a .chart-gradient-start { stop-color: #3b82f6; }
+    .style-a .chart-gradient-end { stop-color: #3b82f6; stop-opacity: 0; }
+    .style-a .chart-line { stroke: #3b82f6; }
+    .style-a .sparkline-up { stroke: #22c55e; }
+    .style-a .sparkline-warn { stroke: #f59e0b; }
+    .style-a .chip-entree { background: #dbeafe; color: #1d4ed8; }
+    .style-a .chip-sortie { background: #dcfce7; color: #15803d; }
+    .style-a .chip-inventaire { background: #fef3c7; color: #b45309; }
+    .style-a .today-highlight { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; }
+    .style-a .dot-warning { background: #f59e0b; }
+    .style-a .expanded-row { background: #fafafa; }
+    .style-a .badge-immeuble { background: #dbeafe; color: #1d4ed8; }
+    .style-a .badge-maison { background: #dcfce7; color: #15803d; }
+    .style-a .stat-card-border { border-left: 3px solid #3b82f6; }
+
+    /* Style B — Warm Elevation */
+    .style-b { font-family: 'Nunito Sans', sans-serif; }
+    .style-b .page-bg { background: #f8f6f3; }
+    .style-b .card {
+      background: #fff;
+      border: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+      border-radius: 14px;
+    }
+    .style-b .sidebar-shell {
+      background: #fff;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+    }
+    .style-b .nav-item {
+      border-radius: 10px;
+      color: #7c8a98;
+      font-weight: 600;
+    }
+    .style-b .nav-item:hover { background: #f5f3f0; color: #2d526c; }
+    .style-b .nav-item.active { background: #eef5fa; color: #2d526c; font-weight: 700; }
+    .style-b .btn-primary {
+      background: #2d526c;
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .style-b .btn-primary:hover { background: #1e3a4f; }
+    .style-b .badge-planifiee { background: #e0ecf4; color: #2d526c; }
+    .style-b .badge-assignee { background: #fef3c7; color: #b45309; }
+    .style-b .badge-terminee { background: #dcfce7; color: #15803d; }
+    .style-b .badge-annulee { background: #fee2e2; color: #b91c1c; }
+    .style-b .badge-brouillon { background: #f3f4f6; color: #6b7280; }
+    .style-b .accent { color: #2d526c; }
+    .style-b .accent-bg { background: #2d526c; }
+    .style-b .table-header { background: #f8f6f3; border-bottom: 1px solid #ebe7e1; }
+    .style-b .table-row { border-bottom: 1px solid #f2eeea; }
+    .style-b .table-row:hover { background: #faf8f5; }
+    .style-b .input-field {
+      border: 1px solid #e5e0da;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .style-b .topbar-border { border-bottom: 1px solid #ebe7e1; }
+    .style-b .logo-text { color: #2d526c; font-weight: 800; }
+    .style-b .text-secondary { color: #7c8a98; }
+    .style-b .text-primary { color: #1e293b; }
+    .style-b .section-title { color: #1e293b; font-weight: 700; }
+    .style-b .chart-gradient-start { stop-color: #2d526c; }
+    .style-b .chart-gradient-end { stop-color: #2d526c; stop-opacity: 0; }
+    .style-b .chart-line { stroke: #2d526c; }
+    .style-b .sparkline-up { stroke: #22c55e; }
+    .style-b .sparkline-warn { stroke: #f59e0b; }
+    .style-b .chip-entree { background: #e0ecf4; color: #2d526c; }
+    .style-b .chip-sortie { background: #dcfce7; color: #15803d; }
+    .style-b .chip-inventaire { background: #fef3c7; color: #b45309; }
+    .style-b .today-highlight { background: #eef5fa; border: 2px solid #2d526c; border-radius: 12px; }
+    .style-b .dot-warning { background: #f59e0b; }
+    .style-b .expanded-row { background: #faf8f5; }
+    .style-b .badge-immeuble { background: #e0ecf4; color: #2d526c; }
+    .style-b .badge-maison { background: #dcfce7; color: #15803d; }
+    .style-b .stat-card-border { border-left: 3px solid #2d526c; }
+
+    /* Shared utilities */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .trend-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .trend-up { background: #dcfce7; color: #15803d; }
+    .trend-warn { background: #fef3c7; color: #b45309; }
+    .trend-neutral { background: #f3f4f6; color: #6b7280; }
+
+    /* Switcher bar */
+    .switcher-bar {
+      background: #111113;
+      border-bottom: 1px solid #222228;
+    }
+    .switcher-btn {
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .switcher-btn:hover { color: #ccc; }
+    .switcher-btn.active {
+      background: #1e1e22;
+      color: #fff;
+      border-color: #333;
+    }
+
+    .page-tab {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .page-tab:hover { color: #aaa; }
+    .page-tab.active {
+      background: #222228;
+      color: #fff;
+    }
+
+    /* Layout */
+    .mockup-container {
+      height: calc(100vh - 88px);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      padding: 16px 24px 24px;
+    }
+    .mockup-frame {
+      width: 100%;
+      max-width: 1400px;
+      height: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .mockup-inner {
+      display: flex;
+      height: 100%;
+    }
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px;
+      height: 100%;
+    }
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      height: 100%;
+    }
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+    .main-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .style-b .main-content::-webkit-scrollbar-thumb { background: #d5cfc8; }
+
+    /* Page transitions */
+    .page-content {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+    .page-content.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Calendar grid */
+    .cal-day { min-height: 80px; }
+    .cal-chip { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP SWITCHER BAR -->
+  <div class="switcher-bar flex items-center justify-between px-6 py-2">
+    <div class="flex items-center gap-3">
+      <span style="color:#fff; font-weight:700; font-size:14px; letter-spacing:-0.02em;">ImmoChecker</span>
+      <span style="color:#444; font-size:13px;">Maquette UI/UX</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="switcher-btn active" onclick="switchStyle('a')" id="style-btn-a">Style A : Shadcn Modern</button>
+      <button class="switcher-btn" onclick="switchStyle('b')" id="style-btn-b">Style B : Warm Elevation</button>
+    </div>
+  </div>
+
+  <!-- PAGE TABS -->
+  <div style="background:#0e0e12; border-bottom:1px solid #222228;" class="flex items-center gap-1 px-6 py-2">
+    <button class="page-tab active" onclick="switchPage('dashboard')" id="tab-dashboard">Tableau de bord</button>
+    <button class="page-tab" onclick="switchPage('missions')" id="tab-missions">Missions</button>
+    <button class="page-tab" onclick="switchPage('mission-detail')" id="tab-mission-detail">Mission Detail</button>
+    <button class="page-tab" onclick="switchPage('parc')" id="tab-parc">Parc immobilier</button>
+  </div>
+
+  <!-- MOCKUP AREA -->
+  <div class="mockup-container" id="mockup-container">
+    <div class="mockup-frame" id="mockup-frame">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+
+  <script>
+    let currentStyle = 'a';
+    let currentPage = 'dashboard';
+
+    function switchStyle(s) {
+      currentStyle = s;
+      document.getElementById('style-btn-a').classList.toggle('active', s === 'a');
+      document.getElementById('style-btn-b').classList.toggle('active', s === 'b');
+      render();
+    }
+
+    function switchPage(p) {
+      currentPage = p;
+      document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + p).classList.add('active');
+      render();
+    }
+
+    function sidebarHTML(activePage) {
+      const items = [
+        { id: 'dashboard', icon: 'ph-squares-four', label: 'Tableau de bord' },
+        { id: 'missions', icon: 'ph-clipboard-text', label: 'Missions' },
+        { id: 'parc', icon: 'ph-building-office', label: 'Parc immobilier' },
+        { id: 'tiers', icon: 'ph-users-three', label: 'Tiers' },
+      ];
+      const active = activePage === 'mission-detail' ? 'missions' : activePage;
+      let html = `
+        <div class="flex items-center gap-2.5 px-3 mb-8">
+          <div class="accent-bg" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;">
+            <i class="ph ph-house-line" style="color:#fff;font-size:16px;"></i>
+          </div>
+          <span class="logo-text" style="font-size:16px;letter-spacing:-0.03em;">ImmoChecker</span>
+        </div>
+        <nav class="flex flex-col gap-1 flex-1">
+      `;
+      items.forEach(item => {
+        const isActive = item.id === active;
+        html += `<a class="nav-item flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors text-[13px] ${isActive ? 'active' : ''}" onclick="switchPage('${item.id}')">
+          <i class="ph ${item.icon}" style="font-size:18px;"></i>
+          <span>${item.label}</span>
+        </a>`;
+      });
+      html += `</nav>
+        <div class="mt-auto">
+          <a class="nav-item flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors text-[13px]">
+            <i class="ph ph-gear" style="font-size:18px;"></i>
+            <span>Parametres</span>
+          </a>
+          <div class="flex items-center gap-2.5 px-3 py-3 mt-2" style="border-top:1px solid currentColor; opacity:0.15;"></div>
+          <div class="flex items-center gap-2.5 px-3">
+            <div style="width:32px;height:32px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;">
+              <i class="ph ph-user" style="font-size:14px;color:#6b7280;"></i>
+            </div>
+            <div>
+              <div class="text-primary" style="font-size:13px;font-weight:600;">Romain Dupuis</div>
+              <div class="text-secondary" style="font-size:11px;">Admin</div>
+            </div>
+          </div>
+        </div>
+      `;
+      return html;
+    }
+
+    /* =================== DASHBOARD PAGE =================== */
+    function dashboardHTML() {
+      return `
+      <div class="page-bg" style="min-height:100%;">
+        <!-- Topbar -->
+        <div class="topbar-border flex items-center justify-between px-6 py-4" style="background:inherit;">
+          <div>
+            <h1 class="text-primary" style="font-size:20px;font-weight:700;letter-spacing:-0.02em;">Tableau de bord</h1>
+            <p class="text-secondary" style="font-size:13px;margin-top:2px;">Vendredi 11 avril 2026</p>
+          </div>
+          <button class="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] cursor-pointer transition-colors">
+            <i class="ph ph-plus" style="font-size:14px;"></i> Nouvelle mission
+          </button>
+        </div>
+
+        <div class="px-6 py-5">
+          <!-- Stat Cards -->
+          <div class="grid grid-cols-4 gap-4 mb-6">
+            <!-- Card 1: Missions aujourd'hui -->
+            <div class="card p-4 stat-card-border">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-secondary" style="font-size:12px;font-weight:500;">Missions aujourd'hui</p>
+                  <p class="text-primary" style="font-size:28px;font-weight:700;line-height:1.2;margin-top:4px;">12</p>
+                </div>
+                <span class="trend-badge trend-up"><i class="ph ph-arrow-up" style="font-size:11px;"></i> +3</span>
+              </div>
+              <svg width="80" height="24" viewBox="0 0 80 24" style="margin-top:8px;"><path d="M0 18 Q10 14 20 16 T40 10 T60 12 T80 4" fill="none" class="sparkline-up" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <!-- Card 2: Actions en attente -->
+            <div class="card p-4 stat-card-border" style="border-left-color:#f59e0b !important;">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-secondary" style="font-size:12px;font-weight:500;">Actions en attente</p>
+                  <p class="text-primary" style="font-size:28px;font-weight:700;line-height:1.2;margin-top:4px;">5</p>
+                </div>
+                <span class="trend-badge trend-warn"><i class="ph ph-warning" style="font-size:11px;"></i> Urgent</span>
+              </div>
+              <svg width="80" height="24" viewBox="0 0 80 24" style="margin-top:8px;"><path d="M0 12 Q10 18 20 14 T40 16 T60 10 T80 14" fill="none" class="sparkline-warn" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <!-- Card 3: A venir -->
+            <div class="card p-4 stat-card-border">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-secondary" style="font-size:12px;font-weight:500;">A venir (7 jours)</p>
+                  <p class="text-primary" style="font-size:28px;font-weight:700;line-height:1.2;margin-top:4px;">8</p>
+                </div>
+                <span class="trend-badge trend-up"><i class="ph ph-arrow-up" style="font-size:11px;"></i> +25%</span>
+              </div>
+              <svg width="80" height="24" viewBox="0 0 80 24" style="margin-top:8px;"><path d="M0 20 Q10 16 20 18 T40 12 T60 8 T80 6" fill="none" class="sparkline-up" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <!-- Card 4: Terminees -->
+            <div class="card p-4 stat-card-border" style="border-left-color:#22c55e !important;">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-secondary" style="font-size:12px;font-weight:500;">Terminees (mois)</p>
+                  <p class="text-primary" style="font-size:28px;font-weight:700;line-height:1.2;margin-top:4px;">156</p>
+                </div>
+                <span class="trend-badge trend-up">98%</span>
+              </div>
+              <svg width="80" height="24" viewBox="0 0 80 24" style="margin-top:8px;"><path d="M0 20 Q10 18 20 14 T40 10 T60 8 T80 4" fill="none" class="sparkline-up" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+
+          <!-- Area Chart -->
+          <div class="card p-5 mb-6">
+            <h3 class="section-title" style="font-size:14px;margin-bottom:16px;">Activite missions — 30 derniers jours</h3>
+            <svg viewBox="0 0 700 180" style="width:100%;height:180px;">
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" class="chart-gradient-start" stop-opacity="0.2"/>
+                  <stop offset="100%" class="chart-gradient-end"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="40" y1="20" x2="680" y2="20" stroke="#e5e7eb" stroke-width="0.5"/>
+              <line x1="40" y1="55" x2="680" y2="55" stroke="#e5e7eb" stroke-width="0.5"/>
+              <line x1="40" y1="90" x2="680" y2="90" stroke="#e5e7eb" stroke-width="0.5"/>
+              <line x1="40" y1="125" x2="680" y2="125" stroke="#e5e7eb" stroke-width="0.5"/>
+              <line x1="40" y1="160" x2="680" y2="160" stroke="#e5e7eb" stroke-width="0.5"/>
+              <!-- Y labels -->
+              <text x="30" y="24" fill="#9ca3af" font-size="10" text-anchor="end">20</text>
+              <text x="30" y="59" fill="#9ca3af" font-size="10" text-anchor="end">15</text>
+              <text x="30" y="94" fill="#9ca3af" font-size="10" text-anchor="end">10</text>
+              <text x="30" y="129" fill="#9ca3af" font-size="10" text-anchor="end">5</text>
+              <text x="30" y="164" fill="#9ca3af" font-size="10" text-anchor="end">0</text>
+              <!-- Area fill -->
+              <path d="M50 120 Q80 100 120 110 T200 80 T280 90 T360 60 T440 70 T520 45 T600 55 T670 40 L670 160 L50 160 Z" fill="url(#chartGrad)"/>
+              <!-- Line -->
+              <path d="M50 120 Q80 100 120 110 T200 80 T280 90 T360 60 T440 70 T520 45 T600 55 T670 40" fill="none" class="chart-line" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- X labels -->
+              <text x="50" y="176" fill="#9ca3af" font-size="10" text-anchor="middle">12/03</text>
+              <text x="200" y="176" fill="#9ca3af" font-size="10" text-anchor="middle">19/03</text>
+              <text x="360" y="176" fill="#9ca3af" font-size="10" text-anchor="middle">26/03</text>
+              <text x="520" y="176" fill="#9ca3af" font-size="10" text-anchor="middle">02/04</text>
+              <text x="670" y="176" fill="#9ca3af" font-size="10" text-anchor="middle">09/04</text>
+            </svg>
+          </div>
+
+          <!-- 2-column: Calendar + Actions -->
+          <div class="grid grid-cols-5 gap-4">
+            <!-- Weekly Calendar -->
+            <div class="card p-5 col-span-3">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="section-title" style="font-size:14px;">Semaine du 7 au 13 avril 2026</h3>
+                <div class="flex items-center gap-2">
+                  <button class="text-secondary" style="cursor:pointer;"><i class="ph ph-caret-left" style="font-size:16px;"></i></button>
+                  <button class="text-secondary" style="cursor:pointer;"><i class="ph ph-caret-right" style="font-size:16px;"></i></button>
+                </div>
+              </div>
+              <div class="grid grid-cols-7 gap-1">
+                ${['LUN 7','MAR 8','MER 9','JEU 10','VEN 11','SAM 12','DIM 13'].map((d, i) => {
+                  const isToday = i === 4;
+                  const missions = [
+                    [{ t:'Appt 101 — Sortie', c:'chip-sortie' }],
+                    [{ t:'Bureau 4A — Entree', c:'chip-entree' }],
+                    [],
+                    [{ t:'Bureau 8B — Entree', c:'chip-entree' }, { t:'Rés. Lilas — Sortie', c:'chip-sortie' }],
+                    [{ t:'Appt 201 — E+S', c:'chip-entree' }, { t:'Maison Dupont — Entree', c:'chip-entree' }, { t:'Studio — Inventaire', c:'chip-inventaire' }],
+                    [{ t:'Appt 302 — Inv.', c:'chip-inventaire' }],
+                    [],
+                  ];
+                  return `<div class="cal-day p-2 ${isToday ? 'today-highlight' : ''}" style="min-height:90px;">
+                    <div class="text-center mb-2" style="font-size:10px;font-weight:600;${isToday ? '' : 'opacity:0.5;'}">
+                      <span class="text-secondary" style="${isToday ? 'color:inherit;opacity:1;' : ''}">${d}</span>
+                    </div>
+                    ${missions[i].map(m => `<div class="cal-chip ${m.c}">${m.t}</div>`).join('')}
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Actions en attente -->
+            <div class="card p-5 col-span-2">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="section-title" style="font-size:14px;">Actions en attente</h3>
+                <span class="badge badge-assignee" style="font-size:11px;">5</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                ${[
+                  { ref:'M-2026-0012', lot:'Appt 302', action:'Technicien a assigner', icon:'ph-user-plus', color:'#f59e0b' },
+                  { ref:'M-2026-0015', lot:'Bureau 4A', action:'Invitation en attente', icon:'ph-envelope-simple', color:'#3b82f6' },
+                  { ref:'M-2026-0018', lot:'Maison Dupont', action:'RDV a confirmer', icon:'ph-calendar-check', color:'#f59e0b' },
+                  { ref:'M-2026-0019', lot:'Res. Lilas', action:'Cles a deposer', icon:'ph-key', color:'#8b5cf6' },
+                  { ref:'M-2026-0020', lot:'Studio Hugo', action:'Invitation refusee', icon:'ph-x-circle', color:'#ef4444' },
+                ].map(a => `
+                  <div class="flex items-start gap-3 p-3 rounded-lg transition-colors cursor-pointer" style="border:1px solid transparent;" onmouseover="this.style.background='rgba(0,0,0,0.02)'" onmouseout="this.style.background='transparent'">
+                    <div style="width:32px;height:32px;border-radius:8px;background:${a.color}12;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                      <i class="ph ${a.icon}" style="font-size:15px;color:${a.color};"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="text-primary" style="font-size:13px;font-weight:600;">${a.ref}</span>
+                        <span class="text-secondary" style="font-size:12px;">${a.lot}</span>
+                      </div>
+                      <p class="text-secondary" style="font-size:12px;margin-top:1px;">${a.action}</p>
+                    </div>
+                    <i class="ph ph-caret-right text-secondary" style="font-size:14px;margin-top:4px;"></i>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      `;
+    }
+
+    /* =================== MISSIONS PAGE =================== */
+    function missionsHTML() {
+      const missions = [
+        { ref:'M-2026-0007', lot:'Appt 201, 12 Rue des Lilas', date:'11/04/2026', type:'Entree+Sortie', types:['chip-entree','chip-sortie'], typeLabels:['Entree','Sortie'], tech:'Marc Bernard', statut:'Assignee', statutClass:'badge-assignee', rdv:'Confirme', rdvClass:'badge-terminee', warn:false },
+        { ref:'M-2026-0008', lot:'Maison Dupont, Boulogne', date:'11/04/2026', type:'Entree', types:['chip-entree'], typeLabels:['Entree'], tech:'—', statut:'Planifiee', statutClass:'badge-planifiee', rdv:'A confirmer', rdvClass:'badge-assignee', warn:true },
+        { ref:'M-2026-0009', lot:'Appt 101, Paris 11', date:'08/04/2026', type:'Sortie', types:['chip-sortie'], typeLabels:['Sortie'], tech:'Julie Moreau', statut:'Terminee', statutClass:'badge-terminee', rdv:'Confirme', rdvClass:'badge-terminee', warn:false },
+        { ref:'M-2026-0010', lot:'Bureau 8B, Puteaux', date:'10/04/2026', type:'Entree', types:['chip-entree'], typeLabels:['Entree'], tech:'Marc Bernard', statut:'Terminee', statutClass:'badge-terminee', rdv:'Confirme', rdvClass:'badge-terminee', warn:false },
+        { ref:'M-2026-0011', lot:'Appt 302, Paris 11', date:'12/04/2026', type:'Inventaire', types:['chip-inventaire'], typeLabels:['Inventaire'], tech:'—', statut:'Planifiee', statutClass:'badge-planifiee', rdv:'A confirmer', rdvClass:'badge-assignee', warn:true },
+        { ref:'M-2026-0012', lot:'Maison Dupont', date:'15/04/2026', type:'Entree', types:['chip-entree'], typeLabels:['Entree'], tech:'Marc Bernard', statut:'Assignee', statutClass:'badge-assignee', rdv:'Confirme', rdvClass:'badge-terminee', warn:false },
+        { ref:'M-2026-0013', lot:'Studio Hugo, Paris 15', date:'18/04/2026', type:'Sortie', types:['chip-sortie'], typeLabels:['Sortie'], tech:'Julie Moreau', statut:'Planifiee', statutClass:'badge-planifiee', rdv:'En attente', rdvClass:'badge-brouillon', warn:false },
+        { ref:'M-2026-0004', lot:'Appt 201', date:'12/03/2026', type:'Entree', types:['chip-entree'], typeLabels:['Entree'], tech:'Julie Moreau', statut:'Annulee', statutClass:'badge-annulee', rdv:'—', rdvClass:'', warn:false },
+      ];
+
+      return `
+      <div class="page-bg" style="min-height:100%;">
+        <!-- Topbar -->
+        <div class="topbar-border flex items-center justify-between px-6 py-4" style="background:inherit;">
+          <div class="flex items-center gap-4">
+            <h1 class="text-primary" style="font-size:20px;font-weight:700;letter-spacing:-0.02em;">Missions</h1>
+            <div class="flex items-center gap-3 text-secondary" style="font-size:13px;">
+              <span><strong class="text-primary">15</strong> missions</span>
+              <span style="color:#d1d5db;">|</span>
+              <span><strong style="color:#f59e0b;">5</strong> en attente</span>
+              <span style="color:#d1d5db;">|</span>
+              <span><strong class="accent">8</strong> a venir</span>
+            </div>
+          </div>
+          <button class="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] cursor-pointer transition-colors">
+            <i class="ph ph-plus" style="font-size:14px;"></i> Nouvelle mission
+          </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="px-6 py-3 flex items-center gap-3">
+          <div class="input-field flex items-center gap-2 px-3 py-2 flex-1" style="max-width:280px;">
+            <i class="ph ph-magnifying-glass text-secondary" style="font-size:14px;"></i>
+            <span class="text-secondary" style="font-size:13px;">Rechercher une mission...</span>
+          </div>
+          <div class="input-field flex items-center gap-2 px-3 py-2 cursor-pointer">
+            <span class="text-secondary" style="font-size:13px;">Periode : Tout</span>
+            <i class="ph ph-caret-down text-secondary" style="font-size:12px;"></i>
+          </div>
+          <div class="input-field flex items-center gap-2 px-3 py-2 cursor-pointer">
+            <span class="text-secondary" style="font-size:13px;">Statut : Tous</span>
+            <i class="ph ph-caret-down text-secondary" style="font-size:12px;"></i>
+          </div>
+          <div class="flex-1"></div>
+          <div class="flex items-center gap-1 input-field p-1">
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium accent" style="background:rgba(59,130,246,0.08);"><i class="ph ph-table" style="font-size:13px;"></i> Tableau</button>
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium text-secondary"><i class="ph ph-kanban" style="font-size:13px;"></i> Kanban</button>
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium text-secondary"><i class="ph ph-map-pin" style="font-size:13px;"></i> Carte</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="px-6 pb-6">
+          <div class="card overflow-hidden">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr class="table-header">
+                  <th style="width:28px;padding:10px 8px;"></th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Reference</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Lot / Adresse</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Date</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Type(s)</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Technicien</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Statut</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Statut RDV</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${missions.map(m => `
+                  <tr class="table-row cursor-pointer transition-colors" ${m.ref === 'M-2026-0007' ? 'onclick="switchPage(\'mission-detail\')"' : ''}>
+                    <td style="padding:10px 8px;text-align:center;">
+                      ${m.warn ? '<span class="dot dot-warning"></span>' : ''}
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="text-primary" style="font-size:13px;font-weight:600;">${m.ref}</span>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="text-primary" style="font-size:13px;">${m.lot}</span>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="text-secondary" style="font-size:13px;">${m.date}</span>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <div class="flex items-center gap-1">
+                        ${m.typeLabels.map((l,i) => `<span class="chip ${m.types[i]}">${l}</span>`).join('')}
+                      </div>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="${m.tech === '—' ? 'text-secondary' : 'text-primary'}" style="font-size:13px;">${m.tech}</span>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      <span class="badge ${m.statutClass}">${m.statut}</span>
+                    </td>
+                    <td style="padding:10px 12px;">
+                      ${m.rdv !== '—' ? `<span class="badge ${m.rdvClass}">${m.rdv}</span>` : '<span class="text-secondary" style="font-size:13px;">—</span>'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      `;
+    }
+
+    /* =================== MISSION DETAIL PAGE =================== */
+    function missionDetailHTML() {
+      return `
+      <div class="page-bg" style="min-height:100%;">
+        <!-- Topbar -->
+        <div class="topbar-border flex items-center justify-between px-6 py-4" style="background:inherit;">
+          <div class="flex items-center gap-2 text-secondary" style="font-size:13px;">
+            <span class="cursor-pointer hover:underline" onclick="switchPage('missions')">Missions</span>
+            <i class="ph ph-caret-right" style="font-size:11px;"></i>
+            <span class="text-primary" style="font-weight:600;">M-2026-0007</span>
+          </div>
+        </div>
+
+        <div class="px-6 py-5">
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-6">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-primary" style="font-size:24px;font-weight:700;letter-spacing:-0.02em;">M-2026-0007</h1>
+                <span class="badge badge-assignee">Assignee</span>
+                <span class="badge badge-terminee">RDV : Confirme</span>
+                <span class="badge badge-terminee">Invitation : Accepte</span>
+              </div>
+              <p class="text-secondary" style="font-size:14px;">
+                <i class="ph ph-calendar" style="font-size:13px;margin-right:4px;"></i>
+                11/04/2026 a 09:00 - 12:00
+                <span style="margin:0 8px;opacity:0.3;">|</span>
+                <i class="ph ph-user" style="font-size:13px;margin-right:4px;"></i>
+                Marc Bernard
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="input-field flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer text-secondary">
+                <i class="ph ph-pencil-simple" style="font-size:14px;"></i> Modifier
+              </button>
+              <button class="input-field flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer" style="color:#ef4444;">
+                <i class="ph ph-x" style="font-size:14px;"></i> Annuler
+              </button>
+            </div>
+          </div>
+
+          <!-- 2-column -->
+          <div class="grid grid-cols-5 gap-5 mb-5">
+            <!-- Left Column -->
+            <div class="col-span-3 flex flex-col gap-5">
+              <!-- Lot Card -->
+              <div class="card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <i class="ph ph-building-office accent" style="font-size:16px;"></i>
+                  <h3 class="section-title" style="font-size:14px;">Lot</h3>
+                </div>
+                <div class="grid grid-cols-2 gap-y-3 gap-x-6">
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Designation</p>
+                    <p class="text-primary" style="font-size:14px;font-weight:600;">Appt 201</p>
+                  </div>
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Type</p>
+                    <p class="text-primary" style="font-size:14px;">Appartement</p>
+                  </div>
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Batiment</p>
+                    <p class="text-primary" style="font-size:14px;">Residence Les Lilas</p>
+                  </div>
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Adresse</p>
+                    <p class="text-primary" style="font-size:14px;">12 Rue des Lilas, Paris</p>
+                  </div>
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Etage</p>
+                    <p class="text-primary" style="font-size:14px;">2</p>
+                  </div>
+                  <div>
+                    <p class="text-secondary" style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Surface</p>
+                    <p class="text-primary" style="font-size:14px;">65 m2</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Parties Card -->
+              <div class="card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <i class="ph ph-users-three accent" style="font-size:16px;"></i>
+                  <h3 class="section-title" style="font-size:14px;">Parties</h3>
+                </div>
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#e0ecf4;display:flex;align-items:center;justify-content:center;">
+                      <i class="ph ph-user" style="font-size:15px;color:#2d526c;"></i>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-primary" style="font-size:13px;font-weight:600;">Jean Martin</p>
+                      <p class="text-secondary" style="font-size:12px;">Proprietaire</p>
+                    </div>
+                    <span class="badge badge-planifiee" style="font-size:11px;">Proprietaire</span>
+                  </div>
+                  <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
+                      <i class="ph ph-sign-out" style="font-size:15px;color:#b91c1c;"></i>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-primary" style="font-size:13px;font-weight:600;">Lucas Petit</p>
+                      <p class="text-secondary" style="font-size:12px;">Locataire sortant</p>
+                    </div>
+                    <span class="badge badge-annulee" style="font-size:11px;">Sortant</span>
+                  </div>
+                  <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;">
+                      <i class="ph ph-sign-in" style="font-size:15px;color:#15803d;"></i>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-primary" style="font-size:13px;font-weight:600;">Sophie Dubois</p>
+                      <p class="text-secondary" style="font-size:12px;">Locataire entrant</p>
+                    </div>
+                    <span class="badge badge-terminee" style="font-size:11px;">Entrant</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-span-2 flex flex-col gap-5">
+              <!-- Planning Card -->
+              <div class="card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <i class="ph ph-calendar accent" style="font-size:16px;"></i>
+                  <h3 class="section-title" style="font-size:14px;">Planning</h3>
+                </div>
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-secondary" style="font-size:13px;">Date</span>
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">11/04/2026</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-secondary" style="font-size:13px;">Horaire</span>
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">09:00 - 12:00</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-secondary" style="font-size:13px;">Statut RDV</span>
+                    <span class="badge badge-terminee">Confirme</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Technicien Card -->
+              <div class="card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <i class="ph ph-wrench accent" style="font-size:16px;"></i>
+                  <h3 class="section-title" style="font-size:14px;">Technicien</h3>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div style="width:40px;height:40px;border-radius:50%;background:#e0ecf4;display:flex;align-items:center;justify-content:center;">
+                    <span style="font-size:14px;font-weight:700;color:#2d526c;">MB</span>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-primary" style="font-size:14px;font-weight:600;">Marc Bernard</p>
+                    <p class="text-secondary" style="font-size:12px;">Technicien</p>
+                  </div>
+                  <span class="badge badge-terminee">Accepte</span>
+                </div>
+              </div>
+
+              <!-- Documents EDL Card -->
+              <div class="card p-5">
+                <div class="flex items-center gap-2 mb-4">
+                  <i class="ph ph-file-text accent" style="font-size:16px;"></i>
+                  <h3 class="section-title" style="font-size:14px;">Documents EDL</h3>
+                </div>
+                <div class="flex flex-col gap-2">
+                  ${[
+                    { label:'Entree — EDL', statut:'Brouillon', icon:'ph-sign-in' },
+                    { label:'Sortie — EDL', statut:'Brouillon', icon:'ph-sign-out' },
+                    { label:'Inventaire', statut:'Brouillon', icon:'ph-list-checks' },
+                  ].map(d => `
+                    <div class="flex items-center justify-between p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                      <div class="flex items-center gap-2">
+                        <i class="ph ${d.icon} text-secondary" style="font-size:14px;"></i>
+                        <span class="text-primary" style="font-size:13px;font-weight:500;">${d.label}</span>
+                      </div>
+                      <span class="badge badge-brouillon">${d.statut}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cles -->
+          <div class="card p-5 mb-5">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <i class="ph ph-key accent" style="font-size:16px;"></i>
+                <h3 class="section-title" style="font-size:14px;">Cles</h3>
+              </div>
+              <button class="text-[13px] accent font-medium cursor-pointer flex items-center gap-1">
+                <i class="ph ph-plus" style="font-size:13px;"></i> Ajouter
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex items-center justify-between p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                <div class="flex items-center gap-3">
+                  <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;">
+                    <i class="ph ph-key" style="font-size:16px;color:#b45309;"></i>
+                  </div>
+                  <div>
+                    <p class="text-primary" style="font-size:13px;font-weight:600;">Cle principale</p>
+                    <p class="text-secondary" style="font-size:12px;">Quantite : 2</p>
+                  </div>
+                </div>
+                <span class="badge badge-assignee">A deposer</span>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg" style="background:rgba(0,0,0,0.02);">
+                <div class="flex items-center gap-3">
+                  <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;">
+                    <i class="ph ph-identification-badge" style="font-size:16px;color:#b45309;"></i>
+                  </div>
+                  <div>
+                    <p class="text-primary" style="font-size:13px;font-weight:600;">Badge</p>
+                    <p class="text-secondary" style="font-size:12px;">Quantite : 1</p>
+                  </div>
+                </div>
+                <span class="badge badge-assignee">A deposer</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Commentaire -->
+          <div class="card p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <i class="ph ph-chat-text accent" style="font-size:16px;"></i>
+              <h3 class="section-title" style="font-size:14px;">Commentaire</h3>
+            </div>
+            <div class="input-field p-3" style="min-height:80px;">
+              <span class="text-secondary" style="font-size:13px;">Prendre les releves de compteurs eau + electricite. Verifier l'etat du parquet salon.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      `;
+    }
+
+    /* =================== PARC IMMOBILIER PAGE =================== */
+    function parcHTML() {
+      return `
+      <div class="page-bg" style="min-height:100%;">
+        <!-- Topbar -->
+        <div class="topbar-border flex items-center justify-between px-6 py-4" style="background:inherit;">
+          <div class="flex items-center gap-4">
+            <h1 class="text-primary" style="font-size:20px;font-weight:700;letter-spacing:-0.02em;">Parc immobilier</h1>
+            <div class="flex items-center gap-3 text-secondary" style="font-size:13px;">
+              <span><strong class="text-primary">13</strong> batiments</span>
+              <span style="color:#d1d5db;">|</span>
+              <span><strong class="text-primary">27</strong> lots</span>
+            </div>
+          </div>
+          <button class="btn-primary flex items-center gap-2 px-4 py-2 text-[13px] cursor-pointer transition-colors">
+            <i class="ph ph-plus" style="font-size:14px;"></i> Nouveau lot
+          </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="px-6 py-3 flex items-center gap-3">
+          <div class="input-field flex items-center gap-2 px-3 py-2 flex-1" style="max-width:280px;">
+            <i class="ph ph-magnifying-glass text-secondary" style="font-size:14px;"></i>
+            <span class="text-secondary" style="font-size:13px;">Rechercher un batiment ou lot...</span>
+          </div>
+          <div class="input-field flex items-center gap-2 px-3 py-2 cursor-pointer">
+            <span class="text-secondary" style="font-size:13px;">Type : Tous</span>
+            <i class="ph ph-caret-down text-secondary" style="font-size:12px;"></i>
+          </div>
+          <div class="flex-1"></div>
+          <div class="flex items-center gap-1 input-field p-1">
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium accent" style="background:rgba(59,130,246,0.08);"><i class="ph ph-table" style="font-size:13px;"></i> Tableau</button>
+            <button class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[12px] font-medium text-secondary"><i class="ph ph-map-pin" style="font-size:13px;"></i> Carte</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="px-6 pb-6">
+          <div class="card overflow-hidden">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr class="table-header">
+                  <th style="width:36px;padding:10px 8px;"></th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Designation</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Type</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Adresse</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Lots</th>
+                  <th class="text-secondary" style="padding:10px 12px;font-size:12px;font-weight:500;text-align:left;">Dern. mission</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Residence Les Lilas — expanded -->
+                <tr class="table-row cursor-pointer transition-colors" style="font-weight:500;">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-down text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Residence Les Lilas</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge badge-immeuble">Immeuble</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">12 Rue des Lilas, Paris</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">3 lots</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">10/04/2026</span></td>
+                </tr>
+                <!-- Expanded children -->
+                <tr class="expanded-row">
+                  <td style="padding:0;"></td>
+                  <td colspan="5" style="padding:0;">
+                    <table style="width:100%;border-collapse:collapse;">
+                      ${[
+                        { nom:'Appt 201', type:'Appartement', etage:'Etage 2', surface:'65 m2', proprio:'Jean Martin', extra:'' },
+                        { nom:'Appt 302', type:'Appartement', etage:'Etage 3', surface:'42 m2', proprio:'SCI Les Hetres', extra:'Meuble' },
+                        { nom:'Appt 101', type:'Appartement', etage:'Etage 1', surface:'78 m2', proprio:'', extra:'' },
+                      ].map(l => `
+                        <tr class="table-row cursor-pointer transition-colors">
+                          <td style="padding:8px 12px 8px 28px;">
+                            <div class="flex items-center gap-2">
+                              <div style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0;"></div>
+                              <span class="text-primary" style="font-size:13px;font-weight:500;">${l.nom}</span>
+                            </div>
+                          </td>
+                          <td style="padding:8px 12px;"><span class="text-secondary" style="font-size:12px;">${l.type}</span></td>
+                          <td style="padding:8px 12px;"><span class="text-secondary" style="font-size:12px;">${l.etage}</span></td>
+                          <td style="padding:8px 12px;"><span class="text-secondary" style="font-size:12px;">${l.surface}</span></td>
+                          <td style="padding:8px 12px;">
+                            <span class="text-primary" style="font-size:12px;font-weight:500;">${l.proprio}</span>
+                            ${l.extra ? `<span class="chip chip-inventaire" style="margin-left:6px;">${l.extra}</span>` : ''}
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Maison Dupont — collapsed -->
+                <tr class="table-row cursor-pointer transition-colors">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-right text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Maison Dupont</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge badge-maison">Maison</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">45 Av. Republique, Boulogne</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">1 lot</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">08/04/2026</span></td>
+                </tr>
+
+                <!-- Immeuble Victor Hugo — collapsed -->
+                <tr class="table-row cursor-pointer transition-colors">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-right text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Immeuble Victor Hugo</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge badge-immeuble">Immeuble</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">8 Bd Victor Hugo, Paris 15</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">4 lots</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">05/04/2026</span></td>
+                </tr>
+
+                <!-- Tour Montparnasse — collapsed -->
+                <tr class="table-row cursor-pointer transition-colors">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-right text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Residence Bellevue</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge badge-immeuble">Immeuble</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">22 Rue de Bellevue, Meudon</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">6 lots</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">02/04/2026</span></td>
+                </tr>
+
+                <!-- Local commercial -->
+                <tr class="table-row cursor-pointer transition-colors">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-right text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Centre Commercial Opale</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge" style="background:#f3e8ff;color:#7c3aed;">Local comm.</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">15 Place du Marche, Nanterre</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">3 lots</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">28/03/2026</span></td>
+                </tr>
+
+                <!-- Maison Leblanc -->
+                <tr class="table-row cursor-pointer transition-colors">
+                  <td style="padding:10px 8px;text-align:center;">
+                    <i class="ph ph-caret-right text-secondary" style="font-size:13px;"></i>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <span class="text-primary" style="font-size:13px;font-weight:600;">Maison Leblanc</span>
+                  </td>
+                  <td style="padding:10px 12px;"><span class="badge badge-maison">Maison</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">3 Impasse des Roses, Vincennes</span></td>
+                  <td style="padding:10px 12px;"><span class="text-primary" style="font-size:13px;">1 lot</span></td>
+                  <td style="padding:10px 12px;"><span class="text-secondary" style="font-size:13px;">15/03/2026</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      `;
+    }
+
+    /* =================== RENDER =================== */
+    function render() {
+      const frame = document.getElementById('mockup-frame');
+      const styleClass = currentStyle === 'a' ? 'style-a' : 'style-b';
+
+      let pageHTML = '';
+      switch(currentPage) {
+        case 'dashboard': pageHTML = dashboardHTML(); break;
+        case 'missions': pageHTML = missionsHTML(); break;
+        case 'mission-detail': pageHTML = missionDetailHTML(); break;
+        case 'parc': pageHTML = parcHTML(); break;
+        default: pageHTML = dashboardHTML();
+      }
+
+      frame.className = `mockup-frame ${styleClass}`;
+      frame.innerHTML = `
+        <div class="mockup-inner">
+          <div class="sidebar sidebar-shell">
+            ${sidebarHTML(currentPage)}
+          </div>
+          <div class="main-content page-bg">
+            ${pageHTML}
+          </div>
+        </div>
+      `;
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Ultra Plan</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',system-ui,sans-serif;background:#fafaf9;color:#1c1917}.section{scroll-margin-top:80px}details summary{cursor:pointer;user-select:none}details summary::-webkit-details-marker{display:none}details>summary::before{content:'▸ ';font-weight:bold}details[open]>summary::before{content:'▾ '}.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}.badge-red{background:#fee2e2;color:#b91c1c}.badge-orange{background:#ffedd5;color:#c2410c}.badge-yellow{background:#fef9c3;color:#a16207}.badge-green{background:#dcfce7;color:#15803d}.badge-blue{background:#dbeafe;color:#1d4ed8}.badge-violet{background:#ede9fe;color:#6d28d9}.badge-gray{background:#f3f4f6;color:#4b5563}table{width:100%;border-collapse:collapse}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #e7e5e4;font-size:13px}th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#a8a29e;background:#f5f5f0}tr:hover{background:#fafaf9}</style>
+</head>
+<body class="antialiased">
+
+<!-- Nav -->
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-200/50 px-8 py-3">
+<div class="max-w-5xl mx-auto flex items-center gap-6">
+<span class="text-sm font-extrabold tracking-tight">ImmoChecker — Ultra Plan</span>
+<div class="flex gap-1 ml-auto text-xs">
+<a href="#scores" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Scores</a>
+<a href="#security" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Securite</a>
+<a href="#ux" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">UX/UI</a>
+<a href="#flows" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Flows</a>
+<a href="#missing" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Manquant</a>
+<a href="#ideas" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Idees</a>
+<a href="#roadmap" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Roadmap</a>
+</div>
+</div>
+</nav>
+
+<div class="max-w-5xl mx-auto pt-20 pb-20 px-6 space-y-16">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SPRINT SCORES -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="scores" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Etat des Sprints</h2>
+<p class="text-sm text-stone-500 mb-8">Audit complet au 11 avril 2026 — 60 User Stories analysees</p>
+
+<div class="grid grid-cols-5 gap-3 mb-8">
+<div class="bg-green-50 rounded-2xl p-4 border border-green-200/50 text-center">
+<div class="text-3xl font-extrabold text-green-700">93%</div>
+<div class="text-[10px] font-bold text-green-600 mt-1">SPRINT 1</div>
+<div class="text-[9px] text-green-500">Fondations</div>
+</div>
+<div class="bg-green-50 rounded-2xl p-4 border border-green-200/50 text-center">
+<div class="text-3xl font-extrabold text-green-700">95%</div>
+<div class="text-[10px] font-bold text-green-600 mt-1">SPRINT 2</div>
+<div class="text-[9px] text-green-500">Tiers + Templates</div>
+</div>
+<div class="bg-green-50 rounded-2xl p-4 border border-green-200/50 text-center">
+<div class="text-3xl font-extrabold text-green-700">100%</div>
+<div class="text-[10px] font-bold text-green-600 mt-1">SPRINT 3</div>
+<div class="text-[9px] text-green-500">Missions</div>
+</div>
+<div class="bg-sky-50 rounded-2xl p-4 border border-sky-200/50 text-center">
+<div class="text-3xl font-extrabold text-sky-700">80%</div>
+<div class="text-[10px] font-bold text-sky-600 mt-1">SPRINT 4</div>
+<div class="text-[9px] text-sky-500">Dashboard</div>
+</div>
+<div class="bg-stone-100 rounded-2xl p-4 border border-stone-200/50 text-center">
+<div class="text-3xl font-extrabold text-stone-500">15%</div>
+<div class="text-[10px] font-bold text-stone-400 mt-1">SPRINT 5</div>
+<div class="text-[9px] text-stone-400">Transverses</div>
+</div>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>Sprint</th><th>US</th><th>Faites</th><th>Restant</th><th>Details manquants</th></tr></thead>
+<tbody>
+<tr><td class="font-semibold">Sprint 1 — Fondations</td><td>14</td><td><span class="badge badge-green">13</span></td><td><span class="badge badge-yellow">1</span></td><td class="text-xs text-stone-500">US-577 page creation workspace standalone</td></tr>
+<tr><td class="font-semibold">Sprint 2 — Tiers</td><td>16</td><td><span class="badge badge-green">15</span></td><td><span class="badge badge-yellow">1</span></td><td class="text-xs text-stone-500">US-582 archivage froid (infra)</td></tr>
+<tr><td class="font-semibold">Sprint 3 — Missions</td><td>12</td><td><span class="badge badge-green">12</span></td><td><span class="badge badge-green">0</span></td><td class="text-xs text-stone-500">Complet + vue calendrier en bonus</td></tr>
+<tr><td class="font-semibold">Sprint 4 — Dashboard</td><td>6</td><td><span class="badge badge-blue">5</span></td><td><span class="badge badge-orange">1</span></td><td class="text-xs text-stone-500">Indisponibilites dans calendrier dashboard (crash API)</td></tr>
+<tr><td class="font-semibold">Sprint 5 — Transverses</td><td>7</td><td><span class="badge badge-yellow">1</span></td><td><span class="badge badge-red">6</span></td><td class="text-xs text-stone-500">Recherche globale, export CSV, notifications, QR code, onboarding</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECURITY -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="security" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Securite & Integrite</h2>
+<p class="text-sm text-stone-500 mb-8">45 problemes identifies — 5 critiques, 15 hauts</p>
+
+<div class="space-y-3">
+
+<details class="bg-white rounded-2xl border border-red-200/60 overflow-hidden" open>
+<summary class="px-5 py-3 text-sm font-bold text-red-800 bg-red-50/50">5 Problemes Critiques <span class="badge badge-red ml-2">URGENT</span></summary>
+<div class="px-5 py-4 space-y-4 text-sm">
+<div>
+<p class="font-semibold text-red-700">1. Switch workspace sans authentification</p>
+<p class="text-stone-600 mt-1"><code>POST /switch-workspace</code> accepte <code>userId</code> du body sans verifier le token JWT. Un attaquant peut usurper n'importe quel user.</p>
+<p class="text-xs text-stone-400 mt-1">Fichier: server/routes/auth.ts:60-78 — Fix: utiliser uniquement req.user!.userId du token verifie</p>
+</div>
+<div>
+<p class="font-semibold text-red-700">2. Tokens de reset password non haches</p>
+<p class="text-stone-600 mt-1">Les tokens UUID sont stockes en clair en DB. Si la base fuite, tous les resets en cours sont compromis.</p>
+<p class="text-xs text-stone-400 mt-1">Fix: hasher le token (bcrypt/sha256) avant stockage, comparer le hash</p>
+</div>
+<div>
+<p class="font-semibold text-red-700">3. Race condition sur auto-terminaison EDL</p>
+<p class="text-stone-600 mt-1">Deux EDL signes en parallele peuvent declencher deux auto-terminaisons sans transaction.</p>
+<p class="text-xs text-stone-400 mt-1">Fix: wraper dans une transaction DB avec SELECT FOR UPDATE</p>
+</div>
+<div>
+<p class="font-semibold text-red-700">4. Reference mission non-unique en DB</p>
+<p class="text-stone-600 mt-1">Aucune contrainte UNIQUE(workspace_id, reference). Deux creations simultanees = meme reference.</p>
+<p class="text-xs text-stone-400 mt-1">Fix: ajouter UNIQUE constraint ou utiliser une sequence DB</p>
+</div>
+<div>
+<p class="font-semibold text-red-700">5. Refresh token replay possible</p>
+<p class="text-stone-600 mt-1">Le token est supprime apres usage mais deux requetes paralleles peuvent reutiliser le meme token.</p>
+<p class="text-xs text-stone-400 mt-1">Fix: rotation de refresh tokens avec invalidation atomique</p>
+</div>
+</div>
+</details>
+
+<details class="bg-white rounded-2xl border border-orange-200/60 overflow-hidden">
+<summary class="px-5 py-3 text-sm font-bold text-orange-800 bg-orange-50/50">15 Problemes Hauts</summary>
+<div class="px-5 py-4 text-sm text-stone-600 space-y-2">
+<p>• Archive tiers/lots/batiments sans verification workspace complete</p>
+<p>• Transition EDL non validee (signe → brouillon possible)</p>
+<p>• Adresse update sans requireRole (tout user authentifie peut modifier)</p>
+<p>• Race condition sur l'archivage (check + update non atomiques)</p>
+<p>• Invitation disclosure possible via enumeration de tokens</p>
+<p>• TiersOrganisation peut lier physique ↔ physique (pas de type check)</p>
+<p>• Cascade delete manquant sur mission.lot_id</p>
+<p>• Mission stats query inefficiente (full table scans multiples)</p>
+<p>• Cle statut transition sans validation (deposee → remise possible)</p>
+<p>• Index manquants sur mission(workspace_id, statut), edl_locataire(tiers_id)</p>
+<p>• Archive flag non filtre sur certains detail endpoints</p>
+<p>• Pas de rate limiting sur login/forgot-password</p>
+<p>• Email lowercasing inconsistent entre endpoints</p>
+<p>• Pagination cursor format inconsistent entre routes</p>
+<p>• Dashboard stats pas invalides apres mutations mission</p>
+</div>
+</details>
+
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- UX/UI -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="ux" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">UX / UI — Suggestions d'amelioration</h2>
+<p class="text-sm text-stone-500 mb-8">33 problemes d'experience utilisateur identifies</p>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Accessibilite <span class="badge badge-red">Critique</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Aucun <code>role="alert"</code> sur les messages d'erreur (toutes les pages auth)</li>
+<li>• Workspace select : cartes cliquables sans <code>role="button"</code> ni tabIndex</li>
+<li>• Toggles PP/PM et Sens mission : pas de <code>role="radiogroup"</code></li>
+<li>• Inputs de mot de passe : pas d'<code>aria-label</code> sur le bouton visibilite</li>
+<li>• Auth layout : pas de landmarks HTML semantiques (header/main)</li>
+<li>• Fichier upload logo : input hidden non accessible aux screen readers</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Formulaires <span class="badge badge-orange">Fort</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Validation par toast uniquement (pas de highlight des champs en erreur)</li>
+<li>• Whitespace-only accepte sur nom, prenom, designation (pas de .trim())</li>
+<li>• Pas de validation SIREN (9 chiffres), telephone (format), heure fin > debut</li>
+<li>• Mot de passe : regles affichees en placeholder (pas de feedback temps reel)</li>
+<li>• Mission : typeBail requis quand 2+ locataires mais pas valide avant submit</li>
+<li>• Forgot password : erreur silencieuse (.catch(() => {})) — user croit que l'email est parti</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Navigation <span class="badge badge-yellow">Moyen</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Breadcrumbs generiques sur acces direct URL (reload = "Lot" au lieu du nom)</li>
+<li>• Pas de warning "modifications non sauvegardees" (beforeunload)</li>
+<li>• Filtres patrimoine perdus apres navigation vers detail et retour</li>
+<li>• Calendar week offset reset quand on quitte et revient</li>
+<li>• Column preferences partagees entre tous les onglets tiers (meme cle)</li>
+<li>• Pas de bouton retour explicite sur les pages detail</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Responsive <span class="badge badge-yellow">Moyen</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Sidebar fixe 240px — pas de hamburger menu sur mobile</li>
+<li>• Dashboard stat cards grid-cols-3 sans breakpoint mobile</li>
+<li>• Tableaux missions : colonnes overflow sans masquage responsive</li>
+<li>• Modals max-w fixes — pas adaptes aux petits ecrans</li>
+<li>• Mini calendrier dashboard cale a droite — invisible sur mobile</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Performance <span class="badge badge-gray">Faible</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Infinite scroll sans virtualisation (300+ rows = DOM lourd)</li>
+<li>• Debounce patrimoine implementation buggee (recree des timers)</li>
+<li>• Lot search tiers non limite (100+ resultats sans virtualisation)</li>
+<li>• Logo upload base64 en DB (pas de CDN, poids DB)</li>
+<li>• queryClient.clear() a chaque switch workspace (couteux)</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Data Refresh <span class="badge badge-orange">Fort</span></h3>
+<ul class="space-y-2 text-xs text-stone-600">
+<li>• Creation batiment : modal callback vide, nouveau batiment invisible</li>
+<li>• Creation tiers : cache search-tiers pas invalide (tiers introuvable)</li>
+<li>• Link/unlink proprietaire : detail tiers pas rafraichi</li>
+<li>• Link organisation : detail tiers pas rafraichi</li>
+<li>• Dashboard stats : cle cache differente des missions stats</li>
+</ul>
+</div>
+
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- FLOWS -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="flows" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Analyse des Flows — Incoherences detectees</h2>
+<p class="text-sm text-stone-500 mb-8">Problemes de logique metier et UX flows</p>
+
+<div class="space-y-4">
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-red-700 mb-2">Flow Login → Dashboard (incohérent)</h3>
+<p class="text-xs text-stone-600">Apres login, l'user est redirige vers <code>/app/patrimoine</code> (ancien defaut). Maintenant le dashboard existe, le redirect devrait etre <code>/app/dashboard</code>.</p>
+<p class="text-xs text-stone-400 mt-2"><strong>Statut :</strong> Corrige dans App.tsx mais login-page.tsx redirige encore vers /app/patrimoine</p>
+<p class="text-xs font-semibold text-red-600 mt-1">Fix : changer navigate('/app/patrimoine') → navigate('/app/dashboard') dans login-page.tsx et workspace-select-page.tsx</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-orange-700 mb-2">Flow Creation Tiers → Lien Lot (casse)</h3>
+<p class="text-xs text-stone-600">L'user cree un tiers depuis la page lot, ferme la modal, essaie de le lier comme proprietaire. Le search cache n'est pas invalide → le tiers n'apparait pas. Il faut rafraichir la page.</p>
+<p class="text-xs font-semibold text-orange-600 mt-1">Fix : invalider queryKey ['search-tiers'] apres creation tiers</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-orange-700 mb-2">Flow Changement Role (dangereux)</h3>
+<p class="text-xs text-stone-600">Dans les parametres, changer le role d'un user (admin → gestionnaire) s'applique immediatement sans confirmation. Si l'admin se retire son propre role admin, il est lock-out.</p>
+<p class="text-xs font-semibold text-orange-600 mt-1">Fix : ajouter dialog de confirmation + bloquer si c'est le dernier admin</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-yellow-700 mb-2">Flow Colocation (confusing)</h3>
+<p class="text-xs text-stone-600">Quand on ajoute 2+ locataires, le radio "Type de bail" apparait mais rien n'indique ce qui se passe concretement (combien d'EDL seront crees, qui signe quoi). L'user doit deviner.</p>
+<p class="text-xs font-semibold text-yellow-600 mt-1">Suggestion : ajouter un bloc explicatif visuel "Bail individuel = 2 EDL separes" / "Bail collectif = 1 EDL signe par tous"</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-yellow-700 mb-2">Flow Annulation Mission (pas clair)</h3>
+<p class="text-xs text-stone-600">Le bouton "Annuler" est sur la page detail et le drawer, mais pas sur la liste/kanban. L'user doit ouvrir chaque mission pour l'annuler. Pas de bulk action.</p>
+<p class="text-xs font-semibold text-yellow-600 mt-1">Suggestion : ajouter annulation depuis le kanban (right-click ou menu contextuel)</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold text-yellow-700 mb-2">Flow Technicien refuse → rien ne se passe</h3>
+<p class="text-xs text-stone-600">Quand un technicien refuse une mission, la mission reste assignee avec statut_invitation="refuse" mais l'admin ne recoit aucune notification. Il doit verifier manuellement le bloc "Actions en attente".</p>
+<p class="text-xs font-semibold text-yellow-600 mt-1">Suggestion : notification push/email a l'admin quand invitation refusee</p>
+</div>
+
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MISSING FEATURES -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="missing" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Fonctionnalites Manquantes</h2>
+<p class="text-sm text-stone-500 mb-8">Sprint 5 + fonctionnalites hors-spec a considerer</p>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>Feature</th><th>Priorite</th><th>Impact</th><th>Complexite</th></tr></thead>
+<tbody>
+<tr><td class="font-semibold">Recherche globale Ctrl+K</td><td><span class="badge badge-red">P0</span></td><td>Tres fort — navigation rapide cross-entity</td><td><span class="badge badge-yellow">Moyen</span></td></tr>
+<tr><td class="font-semibold">Export CSV tableaux</td><td><span class="badge badge-red">P0</span></td><td>Demande immediate utilisateurs</td><td><span class="badge badge-green">Faible</span></td></tr>
+<tr><td class="font-semibold">Notifications in-app</td><td><span class="badge badge-red">P0</span></td><td>Badge cloche existe deja, besoin du backend</td><td><span class="badge badge-orange">Fort</span></td></tr>
+<tr><td class="font-semibold">Page publique EDL</td><td><span class="badge badge-orange">P1</span></td><td>Necessaire pour commercialisation</td><td><span class="badge badge-yellow">Moyen</span></td></tr>
+<tr><td class="font-semibold">QR code verification</td><td><span class="badge badge-orange">P1</span></td><td>Authenticite documents legaux</td><td><span class="badge badge-yellow">Moyen</span></td></tr>
+<tr><td class="font-semibold">Autocomplete Google Places</td><td><span class="badge badge-yellow">P2</span></td><td>UX adresses (geocoding existe deja)</td><td><span class="badge badge-green">Faible</span></td></tr>
+<tr><td class="font-semibold">Onboarding workspace</td><td><span class="badge badge-yellow">P2</span></td><td>Premier lancement guide</td><td><span class="badge badge-yellow">Moyen</span></td></tr>
+<tr><td class="font-semibold">API publique + Swagger</td><td><span class="badge badge-yellow">P2</span></td><td>Integration partenaires</td><td><span class="badge badge-orange">Fort</span></td></tr>
+<tr><td class="font-semibold">Webhooks evenements EDL</td><td><span class="badge badge-gray">P3</span></td><td>Automatisation workflows</td><td><span class="badge badge-orange">Fort</span></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- IDEAS -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="ideas" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Idees & Suggestions</h2>
+<p class="text-sm text-stone-500 mb-8">Ameliorations UX, nouvelles fonctionnalites, quick wins</p>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+<div class="bg-gradient-to-br from-sky-50 to-white rounded-2xl border border-sky-200/50 p-5">
+<h3 class="text-sm font-bold text-sky-800 mb-2">Quick Wins UI (1-2h chacun)</h3>
+<ul class="space-y-1.5 text-xs text-stone-600">
+<li>✦ <strong>Confirmation dialog</strong> avant changement de role user</li>
+<li>✦ <strong>Warning beforeunload</strong> sur les pages avec edition</li>
+<li>✦ <strong>Breadcrumbs dynamiques</strong> qui fetchent le vrai nom sur URL directe</li>
+<li>✦ <strong>Stat cards responsive</strong> grid-cols-1 sur mobile</li>
+<li>✦ <strong>Login redirect</strong> vers /app/dashboard au lieu de /app/patrimoine</li>
+<li>✦ <strong>Empty state contextuel</strong> "Aucun resultat" vs "Aucune donnee"</li>
+<li>✦ <strong>Invalidation cache</strong> apres creation tiers/batiment</li>
+</ul>
+</div>
+
+<div class="bg-gradient-to-br from-violet-50 to-white rounded-2xl border border-violet-200/50 p-5">
+<h3 class="text-sm font-bold text-violet-800 mb-2">Fonctionnalites a fort impact</h3>
+<ul class="space-y-1.5 text-xs text-stone-600">
+<li>✦ <strong>Raccourci Ctrl+K</strong> — command palette pour chercher lots, tiers, missions</li>
+<li>✦ <strong>Dark mode toggle</strong> — le theme dark existe deja dans les CSS variables</li>
+<li>✦ <strong>Export PDF</strong> des fiches tiers/lots/missions pour envoi client</li>
+<li>✦ <strong>Drag & drop photos</strong> sur les fiches (upload direct)</li>
+<li>✦ <strong>Timeline historique</strong> sur la fiche mission (qui a fait quoi quand)</li>
+<li>✦ <strong>Duplication de mission</strong> — creer une mission similaire en 1 clic</li>
+<li>✦ <strong>Templates de mission</strong> — presets pour les types frequents</li>
+</ul>
+</div>
+
+<div class="bg-gradient-to-br from-green-50 to-white rounded-2xl border border-green-200/50 p-5">
+<h3 class="text-sm font-bold text-green-800 mb-2">Ameliorations UX avancees</h3>
+<ul class="space-y-1.5 text-xs text-stone-600">
+<li>✦ <strong>Kanban drag & drop</strong> pour les statuts simples (planifiee → assignee)</li>
+<li>✦ <strong>Multi-selection</strong> dans les tableaux (bulk assign, bulk archive)</li>
+<li>✦ <strong>Vue calendrier mois</strong> comme page standalone (pas juste dans missions)</li>
+<li>✦ <strong>Tooltip riche</strong> sur les badges statut (explication du statut)</li>
+<li>✦ <strong>Animations de transition</strong> entre les pages (deja framer-motion, etendre)</li>
+<li>✦ <strong>Mode focus</strong> — sidebar auto-collapse quand on est sur un detail</li>
+<li>✦ <strong>Raccourcis clavier</strong> — N pour nouveau, E pour editer, Esc pour fermer</li>
+</ul>
+</div>
+
+<div class="bg-gradient-to-br from-orange-50 to-white rounded-2xl border border-orange-200/50 p-5">
+<h3 class="text-sm font-bold text-orange-800 mb-2">Idees business / SaaS</h3>
+<ul class="space-y-1.5 text-xs text-stone-600">
+<li>✦ <strong>Page pricing</strong> avec plans (trial/standard/premium)</li>
+<li>✦ <strong>Stripe integration</strong> pour facturation automatique</li>
+<li>✦ <strong>White-label</strong> — workspace couleur/logo deja fait, etendre au PDF</li>
+<li>✦ <strong>Rapport mensuel auto</strong> — email recapitulatif EDL/missions du mois</li>
+<li>✦ <strong>API usage tracking</strong> — compteur appels API par workspace</li>
+<li>✦ <strong>Audit log</strong> — qui a modifie quoi quand (table audit_log)</li>
+<li>✦ <strong>Multi-langue</strong> — i18n framework (FR par defaut, EN, ES)</li>
+</ul>
+</div>
+
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- ROADMAP -->
+<!-- ═══════════════════════════════════════════ -->
+<section id="roadmap" class="section">
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">Roadmap Suggeree</h2>
+<p class="text-sm text-stone-500 mb-8">Priorisation par impact business et effort technique</p>
+
+<div class="space-y-6">
+
+<div class="bg-white rounded-2xl border border-red-200/60 p-5">
+<h3 class="text-sm font-bold text-red-800 mb-1">Semaine 1 — Securite & Stabilite <span class="badge badge-red">URGENT</span></h3>
+<p class="text-xs text-stone-400 mb-3">Sans ca, pas de mise en production</p>
+<ul class="space-y-1 text-xs text-stone-600">
+<li>1. Fix switch-workspace sans auth (1h)</li>
+<li>2. Hasher les reset tokens (2h)</li>
+<li>3. Transaction auto-terminaison EDL (1h)</li>
+<li>4. UNIQUE constraint sur mission reference (30min)</li>
+<li>5. Rate limiting login + forgot-password (2h)</li>
+<li>6. Fix data refresh bugs (invalidation cache) (3h)</li>
+<li>7. Fix login redirect vers dashboard (15min)</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-orange-200/60 p-5">
+<h3 class="text-sm font-bold text-orange-800 mb-1">Semaine 2 — Quick Wins UX</h3>
+<p class="text-xs text-stone-400 mb-3">Ameliorations visibles sans refactoring lourd</p>
+<ul class="space-y-1 text-xs text-stone-600">
+<li>1. Confirmation dialog changement role (1h)</li>
+<li>2. Warning beforeunload sur pages edit (1h)</li>
+<li>3. Form validation (trim, SIREN, tel, heure fin > debut) (3h)</li>
+<li>4. role="alert" sur messages erreur auth (1h)</li>
+<li>5. Responsive stat cards + sidebar mobile (2h)</li>
+<li>6. Empty states contextuels (1h)</li>
+<li>7. Breadcrumbs dynamiques (2h)</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-sky-200/60 p-5">
+<h3 class="text-sm font-bold text-sky-800 mb-1">Semaine 3-4 — Sprint 5 Features</h3>
+<p class="text-xs text-stone-400 mb-3">Fonctionnalites a fort impact utilisateur</p>
+<ul class="space-y-1 text-xs text-stone-600">
+<li>1. Recherche globale Ctrl+K (3-4h)</li>
+<li>2. Export CSV batiments + tiers + missions (2-3h)</li>
+<li>3. Notifications in-app backend + badge header (4-5h)</li>
+<li>4. Dark mode toggle dans settings (1h — CSS vars deja pretes)</li>
+<li>5. Page publique consultation EDL (3-4h)</li>
+</ul>
+</div>
+
+<div class="bg-white rounded-2xl border border-green-200/60 p-5">
+<h3 class="text-sm font-bold text-green-800 mb-1">Mois 2 — Polish & Commercialisation</h3>
+<p class="text-xs text-stone-400 mb-3">Preparation mise en production SaaS</p>
+<ul class="space-y-1 text-xs text-stone-600">
+<li>1. QR code verification documents (US-820)</li>
+<li>2. Onboarding wizard nouveau workspace (US-836)</li>
+<li>3. API publique + documentation Swagger (EPIC 10)</li>
+<li>4. Audit log (table + UI)</li>
+<li>5. Performance : virtualisation listes, indexes DB</li>
+<li>6. Tests E2E (Playwright ou Cypress)</li>
+<li>7. CI/CD pipeline GitHub Actions</li>
+</ul>
+</div>
+
+</div>
+</section>
+
+<!-- Footer -->
+<div class="text-center pt-8 border-t border-stone-200/60">
+<p class="text-xs text-stone-400">Genere le 11 avril 2026 par l'audit automatise ImmoChecker</p>
+<p class="text-xs text-stone-300 mt-1">111 issues identifiees — 60 US auditees — 28 tables DB analysees</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+Ne pas installer manuellement les dépendances Radix UI ou Lucide React si elles sont gérées par la commande 'add' du CLI.

@@ -1,0 +1,1250 @@
+- generic [ref=e2]:
+  - button [ref=e4] [cursor=pointer]:
+    - img [ref=e5]
+  - link [ref=e11] [cursor=pointer]:
+    - /url: /home
+    - img [ref=e13]
+  - generic [ref=e16]:
+    - generic:
+      - generic:
+        - img
+        - img
+    - generic:
+      - img
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - text: Dub Links
+      - heading "Short links with superpowers" [level=1] [ref=e22]
+      - paragraph [ref=e23]: The modern link management platform for entrepreneurs, creators, and growth teams.
+    - generic [ref=e24]:
+      - link "Start for free" [ref=e25] [cursor=pointer]:
+        - /url: https://app.dub.co/register
+      - link "Get a demo" [ref=e26] [cursor=pointer]:
+        - /url: /enterprise
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]: Destination URL
+        - img [ref=e33]
+        - textbox "Destination URL" [ref=e37]:
+          - /placeholder: Shorten any link...
+      - button "Shorten link" [ref=e39] [cursor=pointer]
+  - generic [ref=e43]:
+    - generic [ref=e45]:
+      - link [ref=e46] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e49]
+      - link "raycast Case Study":
+        - /url: /customers/raycast
+        - generic:
+          - generic:
+            - img "raycast"
+        - generic: Case Study
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+    - generic [ref=e51]:
+      - link [ref=e52] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e55]
+      - link "framer Case Study":
+        - /url: /customers/framer
+        - generic:
+          - generic:
+            - img "framer"
+        - generic: Case Study
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+    - generic [ref=e57]:
+      - link [ref=e58] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e61]
+      - link "product-hunt Case Study":
+        - /url: /customers/product-hunt
+        - generic:
+          - generic:
+            - img "product-hunt"
+        - generic: Case Study
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+    - generic [ref=e63]:
+      - link [ref=e64] [cursor=pointer]:
+        - /url: /customers
+        - img [ref=e67]
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+      - link "tella Case Study":
+        - /url: /customers/tella
+        - generic:
+          - generic:
+            - img "tella"
+        - generic: Case Study
+      - link:
+        - /url: /customers
+        - generic:
+          - generic:
+            - img
+  - generic [ref=e69]:
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - img [ref=e72]
+        - text: Branded Short Links
+      - heading "Branded short links that stand out" [level=2] [ref=e76]
+      - paragraph [ref=e77]: Customize your short links, organize your campaigns, and track what truly matters, all in one place.
+    - generic [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - img [ref=e88]
+            - generic [ref=e92]: Links
+          - img [ref=e93]
+          - generic [ref=e96]:
+            - img "dub.co" [ref=e97]
+            - generic [ref=e98]: dub.sh/about-dub
+        - button [disabled] [ref=e100]:
+          - img [ref=e101]
+      - generic [ref=e104]:
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e109]:
+              - generic [ref=e110]: Destination URL
+              - img [ref=e111]
+            - textbox "Destination URL" [disabled] [ref=e115]:
+              - /placeholder: https://dub.co/help/article/dub-links
+              - text: https://dub.co/about
+          - generic [ref=e116]:
+            - generic [ref=e117]:
+              - generic [ref=e118]: Short Link
+              - generic [ref=e119]:
+                - button [disabled] [ref=e120] [cursor=pointer]:
+                  - img [ref=e121]
+                - button [disabled] [ref=e123] [cursor=pointer]:
+                  - img [ref=e124]
+            - generic [ref=e128]:
+              - button "dub.sh" [disabled] [ref=e130] [cursor=pointer]:
+                - generic [ref=e131]:
+                  - generic [ref=e132]: dub.sh
+                  - img [ref=e133]
+              - textbox "Short Link" [disabled] [ref=e135]:
+                - /placeholder: (optional)
+                - text: about-dub
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: Tags
+              - img [ref=e139]
+            - button "Select tags..." [disabled] [ref=e142] [cursor=pointer]:
+              - img [ref=e143]
+              - generic [ref=e149]: Select tags...
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - generic [ref=e152]: Comments
+              - img [ref=e153]
+            - textbox "Tags Comments" [disabled] [ref=e156]:
+              - /placeholder: Add comments
+        - generic [ref=e160]:
+          - generic [ref=e161]:
+            - heading "Folder" [level=2] [ref=e162]
+            - generic [ref=e163]:
+              - img [ref=e166]
+              - generic [ref=e170]: Links
+          - generic [ref=e171]:
+            - generic [ref=e172]:
+              - heading "QR Code" [level=2] [ref=e173]
+              - button [disabled] [ref=e174] [cursor=pointer]:
+                - img [ref=e175]
+            - img [ref=e183]
+          - generic [ref=e187]:
+            - generic [ref=e188]:
+              - generic [ref=e189]:
+                - heading "Custom Link Preview" [level=2] [ref=e190]
+                - img [ref=e191]
+              - button [disabled] [ref=e194] [cursor=pointer]:
+                - img [ref=e195]
+            - generic [ref=e199]:
+              - button "Default" [disabled] [ref=e200] [cursor=pointer]:
+                - img [ref=e201]
+              - button "Facebook" [disabled] [ref=e207] [cursor=pointer]:
+                - img [ref=e208]
+              - button "LinkedIn" [disabled] [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+              - button "X/Twitter" [disabled] [ref=e214] [cursor=pointer]:
+                - img [ref=e215]
+            - generic [ref=e220]:
+              - generic [ref=e224]:
+                - img [ref=e225]
+                - paragraph [ref=e230]: Drag and drop to upload.
+                - generic [ref=e231]: OG image upload
+              - generic:
+                - img
+                - paragraph: Enter a link to generate a preview
+    - generic [ref=e232]:
+      - generic [ref=e233]:
+        - generic [ref=e234]:
+          - generic [ref=e235]:
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=3]: Link Preview
+                  - generic:
+                    - generic: D
+                - generic:
+                  - generic:
+                    - generic: Image
+                    - generic:
+                      - img
+                      - img
+                  - generic:
+                    - img
+                - generic:
+                  - text: Title
+                  - generic: Dub.co - Link Management for Modern Marketing Teams
+          - generic [ref=e236]:
+            - heading "Boost click-through rates with custom link previews" [level=3] [ref=e237]
+            - paragraph [ref=e239]:
+              - text: Get up to 30% higher click-through rates by
+              - link "customizing how your links show up" [ref=e240] [cursor=pointer]:
+                - /url: /help/article/custom-link-previews
+              - text: on social platforms like X, LinkedIn, as well as in messaging apps like WhatsApp and Discord.
+            - link "Learn more" [ref=e241] [cursor=pointer]:
+              - /url: /help/article/custom-link-previews
+        - generic [ref=e242]:
+          - generic [ref=e245]:
+            - generic [ref=e246]:
+              - generic [ref=e248]:
+                - img [ref=e250]
+                - generic [ref=e251]: acme.link
+                - generic [ref=e252]:
+                  - img [ref=e253]
+                  - generic [ref=e260]:
+                    - text: 15.6K
+                    - generic [ref=e261]: clicks
+                - generic [ref=e262]:
+                  - img [ref=e263]
+                  - generic [ref=e268]: Primary
+              - generic [ref=e270]:
+                - img [ref=e272]
+                - generic [ref=e273]: go.acme.com
+                - generic [ref=e274]:
+                  - img [ref=e275]
+                  - generic [ref=e282]:
+                    - text: 3.7K
+                    - generic [ref=e283]: clicks
+              - generic [ref=e285]:
+                - img [ref=e287]
+                - generic [ref=e288]: ac.me
+                - generic [ref=e289]:
+                  - img [ref=e290]
+                  - generic [ref=e297]:
+                    - text: 2.4K
+                    - generic [ref=e298]: clicks
+            - link [ref=e299] [cursor=pointer]:
+              - /url: /help/article/free-dot-link-domain
+              - img [ref=e300]
+              - generic [ref=e308]:
+                - text: Claim a free
+                - strong [ref=e309]: .link
+                - text: domain
+          - generic [ref=e310]:
+            - heading "Seamlessly integrate your own custom domains" [level=3] [ref=e311]
+            - paragraph [ref=e313]:
+              - text: Shorten your links with your own custom domain to enhance trust and
+              - link "increase click-through rates" [ref=e314] [cursor=pointer]:
+                - /url: /blog/custom-domains
+              - text: . Paid plans also include a
+              - link "complimentary custom domain" [ref=e315] [cursor=pointer]:
+                - /url: /help/article/free-dot-link-domain
+              - text: .
+            - link "Learn more" [ref=e316] [cursor=pointer]:
+              - /url: /help/article/how-to-add-custom-domain
+      - generic [ref=e317]:
+        - generic [ref=e318]:
+          - generic [ref=e320]:
+            - generic [ref=e321]:
+              - generic:
+                - text: dub.sh/1LnprvH
+                - img
+              - generic [ref=e322]: https://dub.co?utm_source=google&utm_medium=cpc&utm_campaign=summer+sale
+            - generic [ref=e323]:
+              - generic [ref=e324]:
+                - heading [level=3] [ref=e325]: UTM Builder
+                - generic [ref=e327]: U
+              - generic [ref=e328]:
+                - generic [ref=e330]:
+                  - generic [ref=e331]:
+                    - img [ref=e332]
+                    - generic [ref=e338]: Source
+                  - textbox [disabled] [ref=e340]:
+                    - /placeholder: google
+                    - text: google
+                - generic [ref=e342]:
+                  - generic [ref=e343]:
+                    - img [ref=e344]
+                    - generic [ref=e350]: Medium
+                  - textbox [disabled] [ref=e352]:
+                    - /placeholder: cpc
+                    - text: cpc
+                - generic [ref=e354]:
+                  - generic [ref=e355]:
+                    - img [ref=e356]
+                    - generic [ref=e359]: Campaign
+                  - textbox [disabled] [ref=e361]:
+                    - /placeholder: summer sale
+                    - text: summer sale
+                - generic [ref=e363]:
+                  - generic [ref=e364]:
+                    - img [ref=e365]
+                    - generic [ref=e370]: Term
+                  - textbox [disabled] [ref=e372]:
+                    - /placeholder: running shoes
+                - generic [ref=e374]:
+                  - generic [ref=e375]:
+                    - img [ref=e376]
+                    - generic [ref=e379]: Content
+                  - textbox [disabled] [ref=e381]:
+                    - /placeholder: logo link
+                - generic [ref=e383]:
+                  - generic [ref=e384]:
+                    - img [ref=e385]
+                    - generic [ref=e391]: Referral
+                  - textbox [disabled] [ref=e393]:
+                    - /placeholder: yoursite.com
+          - generic [ref=e394]:
+            - heading "Streamline your UTM campaigns with reusable templates" [level=3] [ref=e395]
+            - paragraph [ref=e397]:
+              - text: Create standardized, trackable links with our
+              - link "UTM builder" [ref=e398] [cursor=pointer]:
+                - /url: /help/article/utm-builder
+              - text: and
+              - link "reusable templates" [ref=e399] [cursor=pointer]:
+                - /url: /help/article/how-to-create-utm-templates
+              - text: to ensure tracking consistency.
+            - link "Learn more" [ref=e400] [cursor=pointer]:
+              - /url: /help/article/how-to-create-utm-templates
+        - generic [ref=e401]:
+          - img [ref=e403]:
+            - generic [ref=e404]:
+              - generic [ref=e435]: My Projects
+              - generic [ref=e450]: getacme.link/app-page
+          - generic [ref=e462]:
+            - heading "Built-in deep links support for iOS and Android" [level=3] [ref=e463]
+            - paragraph [ref=e465]:
+              - text: Redirect users to a specific page within your app with
+              - link "deferred deep linking" [ref=e466] [cursor=pointer]:
+                - /url: /docs/concepts/deep-links/deferred-deep-linking
+              - text: and
+              - link "mobile attribution support" [ref=e467] [cursor=pointer]:
+                - /url: /docs/concepts/deep-links/attribution
+              - text: .
+            - link "Learn more" [ref=e468] [cursor=pointer]:
+              - /url: /docs/concepts/deep-links/quickstart
+    - generic [ref=e470]:
+      - generic [ref=e471]:
+        - img [ref=e472]
+        - heading "Folders and tags" [level=3] [ref=e476]
+        - paragraph [ref=e478]:
+          - text: Keep all your short links organized with
+          - link "folders" [ref=e479] [cursor=pointer]:
+            - /url: /help/article/link-folders
+          - text: and
+          - link "tags" [ref=e480] [cursor=pointer]:
+            - /url: /help/article/how-to-use-tags
+          - text: ", and filter your analytics as needed."
+        - link "Learn more" [ref=e481] [cursor=pointer]:
+          - /url: /help/article/link-folders
+      - generic [ref=e482]:
+        - img [ref=e483]
+        - heading "Geo and device-targeting" [level=3] [ref=e486]
+        - paragraph [ref=e488]:
+          - text: Dynamically redirect your users based on their
+          - link "location" [ref=e489] [cursor=pointer]:
+            - /url: /help/article/geo-targeting
+          - text: or
+          - link "device" [ref=e490] [cursor=pointer]:
+            - /url: /help/article/device-targeting
+          - text: on the fly to maximize conversion rates.
+        - link "Learn more" [ref=e491] [cursor=pointer]:
+          - /url: /help/article/geo-targeting
+      - generic [ref=e492]:
+        - img [ref=e493]
+        - heading "Branded QR codes" [level=3] [ref=e507]
+        - paragraph [ref=e509]: Create QR codes that match your brand, automatically generated with each short link.
+        - link "Learn more" [ref=e510] [cursor=pointer]:
+          - /url: /help/article/custom-qr-codes
+      - generic [ref=e511]:
+        - img [ref=e512]
+        - heading "A/B Tests" [level=3] [ref=e515]
+        - paragraph [ref=e517]: Run A/B tests with short links to find what drives more clicks, signups, or sales — no extra tools required.
+        - link "Learn more" [ref=e518] [cursor=pointer]:
+          - /url: /help
+  - generic [ref=e521]:
+    - img "Scicomm Media logo" [ref=e523]
+    - paragraph [ref=e525]:
+      - text: “What you all have built is fantastic. I've used platforms like Bitly for years, and
+      - strong [ref=e526]: Dub is hands down the best.
+      - text: ”
+    - img "Ian Mackey" [ref=e527]
+    - generic [ref=e528]: Ian Mackey
+    - generic [ref=e529]: Vice President, Scicomm Media
+  - generic [ref=e531]:
+    - generic [ref=e532]:
+      - generic [ref=e533]:
+        - img [ref=e534]
+        - text: Powerful Analytics
+      - heading "Success at a glance" [level=2] [ref=e538]
+      - paragraph [ref=e539]: With our powerful real-time analytics, you can focus on what truly matters for your marketing attribution.
+      - generic [ref=e540]:
+        - link "Learn more" [ref=e541] [cursor=pointer]:
+          - /url: /analytics
+        - link "Live Demo ↗" [ref=e542] [cursor=pointer]:
+          - /url: https://d.to/stats/try
+    - generic [ref=e548]:
+      - button "Clicks 110,937" [ref=e550] [cursor=pointer]:
+        - generic [ref=e554]: Clicks
+        - img "110,937" [ref=e556]:
+          - generic [ref=e558]:
+            - generic [ref=e559]: "1"
+            - generic [ref=e560]: "1"
+            - generic [ref=e561]: "0"
+            - generic [ref=e562]: ","
+            - generic [ref=e563]: "9"
+            - generic [ref=e564]: "3"
+            - generic [ref=e565]: "7"
+      - generic [ref=e566]:
+        - img [ref=e568]
+        - button "Leads 2,273" [ref=e570] [cursor=pointer]:
+          - generic [ref=e574]: Leads
+          - img "2,273" [ref=e576]:
+            - generic [ref=e578]:
+              - generic [ref=e579]: "2"
+              - generic [ref=e580]: ","
+              - generic [ref=e581]: "2"
+              - generic [ref=e582]: "7"
+              - generic [ref=e583]: "3"
+      - generic [ref=e584]:
+        - img [ref=e586]
+        - button "Sales $8,834" [ref=e588] [cursor=pointer]:
+          - generic [ref=e592]: Sales
+          - img "$8,834" [ref=e594]:
+            - generic [ref=e596]: $
+            - generic [ref=e598]:
+              - generic [ref=e599]: "8"
+              - generic [ref=e600]: ","
+              - generic [ref=e601]: "8"
+              - generic [ref=e602]: "3"
+              - generic [ref=e603]: "4"
+    - generic [ref=e606]:
+      - generic [ref=e607]:
+        - generic [ref=e608]:
+          - button "Watch demo Play demo" [ref=e613] [cursor=pointer]:
+            - img "Watch demo" [ref=e614]
+            - generic [ref=e616]:
+              - img [ref=e617]
+              - generic [ref=e619]: Play demo
+          - generic [ref=e620]:
+            - heading "Conversion tracking" [level=3] [ref=e621]
+            - paragraph [ref=e623]: Track how your clicks convert to signups and sales to understand your marketing return on investment (ROI).
+            - link "Learn more" [ref=e624] [cursor=pointer]:
+              - /url: /help/article/dub-conversions
+        - generic [ref=e625]:
+          - generic [ref=e628]:
+            - generic [ref=e630]:
+              - generic [ref=e631]:
+                - img [ref=e633]
+                - generic [ref=e638]: Devices
+              - generic [ref=e639]:
+                - generic [ref=e640]:
+                  - generic [ref=e641]:
+                    - img [ref=e642]
+                    - generic [ref=e646]: Desktop
+                  - generic [ref=e647]: 1.6K
+                - generic [ref=e648]:
+                  - generic [ref=e649]:
+                    - img [ref=e650]
+                    - generic [ref=e655]: Mobile
+                  - generic [ref=e656]: 1.2K
+                - generic [ref=e657]:
+                  - generic [ref=e658]:
+                    - img [ref=e659]
+                    - generic [ref=e663]: Tablet
+                  - generic [ref=e664]: "983"
+                - generic [ref=e665]:
+                  - generic [ref=e666]:
+                    - img [ref=e667]
+                    - generic [ref=e675]: Console
+                  - generic [ref=e676]: "592"
+                - generic [ref=e677]:
+                  - generic [ref=e678]:
+                    - img [ref=e679]
+                    - generic [ref=e683]: Smart TV
+                  - generic [ref=e684]: "411"
+            - generic [ref=e686]:
+              - generic [ref=e687]:
+                - img [ref=e689]
+                - generic [ref=e695]: Browsers
+              - generic [ref=e696]:
+                - generic [ref=e697]:
+                  - generic [ref=e698]:
+                    - img [ref=e699]
+                    - generic [ref=e700]: Chrome
+                  - generic [ref=e701]: 1.7K
+                - generic [ref=e702]:
+                  - generic [ref=e703]:
+                    - img [ref=e704]
+                    - generic [ref=e705]: Safari
+                  - generic [ref=e706]: 1.2K
+                - generic [ref=e707]:
+                  - generic [ref=e708]:
+                    - img [ref=e709]
+                    - generic [ref=e710]: Firefox
+                  - generic [ref=e711]: "983"
+                - generic [ref=e712]:
+                  - generic [ref=e713]:
+                    - img [ref=e714]
+                    - generic [ref=e715]: Edge
+                  - generic [ref=e716]: "648"
+                - generic [ref=e717]:
+                  - generic [ref=e718]:
+                    - img [ref=e719]
+                    - generic [ref=e720]: Opera
+                  - generic [ref=e721]: "215"
+            - generic [ref=e723]:
+              - generic [ref=e724]:
+                - img [ref=e726]
+                - generic [ref=e731]: Countries
+              - generic [ref=e732]:
+                - generic [ref=e733]:
+                  - generic [ref=e734]:
+                    - img [ref=e735]
+                    - generic [ref=e736]: United States
+                  - generic [ref=e737]: 1.8K
+                - generic [ref=e738]:
+                  - generic [ref=e739]:
+                    - img [ref=e740]
+                    - generic [ref=e741]: Canada
+                  - generic [ref=e742]: 1.2K
+                - generic [ref=e743]:
+                  - generic [ref=e744]:
+                    - img [ref=e745]
+                    - generic [ref=e746]: United Kingdom
+                  - generic [ref=e747]: "983"
+                - generic [ref=e748]:
+                  - generic [ref=e749]:
+                    - img [ref=e750]
+                    - generic [ref=e751]: India
+                  - generic [ref=e752]: "632"
+                - generic [ref=e753]:
+                  - generic [ref=e754]:
+                    - img [ref=e755]
+                    - generic [ref=e756]: Ireland
+                  - generic [ref=e757]: "411"
+          - generic [ref=e758]:
+            - heading "Detailed geo and device-specific data" [level=3] [ref=e759]
+            - paragraph [ref=e761]: Analyze performance of your short links based on cities, countries, browsers, devices, and more.
+            - link "Learn more" [ref=e762] [cursor=pointer]:
+              - /url: /help/article/dub-analytics#2-aggregated-data-for-different-facets-top-views
+      - generic [ref=e763]:
+        - generic [ref=e764]:
+          - img "Customer page demo" [ref=e769]
+          - generic [ref=e770]:
+            - heading "Customer insights" [level=3] [ref=e771]
+            - paragraph [ref=e773]: Track your customer journey from first click to conversion, with detailed events and insights.
+            - link "Learn more" [ref=e774] [cursor=pointer]:
+              - /url: /help/article/customer-insights
+        - generic [ref=e775]:
+          - img "Events table demo" [ref=e780]
+          - generic [ref=e781]:
+            - heading "Real-time events stream" [level=3] [ref=e782]
+            - paragraph [ref=e784]: Gain insights into every click, lead, and sales events as they happen in real time.
+            - link "Learn more" [ref=e785] [cursor=pointer]:
+              - /url: /help/article/real-time-events-stream
+    - generic [ref=e787]:
+      - generic [ref=e788]:
+        - img [ref=e789]
+        - heading "Analytics dashboard sharing" [level=3] [ref=e794]
+        - paragraph [ref=e796]: Share real-time analytics dashboards with your advertisers/partners with one click.
+        - link "Learn more" [ref=e797] [cursor=pointer]:
+          - /url: /help/article/share-analytics
+      - generic [ref=e798]:
+        - img [ref=e799]
+        - heading "Powerful integrations" [level=3] [ref=e809]
+        - paragraph [ref=e811]: Native integrations with your existing analytics stack (Segment, GTM).
+        - link "View integrations" [ref=e812] [cursor=pointer]:
+          - /url: /integrations
+      - generic [ref=e813]:
+        - img [ref=e814]
+        - heading "Build customizable reports" [level=3] [ref=e817]
+        - paragraph [ref=e819]: Build custom reports with flexible date ranges and granular filters.
+        - link "Learn more" [ref=e820] [cursor=pointer]:
+          - /url: /help/article/dub-analytics#date-range-picker
+  - generic [ref=e822]:
+    - generic [ref=e824]:
+      - img
+    - generic [ref=e856]:
+      - heading "Connect with your favorite tools" [level=2] [ref=e857]
+      - paragraph [ref=e858]: Extend Dub, streamline workflows, and connect your favorite tools, with new integrations added constantly.
+      - link "Explore integrations" [ref=e860] [cursor=pointer]:
+        - /url: /integrations
+  - generic [ref=e862]:
+    - generic [ref=e863]:
+      - generic [ref=e864]:
+        - img [ref=e865]
+        - text: Enterprise-grade infrastructure
+      - heading "Scalable programmatic link management" [level=2] [ref=e868]
+      - paragraph [ref=e869]: Integrate Dub's enterprise-grade link infrastructure into your existing workflows to scale your link management efforts.
+    - generic [ref=e870]:
+      - generic [ref=e871]:
+        - generic [ref=e874]:
+          - generic [ref=e875]:
+            - generic [ref=e876]:
+              - link "POST Create a link" [ref=e877] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-link
+                - generic [ref=e878]: POST
+                - text: Create a link
+              - link "PATCH Update a link" [ref=e879] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-link
+                - generic [ref=e880]: PATCH
+                - text: Update a link
+              - link "PUT Upsert a link" [ref=e881] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/upsert-a-link
+                - generic [ref=e882]: PUT
+                - text: Upsert a link
+              - link "DELETE Delete a link" [ref=e883] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-link
+                - generic [ref=e884]: DELETE
+                - text: Delete a link
+            - generic [ref=e885]:
+              - link [ref=e886] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-link
+                - generic [ref=e887]: POST
+                - text: Create a link
+              - link [ref=e888] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-link
+                - generic [ref=e889]: PATCH
+                - text: Update a link
+              - link [ref=e890] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/upsert-a-link
+                - generic [ref=e891]: PUT
+                - text: Upsert a link
+              - link [ref=e892] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-link
+                - generic [ref=e893]: DELETE
+                - text: Delete a link
+          - generic [ref=e894]:
+            - generic [ref=e895]:
+              - link "GET Retrieve a link" [ref=e896] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-link
+                - generic [ref=e897]: GET
+                - text: Retrieve a link
+              - link "GET Retrieve links count" [ref=e898] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-links-count
+                - generic [ref=e899]: GET
+                - text: Retrieve links count
+              - link "GET Retrieve a list of links" [ref=e900] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-links
+                - generic [ref=e901]: GET
+                - text: Retrieve a list of links
+              - link "GET Retrieve analytics" [ref=e902] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-analytics
+                - generic [ref=e903]: GET
+                - text: Retrieve analytics
+            - generic [ref=e904]:
+              - link [ref=e905] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-link
+                - generic [ref=e906]: GET
+                - text: Retrieve a link
+              - link [ref=e907] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-links-count
+                - generic [ref=e908]: GET
+                - text: Retrieve links count
+              - link [ref=e909] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-links
+                - generic [ref=e910]: GET
+                - text: Retrieve a list of links
+              - link [ref=e911] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-analytics
+                - generic [ref=e912]: GET
+                - text: Retrieve analytics
+          - generic [ref=e913]:
+            - generic [ref=e914]:
+              - link "GET Retrieve a list of events" [ref=e915] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-events
+                - generic [ref=e916]: GET
+                - text: Retrieve a list of events
+              - link "POST Create a folder" [ref=e917] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-folder
+                - generic [ref=e918]: POST
+                - text: Create a folder
+              - link "PATCH Update a folder" [ref=e919] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-folder
+                - generic [ref=e920]: PATCH
+                - text: Update a folder
+              - link "DELETE Delete a folder" [ref=e921] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-folder
+                - generic [ref=e922]: DELETE
+                - text: Delete a folder
+            - generic [ref=e923]:
+              - link [ref=e924] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-events
+                - generic [ref=e925]: GET
+                - text: Retrieve a list of events
+              - link [ref=e926] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-folder
+                - generic [ref=e927]: POST
+                - text: Create a folder
+              - link [ref=e928] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-folder
+                - generic [ref=e929]: PATCH
+                - text: Update a folder
+              - link [ref=e930] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-folder
+                - generic [ref=e931]: DELETE
+                - text: Delete a folder
+          - generic [ref=e932]:
+            - generic [ref=e933]:
+              - link "GET Retrieve a list of folders" [ref=e934] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-folders
+                - generic [ref=e935]: GET
+                - text: Retrieve a list of folders
+              - link "POST Create a tag" [ref=e936] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-tag
+                - generic [ref=e937]: POST
+                - text: Create a tag
+              - link "PATCH Update a tag" [ref=e938] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-tag
+                - generic [ref=e939]: PATCH
+                - text: Update a tag
+              - link "GET Retrieve a list of tags" [ref=e940] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-tags
+                - generic [ref=e941]: GET
+                - text: Retrieve a list of tags
+            - generic [ref=e942]:
+              - link [ref=e943] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-folders
+                - generic [ref=e944]: GET
+                - text: Retrieve a list of folders
+              - link [ref=e945] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-tag
+                - generic [ref=e946]: POST
+                - text: Create a tag
+              - link [ref=e947] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-tag
+                - generic [ref=e948]: PATCH
+                - text: Update a tag
+              - link [ref=e949] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-tags
+                - generic [ref=e950]: GET
+                - text: Retrieve a list of tags
+          - generic [ref=e951]:
+            - generic [ref=e952]:
+              - link "POST Bulk create links" [ref=e953] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-create-links
+                - generic [ref=e954]: POST
+                - text: Bulk create links
+              - link "PATCH Bulk update links" [ref=e955] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-update-links
+                - generic [ref=e956]: PATCH
+                - text: Bulk update links
+              - link "DELETE Bulk delete links" [ref=e957] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-delete-links
+                - generic [ref=e958]: DELETE
+                - text: Bulk delete links
+              - link "POST Create a link" [ref=e959] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-link
+                - generic [ref=e960]: POST
+                - text: Create a link
+            - generic [ref=e961]:
+              - link [ref=e962] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-create-links
+                - generic [ref=e963]: POST
+                - text: Bulk create links
+              - link [ref=e964] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-update-links
+                - generic [ref=e965]: PATCH
+                - text: Bulk update links
+              - link [ref=e966] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/bulk-delete-links
+                - generic [ref=e967]: DELETE
+                - text: Bulk delete links
+              - link [ref=e968] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-link
+                - generic [ref=e969]: POST
+                - text: Create a link
+          - generic [ref=e970]:
+            - generic [ref=e971]:
+              - link "PATCH Update a link" [ref=e972] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-link
+                - generic [ref=e973]: PATCH
+                - text: Update a link
+              - link "PUT Upsert a link" [ref=e974] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/upsert-a-link
+                - generic [ref=e975]: PUT
+                - text: Upsert a link
+              - link "DELETE Delete a link" [ref=e976] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-link
+                - generic [ref=e977]: DELETE
+                - text: Delete a link
+              - link "GET Retrieve a link" [ref=e978] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-link
+                - generic [ref=e979]: GET
+                - text: Retrieve a link
+            - generic [ref=e980]:
+              - link [ref=e981] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-link
+                - generic [ref=e982]: PATCH
+                - text: Update a link
+              - link [ref=e983] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/upsert-a-link
+                - generic [ref=e984]: PUT
+                - text: Upsert a link
+              - link [ref=e985] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-link
+                - generic [ref=e986]: DELETE
+                - text: Delete a link
+              - link [ref=e987] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-link
+                - generic [ref=e988]: GET
+                - text: Retrieve a link
+          - generic [ref=e989]:
+            - generic [ref=e990]:
+              - link "GET Retrieve links count" [ref=e991] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-links-count
+                - generic [ref=e992]: GET
+                - text: Retrieve links count
+              - link "GET Retrieve a list of links" [ref=e993] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-links
+                - generic [ref=e994]: GET
+                - text: Retrieve a list of links
+              - link "GET Retrieve analytics" [ref=e995] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-analytics
+                - generic [ref=e996]: GET
+                - text: Retrieve analytics
+              - link "GET Retrieve a list of events" [ref=e997] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-events
+                - generic [ref=e998]: GET
+                - text: Retrieve a list of events
+            - generic [ref=e999]:
+              - link [ref=e1000] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-links-count
+                - generic [ref=e1001]: GET
+                - text: Retrieve links count
+              - link [ref=e1002] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-links
+                - generic [ref=e1003]: GET
+                - text: Retrieve a list of links
+              - link [ref=e1004] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-analytics
+                - generic [ref=e1005]: GET
+                - text: Retrieve analytics
+              - link [ref=e1006] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-events
+                - generic [ref=e1007]: GET
+                - text: Retrieve a list of events
+          - generic [ref=e1008]:
+            - generic [ref=e1009]:
+              - link "POST Create a folder" [ref=e1010] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-folder
+                - generic [ref=e1011]: POST
+                - text: Create a folder
+              - link "PATCH Update a folder" [ref=e1012] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-folder
+                - generic [ref=e1013]: PATCH
+                - text: Update a folder
+              - link "DELETE Delete a folder" [ref=e1014] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-folder
+                - generic [ref=e1015]: DELETE
+                - text: Delete a folder
+              - link "GET Retrieve a list of folders" [ref=e1016] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-folders
+                - generic [ref=e1017]: GET
+                - text: Retrieve a list of folders
+            - generic [ref=e1018]:
+              - link [ref=e1019] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/create-a-folder
+                - generic [ref=e1020]: POST
+                - text: Create a folder
+              - link [ref=e1021] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/update-a-folder
+                - generic [ref=e1022]: PATCH
+                - text: Update a folder
+              - link [ref=e1023] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/delete-a-folder
+                - generic [ref=e1024]: DELETE
+                - text: Delete a folder
+              - link [ref=e1025] [cursor=pointer]:
+                - /url: https://dub.co/docs/api-reference/endpoint/retrieve-a-list-of-folders
+                - generic [ref=e1026]: GET
+                - text: Retrieve a list of folders
+        - generic [ref=e1028]:
+          - generic [ref=e1029]:
+            - button [pressed] [ref=e1030] [cursor=pointer]:
+              - img [ref=e1031]:
+                - img [ref=e1032]
+            - button [ref=e1034] [cursor=pointer]:
+              - img [ref=e1035]
+            - button [ref=e1038] [cursor=pointer]:
+              - img [ref=e1039]
+            - button [ref=e1042] [cursor=pointer]:
+              - img [ref=e1043]
+            - button [ref=e1063] [cursor=pointer]:
+              - img [ref=e1064]
+          - generic [ref=e1072]:
+            - generic [ref=e1074]:
+              - generic [ref=e1075]:
+                - generic [ref=e1080]: Dub TypeScript SDK
+                - link [ref=e1082] [cursor=pointer]:
+                  - /url: /sdks/typescript
+                  - img [ref=e1083]
+              - generic [ref=e1087]: "import { Dub } from \"dub\"; const dub = new Dub({ token: \"DUB_API_KEY\", }); const { shortLink } = await dub.links.create({ url: \"https://google.com\", });"
+            - generic [ref=e1089]:
+              - generic [ref=e1090]:
+                - generic [ref=e1095]: Dub Go SDK
+                - link [ref=e1097] [cursor=pointer]:
+                  - /url: /sdks/go
+                  - img [ref=e1098]
+              - generic [ref=e1102]: "import { Dub } from \"dub\"; const dub = new Dub({ token: \"DUB_API_KEY\", }); const { shortLink } = await dub.links.create({ url: \"https://google.com\", });"
+            - generic [ref=e1104]:
+              - generic [ref=e1105]:
+                - generic [ref=e1110]: Dub Python SDK
+                - link [ref=e1112] [cursor=pointer]:
+                  - /url: /sdks/python
+                  - img [ref=e1113]
+              - generic [ref=e1117]: "import { Dub } from \"dub\"; const dub = new Dub({ token: \"DUB_API_KEY\", }); const { shortLink } = await dub.links.create({ url: \"https://google.com\", });"
+            - generic [ref=e1119]:
+              - generic [ref=e1120]:
+                - generic [ref=e1125]: Dub Ruby SDK
+                - link [ref=e1127] [cursor=pointer]:
+                  - /url: /sdks/ruby
+                  - img [ref=e1128]
+              - generic [ref=e1132]: "import { Dub } from \"dub\"; const dub = new Dub({ token: \"DUB_API_KEY\", }); const { shortLink } = await dub.links.create({ url: \"https://google.com\", });"
+            - generic [ref=e1134]:
+              - generic [ref=e1135]:
+                - generic [ref=e1140]: Dub PHP SDK
+                - link [ref=e1142] [cursor=pointer]:
+                  - /url: /sdks/php
+                  - img [ref=e1143]
+              - generic [ref=e1147]: "import { Dub } from \"dub\"; const dub = new Dub({ token: \"DUB_API_KEY\", }); const { shortLink } = await dub.links.create({ url: \"https://google.com\", });"
+        - generic [ref=e1152]:
+          - img [ref=e1158]
+          - img [ref=e1162]
+          - generic [ref=e1165]:
+            - generic [ref=e1167]: Request
+            - generic [ref=e1169]: Response
+            - generic [ref=e1171]: New Event
+            - generic [ref=e1173]:
+              - img [ref=e1175]
+              - generic [ref=e1182]: Link clicked
+            - generic [ref=e1185]:
+              - generic [ref=e1186]:
+                - img [ref=e1189]
+                - img [ref=e1192]
+              - generic [ref=e1193]:
+                - img [ref=e1196]
+                - img [ref=e1199]
+              - generic [ref=e1200]:
+                - img [ref=e1203]
+                - img [ref=e1206]
+          - img [ref=e1209]
+          - generic [ref=e1212]:
+            - img [ref=e1218]
+            - img [ref=e1223]
+            - img [ref=e1228]
+            - img [ref=e1233]
+            - img [ref=e1238]
+            - img [ref=e1243]
+      - generic [ref=e1244]:
+        - button "Powerful REST API Manage links and resources with our REST API. Learn more" [ref=e1245] [cursor=pointer]:
+          - img [ref=e1248]
+          - generic [ref=e1251]: Powerful REST API
+          - paragraph [ref=e1252]: Manage links and resources with our REST API.
+          - link "Learn more" [ref=e1253]:
+            - /url: https://dub.co/docs/api-reference/introduction
+            - text: Learn more
+            - generic:
+              - img [ref=e1254]
+              - img [ref=e1256]
+        - button "Multi-language SDKs Integrate with Dub using your framework of choice. Learn more" [ref=e1258] [cursor=pointer]:
+          - img [ref=e1261]
+          - generic [ref=e1270]: Multi-language SDKs
+          - paragraph [ref=e1271]: Integrate with Dub using your framework of choice.
+          - link "Learn more":
+            - /url: https://dub.co/docs/sdks/overview
+            - text: Learn more
+            - generic:
+              - img
+              - img
+        - button "Real-time webhooks Keep your systems up-to-date, instantly. Learn more" [ref=e1272] [cursor=pointer]:
+          - img [ref=e1275]
+          - generic [ref=e1283]: Real-time webhooks
+          - paragraph [ref=e1284]: Keep your systems up-to-date, instantly.
+          - link "Learn more":
+            - /url: https://dub.co/docs/concepts/webhooks/introduction
+            - text: Learn more
+            - generic:
+              - img
+              - img
+  - generic [ref=e1287]:
+    - img "Whop logo" [ref=e1289]
+    - paragraph [ref=e1291]: “Dub's link infrastructure is incredibly reliable – we've been using them in production at Whop for years now, creating thousands of links per month with sub-150ms request latency.”
+    - img "Jack Sharkey" [ref=e1292]
+    - generic [ref=e1293]: Jack Sharkey
+    - generic [ref=e1294]: CTO, Whop
+  - generic [ref=e1298]:
+    - generic:
+      - generic:
+        - img
+    - generic [ref=e1299]:
+      - img [ref=e1300]
+      - img [ref=e1304]
+    - generic [ref=e1307]:
+      - generic [ref=e1309]:
+        - img [ref=e1311]
+        - text: Dub Links
+      - heading "Short links with super powers" [level=2] [ref=e1313]
+      - paragraph [ref=e1314]: Dub is the modern link attribution platform for short links, conversion tracking, and affiliate programs.
+      - generic [ref=e1315]:
+        - link "Start for free" [ref=e1316] [cursor=pointer]:
+          - /url: https://app.dub.co/register
+        - link "Get a demo" [ref=e1317] [cursor=pointer]:
+          - /url: /contact/sales
+      - generic [ref=e1318]:
+        - link "G2" [ref=e1319] [cursor=pointer]:
+          - /url: https://www.g2.com/products/dub/reviews
+          - img [ref=e1321]
+          - generic [ref=e1324]:
+            - img [ref=e1325]
+            - img [ref=e1327]
+            - img [ref=e1329]
+            - img [ref=e1331]
+            - img [ref=e1333]
+        - link "Product Hunt" [ref=e1335] [cursor=pointer]:
+          - /url: https://www.producthunt.com/products/dub
+          - img [ref=e1337]
+          - generic [ref=e1339]:
+            - img [ref=e1340]
+            - img [ref=e1342]
+            - img [ref=e1344]
+            - img [ref=e1346]
+            - img [ref=e1348]
+        - link "Trustpilot" [ref=e1350] [cursor=pointer]:
+          - /url: https://www.trustpilot.com/review/dub.co
+          - img [ref=e1352]
+          - generic [ref=e1354]:
+            - img [ref=e1355]
+            - img [ref=e1357]
+            - img [ref=e1359]
+            - img [ref=e1361]
+            - img [ref=e1363]
+  - contentinfo [ref=e1366]:
+    - generic [ref=e1367]:
+      - generic [ref=e1368]:
+        - link "Dub.co Logo" [ref=e1370] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e1371]: Dub.co Logo
+          - img [ref=e1373]
+        - generic [ref=e1375]:
+          - link "Twitter" [ref=e1376] [cursor=pointer]:
+            - /url: https://twitter.com/dubdotco
+            - generic [ref=e1377]: Twitter
+            - img [ref=e1378]
+          - link "LinkedIn" [ref=e1380] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/dubinc
+            - generic [ref=e1381]: LinkedIn
+            - img [ref=e1382]
+          - link "GitHub" [ref=e1384] [cursor=pointer]:
+            - /url: https://github.com/dubinc/dub
+            - generic [ref=e1385]: GitHub
+            - img [ref=e1386]
+          - link "YouTube" [ref=e1388] [cursor=pointer]:
+            - /url: https://www.youtube.com/@dubdotco
+            - generic [ref=e1389]: YouTube
+            - img [ref=e1390]
+      - generic [ref=e1393]:
+        - generic [ref=e1394]:
+          - generic [ref=e1395]:
+            - generic [ref=e1396]:
+              - heading "Product" [level=3] [ref=e1397]
+              - list [ref=e1398]:
+                - listitem [ref=e1399]:
+                  - link "Dub Links" [ref=e1400] [cursor=pointer]:
+                    - /url: /links
+                    - img [ref=e1402]
+                    - text: Dub Links
+                - listitem [ref=e1404]:
+                  - link "Dub Partners" [ref=e1405] [cursor=pointer]:
+                    - /url: /partners
+                    - img [ref=e1407]
+                    - text: Dub Partners
+                - listitem [ref=e1412]:
+                  - link "Dub Analytics" [ref=e1413] [cursor=pointer]:
+                    - /url: /analytics
+                    - img [ref=e1415]
+                    - text: Dub Analytics
+                - listitem [ref=e1417]:
+                  - link "Dub API" [ref=e1418] [cursor=pointer]:
+                    - /url: /docs/api-reference/introduction
+                    - img [ref=e1420]
+                    - text: Dub API
+                - listitem [ref=e1422]:
+                  - link "Dub Enterprise" [ref=e1423] [cursor=pointer]:
+                    - /url: /enterprise
+            - generic [ref=e1424]:
+              - heading "Solutions" [level=3] [ref=e1425]
+              - list [ref=e1426]:
+                - listitem [ref=e1427]:
+                  - link "Marketing attribution" [ref=e1428] [cursor=pointer]:
+                    - /url: /analytics
+                - listitem [ref=e1429]:
+                  - link "Content creators" [ref=e1430] [cursor=pointer]:
+                    - /url: /solutions/creators
+                - listitem [ref=e1431]:
+                  - link "Affiliate management" [ref=e1432] [cursor=pointer]:
+                    - /url: /partners
+          - generic [ref=e1433]:
+            - heading "Resources" [level=3] [ref=e1434]
+            - list [ref=e1435]:
+              - listitem [ref=e1436]:
+                - link "Docs" [ref=e1437] [cursor=pointer]:
+                  - /url: /docs
+              - listitem [ref=e1438]:
+                - link "Help Center" [ref=e1439] [cursor=pointer]:
+                  - /url: /help
+              - listitem [ref=e1440]:
+                - link "Integrations" [ref=e1441] [cursor=pointer]:
+                  - /url: /integrations
+              - listitem [ref=e1442]:
+                - link "Pricing" [ref=e1443] [cursor=pointer]:
+                  - /url: /pricing
+              - listitem [ref=e1444]:
+                - link "Affiliates" [ref=e1445] [cursor=pointer]:
+                  - /url: https://partners.dub.co/dub
+                  - text: Affiliates
+                  - img [ref=e1446]
+        - generic [ref=e1451]:
+          - generic [ref=e1453]:
+            - heading "Company" [level=3] [ref=e1454]
+            - list [ref=e1455]:
+              - listitem [ref=e1456]:
+                - link "About" [ref=e1457] [cursor=pointer]:
+                  - /url: /about
+              - listitem [ref=e1458]:
+                - link "Blog" [ref=e1459] [cursor=pointer]:
+                  - /url: /blog
+              - listitem [ref=e1460]:
+                - link "Careers" [ref=e1461] [cursor=pointer]:
+                  - /url: /careers
+              - listitem [ref=e1462]:
+                - link "Changelog" [ref=e1463] [cursor=pointer]:
+                  - /url: /changelog
+              - listitem [ref=e1464]:
+                - link "Customers" [ref=e1465] [cursor=pointer]:
+                  - /url: /customers
+              - listitem [ref=e1466]:
+                - link "Brand" [ref=e1467] [cursor=pointer]:
+                  - /url: /brand
+              - listitem [ref=e1468]:
+                - link "Contact" [ref=e1469] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=e1470]:
+                - link "Privacy" [ref=e1471] [cursor=pointer]:
+                  - /url: /privacy
+              - listitem [ref=e1472]:
+                - button "Legal" [ref=e1473] [cursor=pointer]:
+                  - text: Legal
+                  - img [ref=e1474]
+          - generic [ref=e1476]:
+            - heading "Compare" [level=3] [ref=e1477]
+            - list [ref=e1478]:
+              - listitem [ref=e1479]:
+                - link "Bitly" [ref=e1480] [cursor=pointer]:
+                  - /url: /compare/bitly
+                  - img [ref=e1482]
+                  - text: Bitly
+              - listitem [ref=e1484]:
+                - link "Rebrandly" [ref=e1485] [cursor=pointer]:
+                  - /url: /compare/rebrandly
+                  - img [ref=e1487]
+                  - text: Rebrandly
+              - listitem [ref=e1489]:
+                - link "Short.io" [ref=e1490] [cursor=pointer]:
+                  - /url: /compare/short
+                  - img [ref=e1492]
+                  - text: Short.io
+              - listitem [ref=e1494]:
+                - link "Bl.ink" [ref=e1495] [cursor=pointer]:
+                  - /url: /compare/blink
+                  - img [ref=e1497]
+                  - text: Bl.ink
+              - listitem [ref=e1499]:
+                - link "Rewardful" [ref=e1500] [cursor=pointer]:
+                  - /url: /blog/dub-vs-rewardful
+                  - img [ref=e1502]
+                  - text: Rewardful
+              - listitem [ref=e1507]:
+                - link "PartnerStack" [ref=e1508] [cursor=pointer]:
+                  - /url: /blog/dub-vs-partnerstack
+                  - img [ref=e1510]
+                  - text: PartnerStack
+              - listitem [ref=e1515]:
+                - link "FirstPromoter" [ref=e1516] [cursor=pointer]:
+                  - /url: /blog/dub-vs-firstpromoter
+                  - img [ref=e1518]
+                  - text: FirstPromoter
+              - listitem [ref=e1523]:
+                - link "Tolt" [ref=e1524] [cursor=pointer]:
+                  - /url: /blog/dub-vs-tolt
+                  - img [ref=e1526]
+                  - text: Tolt
+    - generic [ref=e1531]:
+      - link "Loading status..." [ref=e1532] [cursor=pointer]:
+        - /url: https://status.dub.co
+        - paragraph [ref=e1536]: Loading status...
+      - link "AICPA SOC 2 Type II Certified" [ref=e1537] [cursor=pointer]:
+        - /url: /blog/soc2
+        - img "AICPA SOC 2 Type II Certified" [ref=e1538]
+      - paragraph [ref=e1539]: © 2026 Dub Technologies, Inc.

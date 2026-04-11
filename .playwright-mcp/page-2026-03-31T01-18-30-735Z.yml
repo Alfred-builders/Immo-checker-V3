@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - img [ref=e5]
+      - text: Attendance System
+      - button "Toggle theme" [ref=e7] [cursor=pointer]:
+        - img
+        - img
+        - generic [ref=e8]: Toggle theme
+      - button "Go to Register" [ref=e9] [cursor=pointer]
+    - generic [ref=e12]:
+      - generic [ref=e13]: Login
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - heading "Welcome Back 👋" [level=1] [ref=e17]
+          - paragraph [ref=e19]: Log in to your account to access your attendance records and manage your schedule.
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]: Username
+            - textbox "Username" [ref=e24]:
+              - /placeholder: Enter your username
+          - generic [ref=e25]:
+            - generic [ref=e26]: Password
+            - textbox "Password" [ref=e27]:
+              - /placeholder: Enter your password
+          - button "Login" [ref=e28] [cursor=pointer]
+        - generic [ref=e33]: Or continue with
+        - generic [ref=e34]:
+          - button [ref=e35] [cursor=pointer]:
+            - img
+          - button [ref=e36] [cursor=pointer]:
+            - img
+          - button [ref=e37] [cursor=pointer]:
+            - img
+          - button [ref=e38] [cursor=pointer]:
+            - img
+          - button [ref=e39] [cursor=pointer]:
+            - img
+        - paragraph [ref=e40]:
+          - text: By clicking continue, you agree to our
+          - link "Terms of Service" [ref=e41] [cursor=pointer]:
+            - /url: /terms
+          - text: and
+          - link "Privacy Policy" [ref=e42] [cursor=pointer]:
+            - /url: /privacy
+          - text: .
+  - region "Notifications (F8)":
+    - list
+  - alert [ref=e43]

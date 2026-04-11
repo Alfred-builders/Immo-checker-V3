@@ -1,0 +1,215 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e6]:
+      - link "Skip to Main" [ref=e7] [cursor=pointer]:
+        - /url: "#content"
+      - generic [ref=e10]:
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - button "Shadcn Admin Vite + ShadcnUI" [ref=e14] [cursor=pointer]:
+              - img [ref=e16]
+              - generic [ref=e18]:
+                - generic [ref=e19]: Shadcn Admin
+                - generic [ref=e20]: Vite + ShadcnUI
+              - img [ref=e21]
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]: General
+            - list [ref=e27]:
+              - listitem [ref=e28]:
+                - link "Dashboard" [ref=e29] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e30]
+                  - generic [ref=e35]: Dashboard
+              - listitem [ref=e36]:
+                - link "Tasks" [ref=e37] [cursor=pointer]:
+                  - /url: /tasks
+                  - img [ref=e38]
+                  - generic [ref=e41]: Tasks
+              - listitem [ref=e42]:
+                - link "Apps" [ref=e43] [cursor=pointer]:
+                  - /url: /apps
+                  - img [ref=e44]
+                  - generic [ref=e48]: Apps
+              - listitem [ref=e49]:
+                - link "Chats 3" [ref=e50] [cursor=pointer]:
+                  - /url: /chats
+                  - img [ref=e51]
+                  - generic [ref=e54]: Chats
+                  - generic [ref=e55]: "3"
+              - listitem [ref=e56]:
+                - link "Users" [ref=e57] [cursor=pointer]:
+                  - /url: /users
+                  - img [ref=e58]
+                  - generic [ref=e63]: Users
+              - listitem [ref=e64]:
+                - button "Clerk Secured by Clerk" [ref=e65] [cursor=pointer]:
+                  - img "Clerk" [ref=e66]
+                  - generic [ref=e68]: Secured by Clerk
+                  - img [ref=e69]
+          - generic [ref=e71]:
+            - generic [ref=e72]: Pages
+            - list [ref=e73]:
+              - listitem [ref=e74]:
+                - button "Auth" [ref=e75] [cursor=pointer]:
+                  - img [ref=e76]
+                  - generic [ref=e79]: Auth
+                  - img [ref=e80]
+              - listitem [ref=e82]:
+                - button "Errors" [ref=e83] [cursor=pointer]:
+                  - img [ref=e84]
+                  - generic [ref=e93]: Errors
+                  - img [ref=e94]
+          - generic [ref=e96]:
+            - generic [ref=e97]: Other
+            - list [ref=e98]:
+              - listitem [ref=e99]:
+                - button "Settings" [ref=e100] [cursor=pointer]:
+                  - img [ref=e101]
+                  - generic [ref=e104]: Settings
+                  - img [ref=e105]
+              - listitem [ref=e107]:
+                - link "Help Center" [ref=e108] [cursor=pointer]:
+                  - /url: /help-center
+                  - img [ref=e109]
+                  - generic [ref=e112]: Help Center
+        - list [ref=e114]:
+          - listitem [ref=e115]:
+            - button "SN satnaing satnaingdev@gmail.com" [ref=e116] [cursor=pointer]:
+              - generic [ref=e118]: SN
+              - generic [ref=e119]:
+                - generic [ref=e120]: satnaing
+                - generic [ref=e121]: satnaingdev@gmail.com
+              - img [ref=e122]
+        - button "Toggle Sidebar" [ref=e125]
+      - generic [ref=e126]:
+        - banner [ref=e127]:
+          - generic [ref=e128]:
+            - button "Toggle Sidebar" [ref=e129] [cursor=pointer]:
+              - img
+              - generic [ref=e130]: Toggle Sidebar
+            - button [ref=e132] [cursor=pointer]:
+              - img
+            - generic [ref=e133]:
+              - button "Search ⌘ K" [ref=e134] [cursor=pointer]:
+                - img
+                - generic [ref=e135]: Search
+                - generic:
+                  - generic: ⌘
+                  - text: K
+              - button "Toggle theme" [ref=e136] [cursor=pointer]:
+                - img
+                - generic [ref=e137]: Toggle theme
+              - button "Open theme settings" [ref=e138] [cursor=pointer]:
+                - img
+              - button "SN" [ref=e139] [cursor=pointer]:
+                - generic [ref=e141]: SN
+        - main [ref=e142]:
+          - generic [ref=e143]:
+            - heading "Dashboard" [level=1] [ref=e144]
+            - button "Download" [ref=e146] [cursor=pointer]
+          - generic [ref=e147]:
+            - tablist [ref=e149]:
+              - tab "Overview" [selected] [ref=e150] [cursor=pointer]
+              - tab "Analytics" [ref=e151] [cursor=pointer]
+              - tab "Reports" [disabled]
+              - tab "Notifications" [disabled]
+            - tabpanel "Overview" [ref=e152]:
+              - generic [ref=e153]:
+                - generic [ref=e154]:
+                  - generic [ref=e155]:
+                    - generic [ref=e156]: Total Revenue
+                    - img [ref=e157]
+                  - generic [ref=e159]:
+                    - generic [ref=e160]: $45,231.89
+                    - paragraph [ref=e161]: +20.1% from last month
+                - generic [ref=e162]:
+                  - generic [ref=e163]:
+                    - generic [ref=e164]: Subscriptions
+                    - img [ref=e165]
+                  - generic [ref=e169]:
+                    - generic [ref=e170]: "+2350"
+                    - paragraph [ref=e171]: +180.1% from last month
+                - generic [ref=e172]:
+                  - generic [ref=e173]:
+                    - generic [ref=e174]: Sales
+                    - img [ref=e175]
+                  - generic [ref=e177]:
+                    - generic [ref=e178]: +12,234
+                    - paragraph [ref=e179]: +19% from last month
+                - generic [ref=e180]:
+                  - generic [ref=e181]:
+                    - generic [ref=e182]: Active Now
+                    - img [ref=e183]
+                  - generic [ref=e185]:
+                    - generic [ref=e186]: "+573"
+                    - paragraph [ref=e187]: +201 since last hour
+              - generic [ref=e188]:
+                - generic [ref=e189]:
+                  - generic [ref=e191]: Overview
+                  - application [ref=e195]:
+                    - generic [ref=e196]:
+                      - generic [ref=e197]:
+                        - generic [ref=e199]: Jan
+                        - generic [ref=e201]: Feb
+                        - generic [ref=e203]: Mar
+                        - generic [ref=e205]: Apr
+                        - generic [ref=e207]: May
+                        - generic [ref=e209]: Jun
+                        - generic [ref=e211]: Jul
+                        - generic [ref=e213]: Aug
+                        - generic [ref=e215]: Sep
+                        - generic [ref=e217]: Oct
+                        - generic [ref=e219]: Nov
+                        - generic [ref=e221]: Dec
+                      - generic [ref=e222]:
+                        - generic [ref=e224]: $0
+                        - generic [ref=e226]: $1500
+                        - generic [ref=e228]: $3000
+                        - generic [ref=e230]: $4500
+                        - generic [ref=e232]: $6000
+                - generic [ref=e233]:
+                  - generic [ref=e234]:
+                    - generic [ref=e235]: Recent Sales
+                    - generic [ref=e236]: You made 265 sales this month.
+                  - generic [ref=e238]:
+                    - generic [ref=e239]:
+                      - generic [ref=e241]: OM
+                      - generic [ref=e242]:
+                        - generic [ref=e243]:
+                          - paragraph [ref=e244]: Olivia Martin
+                          - paragraph [ref=e245]: olivia.martin@email.com
+                        - generic [ref=e246]: +$1,999.00
+                    - generic [ref=e247]:
+                      - generic [ref=e249]: JL
+                      - generic [ref=e250]:
+                        - generic [ref=e251]:
+                          - paragraph [ref=e252]: Jackson Lee
+                          - paragraph [ref=e253]: jackson.lee@email.com
+                        - generic [ref=e254]: +$39.00
+                    - generic [ref=e255]:
+                      - generic [ref=e257]: IN
+                      - generic [ref=e258]:
+                        - generic [ref=e259]:
+                          - paragraph [ref=e260]: Isabella Nguyen
+                          - paragraph [ref=e261]: isabella.nguyen@email.com
+                        - generic [ref=e262]: +$299.00
+                    - generic [ref=e263]:
+                      - generic [ref=e265]: WK
+                      - generic [ref=e266]:
+                        - generic [ref=e267]:
+                          - paragraph [ref=e268]: William Kim
+                          - paragraph [ref=e269]: will@email.com
+                        - generic [ref=e270]: +$99.00
+                    - generic [ref=e271]:
+                      - generic [ref=e273]: SD
+                      - generic [ref=e274]:
+                        - generic [ref=e275]:
+                          - paragraph [ref=e276]: Sofia Davis
+                          - paragraph [ref=e277]: sofia.davis@email.com
+                        - generic [ref=e278]: +$39.00
+    - generic [ref=e279]:
+      - heading "Command Palette" [level=2] [ref=e280]
+      - paragraph [ref=e281]: Search for a command to run...
+    - region "Notifications alt+T"
+  - generic [ref=e282]: $0

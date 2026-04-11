@@ -1,0 +1,1 @@
+Lire et respecter les chemins définis dans 'components.json' avant d'importer ou de créer des composants.
