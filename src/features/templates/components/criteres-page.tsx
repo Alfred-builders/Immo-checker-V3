@@ -114,7 +114,7 @@ export function CriteresPage() {
       {/* Empty state */}
       {!isLoading && (!configs || configs.length === 0) && (
         <div className="py-20 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
             <SlidersHorizontal className="h-6 w-6 text-muted-foreground/50" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">Aucune configuration de critères</p>
@@ -126,7 +126,7 @@ export function CriteresPage() {
 
       {/* Matrix table */}
       {!isLoading && configs && configs.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+        <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

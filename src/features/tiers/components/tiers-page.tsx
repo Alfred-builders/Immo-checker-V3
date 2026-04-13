@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { MagnifyingGlass, Plus, User, BuildingOffice, UsersThree, Briefcase } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, User, BuildingOffice, UsersThree, Briefcase, CaretUp, CaretDown } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -100,7 +100,35 @@ export function TiersPage() {
     type_personne: typePersonneFilter !== 'all' ? typePersonneFilter as 'physique' | 'morale' : undefined,
   })
   const { data: stats } = useTiersStats()
-  const tiersList = data?.data ?? []
+  const tiersRaw = data?.data ?? []
+
+  // Sort
+  type SortDir = 'asc' | 'desc'
+  const [sortCol, setSortCol] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  function handleSort(col: string) {
+    if (sortCol === col) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
+    else { setSortCol(col); setSortDir('asc') }
+  }
+
+  const tiersList = useMemo(() => {
+    if (!sortCol) return tiersRaw
+    return [...tiersRaw].sort((a, b) => {
+      const key = sortCol as keyof typeof a
+      let aVal: any = a[key]
+      let bVal: any = b[key]
+      // Aggregated name sort
+      if (sortCol === 'nom') {
+        aVal = a.type_personne === 'morale' ? (a.raison_sociale || a.nom) : `${a.prenom || ''} ${a.nom}`
+        bVal = b.type_personne === 'morale' ? (b.raison_sociale || b.nom) : `${b.prenom || ''} ${b.nom}`
+      }
+      if (aVal == null) return 1
+      if (bVal == null) return -1
+      const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal))
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [tiersRaw, sortCol, sortDir])
 
   // Hide Mandataire tab for agence workspaces
   const showMandataire = workspace?.type_workspace !== 'agence'
@@ -170,26 +198,39 @@ export function TiersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
         {/* Dynamic header */}
-        <div className="flex items-center gap-4 px-6 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none bg-surface-sunken">
-          {columns.map((col) => (
-            <div
-              key={col.id}
-              className={`relative shrink-0 ${col.align === 'center' ? 'text-center' : ''}`}
-              style={{ width: colWidths[col.id] ?? col.width, minWidth: col.minWidth ?? undefined }}
-            >
-              {col.label}
-              {col.resizable !== false && col.label && (
-                <ResizeHandle colId={col.id} onResizeStart={onResizeStart} onResize={onResize} />
-              )}
-            </div>
-          ))}
+        <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
+          {columns.map((col) => {
+            const sortable = col.id !== 'avatar' && !!col.label
+            const isActive = sortCol === col.id && sortable
+            return (
+              <div
+                key={col.id}
+                className={`relative shrink-0 ${col.align === 'center' ? 'text-center' : ''} ${sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
+                style={{ width: colWidths[col.id] ?? col.width, minWidth: col.minWidth ?? undefined }}
+                onClick={() => sortable && handleSort(col.id)}
+              >
+                <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
+                  {col.label}
+                  {sortable && (
+                    <span className="inline-flex flex-col -space-y-1 opacity-40">
+                      <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
+                      <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
+                    </span>
+                  )}
+                </span>
+                {col.resizable !== false && col.label && (
+                  <ResizeHandle colId={col.id} onResizeStart={onResizeStart} onResize={onResize} />
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {isLoading && (
           <div>{[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className={`flex items-center gap-4 px-6 py-3 ${i % 2 === 0 ? 'bg-surface-sunken/50' : ''}`}>
+            <div key={i} className="flex items-center gap-4 px-5 py-3 border-b border-border/15">
               <Skeleton className="h-8 w-8 rounded-full" />
               <Skeleton className="h-4 flex-1 rounded-full" />
               <Skeleton className="h-4 w-20 rounded-full" />
@@ -339,7 +380,7 @@ function TiersRow({ tiers: t, columns, colWidths, index, onClick }: {
 }) {
   return (
     <div
-      className={`group flex items-center gap-4 px-6 py-3 hover:bg-primary/[0.04] cursor-pointer transition-colors duration-150 text-[13px] ${index % 2 === 1 ? 'bg-surface-sunken/50' : ''}`}
+      className="group flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 text-[13px]"
       onClick={onClick}
     >
       {columns.map((col) => {

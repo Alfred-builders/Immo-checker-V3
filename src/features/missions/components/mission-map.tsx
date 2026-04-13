@@ -172,10 +172,10 @@ export function MissionMap({ missions }: Props) {
     // Status tab config
     const statusTabs = [
       { key: 'all', label: 'Tout', color: '#6b7280' },
-      { key: 'planifiee', label: 'Planifiee', color: '#3b82f6' },
-      { key: 'assignee', label: 'Assignee', color: '#10b981' },
-      { key: 'terminee', label: 'Terminee', color: '#9ca3af' },
-      { key: 'annulee', label: 'Annulee', color: '#ef4444' },
+      { key: 'planifiee', label: 'Planifiée', color: '#3b82f6' },
+      { key: 'assignee', label: 'Assignée', color: '#10b981' },
+      { key: 'terminee', label: 'Terminée', color: '#9ca3af' },
+      { key: 'annulee', label: 'Annulée', color: '#ef4444' },
     ]
 
     // Sort missions: closest to today first
@@ -510,13 +510,13 @@ export function MissionMap({ missions }: Props) {
   if (!mapboxgl.accessToken) {
     return (
       <div className="border border-border/60 rounded-2xl h-[600px] flex items-center justify-center text-muted-foreground bg-muted/30">
-        <p className="text-sm">Token Mapbox non configure</p>
+        <p className="text-sm">Token Mapbox non configuré</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="relative">
         <div ref={mapContainer} className="h-[600px] w-full" />
         {!mapRef.current && (
@@ -542,7 +542,7 @@ export function MissionMap({ missions }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10b981' }} />
-            <span>Confirmee</span>
+            <span>Confirmée</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9ca3af' }} />

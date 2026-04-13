@@ -120,7 +120,7 @@ export function TemplatesPage() {
       {/* Empty state */}
       {!isLoading && (pieces ?? []).length === 0 && !search && (
         <div className="py-20 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
             <GridFour className="h-6 w-6 text-muted-foreground/50" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">Aucun type de piece</p>
@@ -136,7 +136,7 @@ export function TemplatesPage() {
 
         return (
           <Collapsible key={cat} open={isOpen} onOpenChange={() => toggleCollapse(cat)}>
-            <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+            <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
               {/* Group header */}
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center gap-3 px-5 py-4 hover:bg-accent/30 transition-colors duration-200">
@@ -247,7 +247,7 @@ export function TemplatesPage() {
       {/* Search no results */}
       {!isLoading && search && Object.values(grouped).every((g) => g.length === 0) && (
         <div className="py-16 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
             <MagnifyingGlass className="h-6 w-6 text-muted-foreground/50" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">Aucun resultat pour "{search}"</p>
@@ -329,7 +329,7 @@ function CreateEditPieceDialog({
 
           {!isEdit && (
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Categorie *</Label>
+              <Label className="text-xs text-muted-foreground">Catégorie *</Label>
               <Select value={categorie} onValueChange={(v) => setCategorie(v as CategoriePiece)}>
                 <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -359,7 +359,7 @@ function CreateEditPieceDialog({
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending && <SpinnerGap className="h-4 w-4 animate-spin mr-1.5" />}
-              {isEdit ? 'Enregistrer' : 'Creer'}
+              {isEdit ? 'Enregistrer' : 'Créer'}
             </Button>
           </DialogFooter>
         </form>

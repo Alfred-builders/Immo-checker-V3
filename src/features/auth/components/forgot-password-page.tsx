@@ -16,7 +16,10 @@ export function ForgotPasswordPage() {
     try {
       await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) })
       setSent(true)
-    } catch {}
+    } catch {
+      // Still show success (don't reveal if email exists) but log for debugging
+      setSent(true)
+    }
     setLoading(false)
   }
 

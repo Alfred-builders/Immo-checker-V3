@@ -18,6 +18,15 @@ import missionRoutes from './routes/missions.js'
 import edlRoutes, { missionEdlRouter } from './routes/edl.js'
 import indisponibiliteRoutes, { technicianConflictRouter } from './routes/indisponibilites.js'
 import dashboardRoutes from './routes/dashboard.js'
+import apiKeyRoutes from './routes/api-keys.js'
+import webhookRoutes from './routes/webhooks.js'
+import docsRouter from './routes/docs.js'
+import v1MissionsRouter from './routes/v1/missions.js'
+import v1EdlRouter from './routes/v1/edl.js'
+import v1LotsRouter from './routes/v1/lots.js'
+import v1BatimentsRouter from './routes/v1/batiments.js'
+import { verifyApiKey } from './middleware/api-key-auth.js'
+import rateLimit from 'express-rate-limit'
 import { AppError } from './utils/errors.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -62,6 +71,23 @@ app.use('/api/edl', edlRoutes)
 app.use('/api/indisponibilites', indisponibiliteRoutes)
 app.use('/api/technicians', technicianConflictRouter)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/api-keys', apiKeyRoutes)
+app.use('/api/webhooks', webhookRoutes)
+app.use('/api/docs', docsRouter)
+
+// ── Public API v1 (API key auth + rate limit) ──
+const apiV1Limit = rateLimit({
+  windowMs: 60_000,
+  max: 100,
+  keyGenerator: (req) => (req.headers.authorization as string) || (req.ip ?? 'unknown'),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes', code: 'RATE_LIMIT' },
+})
+app.use('/api/v1/missions', verifyApiKey, apiV1Limit, v1MissionsRouter)
+app.use('/api/v1/edl-inventaires', verifyApiKey, apiV1Limit, v1EdlRouter)
+app.use('/api/v1/lots', verifyApiKey, apiV1Limit, v1LotsRouter)
+app.use('/api/v1/batiments', verifyApiKey, apiV1Limit, v1BatimentsRouter)
 
 // Serve frontend (always in non-dev — Railway, staging, production)
 if (!isDev) {

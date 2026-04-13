@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Sprint 1-3 Deep Audit v2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',system-ui,sans-serif;background:#fafaf9;color:#1c1917}.section{scroll-margin-top:72px}table{width:100%;border-collapse:collapse}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #e7e5e4;font-size:12px}th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#a8a29e;background:#f5f5f0}.b{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:700}.bg{background:#dcfce7;color:#15803d}.by{background:#fef9c3;color:#a16207}.br{background:#fee2e2;color:#b91c1c}.bb{background:#dbeafe;color:#1d4ed8}.bo{background:#ffedd5;color:#c2410c}</style>
+</head>
+<body class="antialiased">
+
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-200/40 px-8 py-3">
+<div class="max-w-6xl mx-auto flex items-center gap-6">
+<span class="text-sm font-bold tracking-tight">Sprint 1-3 Deep Audit — 13 avril 2026</span>
+<div class="flex gap-1 ml-auto text-xs">
+<a href="#forms" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Formulaires</a>
+<a href="#pages" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Pages</a>
+<a href="#incoherences" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Incoherences</a>
+<a href="#bugs" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Bugs</a>
+<a href="#plan" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Plan</a>
+</div>
+</div>
+</nav>
+
+<div class="max-w-6xl mx-auto pt-20 pb-20 px-6 space-y-16">
+
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight mb-2">Audit exhaustif Sprints 1-3</h1>
+<p class="text-sm text-stone-500 mb-6">13 formulaires, 7 pages detail, 3 tableaux — testes champ par champ</p>
+<div class="grid grid-cols-4 gap-3">
+<div class="bg-red-50 rounded-2xl p-4 border border-red-200/50 text-center"><div class="text-3xl font-extrabold text-red-700">5</div><div class="text-[10px] font-bold text-red-600">BUGS CRITIQUES</div></div>
+<div class="bg-orange-50 rounded-2xl p-4 border border-orange-200/50 text-center"><div class="text-3xl font-extrabold text-orange-700">12</div><div class="text-[10px] font-bold text-orange-600">INCOHERENCES</div></div>
+<div class="bg-amber-50 rounded-2xl p-4 border border-amber-200/50 text-center"><div class="text-3xl font-extrabold text-amber-700">18</div><div class="text-[10px] font-bold text-amber-600">VALIDATIONS MANQUANTES</div></div>
+<div class="bg-sky-50 rounded-2xl p-4 border border-sky-200/50 text-center"><div class="text-3xl font-extrabold text-sky-700">8</div><div class="text-[10px] font-bold text-sky-600">UX A AMELIORER</div></div>
+</div>
+</div>
+
+<!-- FORMS -->
+<section id="forms" class="section">
+<h2 class="text-2xl font-extrabold mb-6">Formulaires — Audit champ par champ</h2>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden mb-6">
+<table>
+<thead><tr><th>Formulaire</th><th>Sprint</th><th>Champs</th><th>Validation</th><th>Problemes</th></tr></thead>
+<tbody>
+<tr><td class="font-semibold">Login</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b by">Faible</span></td><td class="text-xs text-stone-500">Pas de validation email regex, pas de feedback champ par champ</td></tr>
+<tr><td class="font-semibold">Register</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Pas de trim nom/prenom, pas de feedback temps reel regles password</td></tr>
+<tr><td class="font-semibold">Forgot password</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">Pattern securite correct (ne revele pas si email existe)</td></tr>
+<tr><td class="font-semibold">Reset password</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b by">Faible</span></td><td class="text-xs text-stone-500">Validation sequentielle (un seul message a la fois), pas de feedback temps reel</td></tr>
+<tr><td class="font-semibold">Creer batiment</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Pas de validation adresse obligatoire, nb_etages accepte negatifs, annee non validee</td></tr>
+<tr><td class="font-semibold">Creer lot</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b by">Faible</span></td><td class="text-xs text-stone-500">Surface sans min/max, DPE/GES independants, pas de validation dependances chauffage/eau</td></tr>
+<tr><td class="font-semibold">Import CSV</td><td>1</td><td><span class="b bg">OK</span></td><td><span class="b br">Critique</span></td><td class="text-xs text-red-600 font-semibold">Import lots non supporte, pas de rollback sur echec partiel, pas de detection doublons</td></tr>
+<tr><td class="font-semibold">Creer tiers</td><td>2</td><td><span class="b bg">OK</span></td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">SIREN valide, trim ajoute, procuration present — bon</td></tr>
+<tr><td class="font-semibold">Parametres workspace</td><td>2</td><td><span class="b bg">OK</span></td><td><span class="b by">Faible</span></td><td class="text-xs text-stone-500">SIRET non valide (14 chiffres), couleur hex non validee, logo sans verif contenu</td></tr>
+<tr><td class="font-semibold">Invitations</td><td>2</td><td><span class="b bg">OK</span></td><td><span class="b by">Faible</span></td><td class="text-xs text-stone-500">Pas de detection doublon email, email format HTML5 seul</td></tr>
+<tr><td class="font-semibold">Creer mission</td><td>3</td><td><span class="b bg">OK</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Time validation heureFin &lt;= au lieu de &lt;, pas de validation date passee, type bail non obligatoire visuellement</td></tr>
+<tr><td class="font-semibold">Annuler mission</td><td>3</td><td><span class="b bg">OK</span></td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">Motif requis, bloque si terminee — conforme</td></tr>
+<tr><td class="font-semibold">Indisponibilite</td><td>3</td><td><span class="b bg">OK</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Recurrence count=0 accepte, jours weekly non valides, heure fin non validee</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- PAGES -->
+<section id="pages" class="section">
+<h2 class="text-2xl font-extrabold mb-6">Pages detail & tableaux — Audit</h2>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden mb-6">
+<table>
+<thead><tr><th>Page</th><th>Sprint</th><th>Edit mode</th><th>Data refresh</th><th>Problemes</th></tr></thead>
+<tbody>
+<tr><td class="font-semibold">Batiment detail</td><td>1</td><td><span class="b bg">FloatingSaveBar</span></td><td><span class="b br">KO</span></td><td class="text-xs text-red-600">Suppression adresse sans confirmation, layout 2 cols non responsive</td></tr>
+<tr><td class="font-semibold">Lot detail</td><td>1</td><td><span class="b bg">FloatingSaveBar</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Unlink proprio sans confirmation, archive dit "desactive" mais editable</td></tr>
+<tr><td class="font-semibold">Tiers detail</td><td>2</td><td><span class="b bg">FloatingSaveBar</span></td><td><span class="b bo">Partiel</span></td><td class="text-xs text-stone-500">Pas de validation edit (nom vide accepte), loading async sections</td></tr>
+<tr><td class="font-semibold">Mission detail</td><td>3</td><td><span class="b bg">FloatingSaveBar</span></td><td><span class="b br">KO</span></td><td class="text-xs text-red-600">Champs editables meme si terminee (UI), form reset si mission refetch, cle save sans feedback</td></tr>
+<tr><td class="font-semibold">Patrimoine table</td><td>1</td><td>—</td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">Debounce hook bugge, filtres client-side (pas server-side)</td></tr>
+<tr><td class="font-semibold">Tiers table</td><td>2</td><td>—</td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">Pas de filtre archive, tri ajoute maintenant</td></tr>
+<tr><td class="font-semibold">Missions table</td><td>3</td><td>—</td><td><span class="b bg">OK</span></td><td class="text-xs text-stone-500">Tri client-side (devrait etre server-side pour gros volumes)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- INCOHERENCES -->
+<section id="incoherences" class="section">
+<h2 class="text-2xl font-extrabold mb-6">Incoherences entre composants</h2>
+
+<div class="space-y-3">
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">1. Marquage champs requis</h4>
+<p class="text-xs text-stone-600">Certains formulaires utilisent *, d'autres s'appuient uniquement sur l'attribut HTML required. Pas de pattern visuel consistant.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">2. Affichage erreurs</h4>
+<p class="text-xs text-stone-600">Auth : alert boxes. Modals creation : toast uniquement. Settings : toast. Pas de messages d'erreur au niveau champ nulle part.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">3. Trim des champs texte</h4>
+<p class="text-xs text-stone-600">Creer tiers : trim ajoute. Register : pas de trim. Creer batiment : pas de trim. Inconsistant.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">4. Validation email</h4>
+<p class="text-xs text-stone-600">HTML5 type="email" partout mais pas de regex validation. Accepte des formats invalides.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">5. Validation telephone</h4>
+<p class="text-xs text-stone-600">Aucune validation de format nulle part. Accepte n'importe quel texte.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">6. Confirmation actions destructives</h4>
+<p class="text-xs text-stone-600">Annulation mission : confirmation. Unlink proprio : pas de confirmation. Suppression adresse : pas de confirmation. Delete indispo : confirmation. Inconsistant.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">7. Loading states boutons</h4>
+<p class="text-xs text-stone-600">Login : texte change + disabled. Creer mission : disabled seul. Creer tiers : pas de loading visible. Devrait etre consistant.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">8. Empty state icone</h4>
+<p class="text-xs text-stone-600">Patrimoine : rounded-2xl. Tiers : rounded-full. Missions : rounded-full. Devrait etre un seul pattern.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">9. Edit mode pages detail</h4>
+<p class="text-xs text-stone-600">Toutes les pages utilisent FloatingSaveBar maintenant — BIEN. Mais mission detail permet encore de modifier des champs en mode terminee cote UI.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">10. Data refresh apres mutations</h4>
+<p class="text-xs text-stone-600">Building : pas d'invalidation apres address mutation. Mission : pas d'invalidation apres assign tech / update cle. Tiers : pas d'invalidation orga link.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">11. Section collapse non persistee</h4>
+<p class="text-xs text-stone-600">Mission/tiers detail : sections collapsibles remises a defaut au reload. Devrait sauver dans localStorage.</p>
+</div>
+<div class="bg-white rounded-xl border border-stone-200/60 p-4">
+<h4 class="text-xs font-bold text-orange-700 mb-1">12. Responsive breakpoints</h4>
+<p class="text-xs text-stone-600">Building detail : grid-cols-2 sans breakpoint mobile. Patrimoine table : colonnes overflow sur mobile.</p>
+</div>
+</div>
+</section>
+
+<!-- BUGS -->
+<section id="bugs" class="section">
+<h2 class="text-2xl font-extrabold mb-6">5 Bugs critiques</h2>
+
+<div class="space-y-3">
+<div class="bg-red-50 rounded-xl border border-red-200/60 p-4">
+<h4 class="text-sm font-bold text-red-800">1. Mission terminee editable cote UI</h4>
+<p class="text-xs text-red-700 mt-1">mission-detail-page.tsx — Les champs planning (date, heure, statut_rdv) sont modifiables meme quand isTerminated=true. Le backend rejette mais l'UI ne bloque pas. L'utilisateur croit pouvoir modifier.</p>
+<p class="text-[10px] text-red-500 mt-1">Fix: Desactiver les inputs quand isLocked=true (disabled prop)</p>
+</div>
+<div class="bg-red-50 rounded-xl border border-red-200/60 p-4">
+<h4 class="text-sm font-bold text-red-800">2. Form reset sur refetch mission</h4>
+<p class="text-xs text-red-700 mt-1">mission-detail-page.tsx:89 — useEffect([mission, editing]) sync le form a chaque changement de mission. Si l'API refetch pendant que l'user edite, ses modifs sont ecrasees sans warning.</p>
+<p class="text-[10px] text-red-500 mt-1">Fix: Ajouter un dirty flag, ne pas sync si le form a ete modifie</p>
+</div>
+<div class="bg-red-50 rounded-xl border border-red-200/60 p-4">
+<h4 class="text-sm font-bold text-red-800">3. Import CSV sans rollback</h4>
+<p class="text-xs text-red-700 mt-1">import-csv-modal.tsx — Si la ligne 5 echoue, les lignes 1-4 sont deja commitees en base. Pas de transaction. Peut creer des batiments orphelins.</p>
+<p class="text-[10px] text-red-500 mt-1">Fix: Utiliser une transaction backend ou un batch insert atomique</p>
+</div>
+<div class="bg-red-50 rounded-xl border border-red-200/60 p-4">
+<h4 class="text-sm font-bold text-red-800">4. Debounce hook patrimoine bugge</h4>
+<p class="text-xs text-red-700 mt-1">patrimoine-page.tsx:87 — useDebounce utilise useState de facon incorrecte (mutation synchrone dans le render). Peut causer des race conditions sur la recherche.</p>
+<p class="text-[10px] text-red-500 mt-1">Fix: Reimplementer avec useEffect + setTimeout classique</p>
+</div>
+<div class="bg-red-50 rounded-xl border border-red-200/60 p-4">
+<h4 class="text-sm font-bold text-red-800">5. Indisponibilite recurrence count=0</h4>
+<p class="text-xs text-red-700 mt-1">unavailability-modal.tsx — Le champ count accepte 0 ou negatif. Cree une recurrence infinie ou invalide cote backend.</p>
+<p class="text-[10px] text-red-500 mt-1">Fix: Ajouter min="1" et validation count > 0 avant submit</p>
+</div>
+</div>
+</section>
+
+<!-- PLAN -->
+<section id="plan" class="section">
+<h2 class="text-2xl font-extrabold mb-6">Plan d'amelioration prioritise</h2>
+
+<div class="space-y-4">
+
+<div class="bg-white rounded-2xl border border-red-200/60 p-5">
+<h3 class="text-sm font-bold text-red-800 mb-3">Priorite 1 — Bugs critiques <span class="b br">URGENT</span></h3>
+<table>
+<thead><tr><th>Bug</th><th>Fichier</th><th>Fix</th><th>Effort</th></tr></thead>
+<tbody>
+<tr><td class="text-xs">Mission terminee editable</td><td class="text-xs font-mono">mission-detail-page.tsx</td><td class="text-xs">Ajouter disabled={isLocked} sur tous les inputs planning</td><td><span class="b bg">30min</span></td></tr>
+<tr><td class="text-xs">Form reset sur refetch</td><td class="text-xs font-mono">mission-detail-page.tsx</td><td class="text-xs">Dirty flag: ne pas sync useEffect si hasEdits=true</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">CSV sans rollback</td><td class="text-xs font-mono">import-csv-modal.tsx + backend</td><td class="text-xs">Batch insert dans une transaction PostgreSQL</td><td><span class="b bo">3h</span></td></tr>
+<tr><td class="text-xs">Debounce bugge</td><td class="text-xs font-mono">patrimoine-page.tsx</td><td class="text-xs">Reimplementer avec useEffect + setTimeout</td><td><span class="b bg">30min</span></td></tr>
+<tr><td class="text-xs">Recurrence count=0</td><td class="text-xs font-mono">unavailability-modal.tsx</td><td class="text-xs">min="1" + validation count > 0</td><td><span class="b bg">15min</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="bg-white rounded-2xl border border-orange-200/60 p-5">
+<h3 class="text-sm font-bold text-orange-800 mb-3">Priorite 2 — Incoherences a harmoniser <span class="b bo">IMPORTANT</span></h3>
+<table>
+<thead><tr><th>Incoherence</th><th>Fix</th><th>Effort</th></tr></thead>
+<tbody>
+<tr><td class="text-xs">Marquage requis inconsistant</td><td class="text-xs">Ajouter un composant RequiredLabel reutilisable avec asterisque rouge</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Erreurs toast-only</td><td class="text-xs">Ajouter validation inline (border rouge + message sous le champ) sur les champs requis</td><td><span class="b bo">4h</span></td></tr>
+<tr><td class="text-xs">Trim inconsistant</td><td class="text-xs">Ajouter .trim() sur tous les champs texte dans tous les handleSubmit</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Confirmation actions destructives</td><td class="text-xs">Alert dialog avant unlink proprio, suppression adresse, unlink orga</td><td><span class="b by">2h</span></td></tr>
+<tr><td class="text-xs">Data refresh mutations</td><td class="text-xs">Ajouter queryClient.invalidateQueries apres assign tech, update cle, link orga</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Empty state icon shape</td><td class="text-xs">Standardiser sur rounded-full partout</td><td><span class="b bg">15min</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="bg-white rounded-2xl border border-amber-200/60 p-5">
+<h3 class="text-sm font-bold text-amber-800 mb-3">Priorite 3 — Validations manquantes <span class="b by">MOYEN</span></h3>
+<table>
+<thead><tr><th>Validation</th><th>Formulaire(s)</th><th>Effort</th></tr></thead>
+<tbody>
+<tr><td class="text-xs">Email regex (pas juste HTML5)</td><td class="text-xs">Login, register, forgot, tiers, invitations</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Telephone format FR</td><td class="text-xs">Tiers, parametres</td><td><span class="b bg">30min</span></td></tr>
+<tr><td class="text-xs">SIRET 14 chiffres</td><td class="text-xs">Parametres workspace</td><td><span class="b bg">15min</span></td></tr>
+<tr><td class="text-xs">Nb etages >= 0</td><td class="text-xs">Creer batiment</td><td><span class="b bg">10min</span></td></tr>
+<tr><td class="text-xs">Annee construction realiste</td><td class="text-xs">Creer batiment</td><td><span class="b bg">10min</span></td></tr>
+<tr><td class="text-xs">Surface min/max</td><td class="text-xs">Creer lot</td><td><span class="b bg">10min</span></td></tr>
+<tr><td class="text-xs">Date pas dans le passe</td><td class="text-xs">Creer mission, indisponibilite</td><td><span class="b bg">15min</span></td></tr>
+<tr><td class="text-xs">Heure fin > debut (strict)</td><td class="text-xs">Creer mission, indisponibilite</td><td><span class="b bg">10min</span></td></tr>
+<tr><td class="text-xs">Recurrence jours requis</td><td class="text-xs">Indisponibilite (weekly/biweekly)</td><td><span class="b bg">15min</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="bg-white rounded-2xl border border-sky-200/60 p-5">
+<h3 class="text-sm font-bold text-sky-800 mb-3">Priorite 4 — UX ameliorations <span class="b bb">NICE</span></h3>
+<table>
+<thead><tr><th>Amelioration</th><th>Impact</th><th>Effort</th></tr></thead>
+<tbody>
+<tr><td class="text-xs">Feedback temps reel regles password (register/reset)</td><td class="text-xs">Fort — users frustres par erreurs post-submit</td><td><span class="b by">2h</span></td></tr>
+<tr><td class="text-xs">Persist section collapse dans localStorage</td><td class="text-xs">Moyen — preferences perdues au reload</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Responsive building detail (grid breakpoint)</td><td class="text-xs">Moyen — casse sur tablette</td><td><span class="b bg">15min</span></td></tr>
+<tr><td class="text-xs">Loading indicators infinite scroll</td><td class="text-xs">Faible — users attendent sans feedback</td><td><span class="b bg">30min</span></td></tr>
+<tr><td class="text-xs">Persist column widths localStorage</td><td class="text-xs">Faible — preferences perdues</td><td><span class="b by">1h</span></td></tr>
+<tr><td class="text-xs">Filtre archive sur tiers</td><td class="text-xs">Moyen — pas de filtre actuel</td><td><span class="b bg">30min</span></td></tr>
+<tr><td class="text-xs">Tooltip sur boutons unlink (accessibilite)</td><td class="text-xs">Faible — hover-only discovery</td><td><span class="b bg">15min</span></td></tr>
+<tr><td class="text-xs">Aide contextuelle recurrence (help text)</td><td class="text-xs">Moyen — users ne comprennent pas les options</td><td><span class="b bg">30min</span></td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+
+<div class="mt-8 bg-green-50 rounded-xl border border-green-200/60 p-5">
+<h3 class="text-sm font-bold text-green-800 mb-2">Effort total estime</h3>
+<div class="grid grid-cols-4 gap-4 text-center">
+<div><div class="text-2xl font-extrabold text-red-700">~5h</div><div class="text-[10px] text-red-600">Bugs critiques</div></div>
+<div><div class="text-2xl font-extrabold text-orange-700">~9h</div><div class="text-[10px] text-orange-600">Incoherences</div></div>
+<div><div class="text-2xl font-extrabold text-amber-700">~3h</div><div class="text-[10px] text-amber-600">Validations</div></div>
+<div><div class="text-2xl font-extrabold text-sky-700">~6h</div><div class="text-[10px] text-sky-600">UX</div></div>
+</div>
+<p class="text-xs text-green-600 mt-3 text-center font-semibold">Total : ~23h de corrections pour atteindre la qualite production</p>
+</div>
+</section>
+
+<div class="text-center pt-8 border-t border-stone-200/60">
+<p class="text-xs text-stone-400">Audit genere le 13 avril 2026 — 13 formulaires, 7 pages, 3 tableaux analyses</p>
+</div>
+
+</div>
+</body>
+</html>

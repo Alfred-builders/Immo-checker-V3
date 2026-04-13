@@ -71,7 +71,7 @@ router.get('/current', async (req, res) => {
 router.patch('/current', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const allowedFields = ['nom', 'siret', 'email', 'telephone', 'adresse', 'code_postal', 'ville', 'logo_url', 'couleur_primaire']
+    const allowedFields = ['nom', 'siret', 'email', 'telephone', 'adresse', 'code_postal', 'ville', 'logo_url', 'couleur_primaire', 'couleur_fond', 'fond_style']
 
     const fields: string[] = []
     const values: unknown[] = []

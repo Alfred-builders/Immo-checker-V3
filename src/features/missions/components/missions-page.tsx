@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  MagnifyingGlass, Plus, List, GridFour, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank,
+  MagnifyingGlass, Plus, List, GridFour, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown,
 } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
@@ -15,6 +15,7 @@ import {
 } from 'src/components/ui/tooltip'
 import { useMissions, useMissionStats, useWorkspaceTechnicians } from '../api'
 import { ColumnConfig, useColumnPreferences, type ColumnDef } from 'src/components/shared/column-config'
+import { ResizeHandle, useResizableColumns } from 'src/components/shared/resizable-columns'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { CreateMissionModal } from './create-mission-modal'
 import { MissionKanban } from './mission-kanban'
@@ -111,17 +112,53 @@ export function MissionsPage() {
 
   const missions = missionsData?.data ?? []
   const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('missions_list', MISSION_COLUMNS)
+  const { colWidths, onResizeStart, onResize } = useResizableColumns({
+    reference: 120, lot: 220, date: 110, types: 130, technicien: 140, statut: 110, statut_rdv: 90, invitation: 90, created_at: 90,
+  })
 
   // Reset display count on filter changes
   useEffect(() => {
     setDisplayCount(BATCH_SIZE)
   }, [search, period, techFilter, statutFilter, pendingFilter])
 
+  // Sort state
+  const [sortCol, setSortCol] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  function handleSort(col: string) {
+    if (sortCol === col) {
+      if (sortDir === 'asc') setSortDir('desc')
+      else { setSortCol(null); setSortDir('asc') }
+    } else {
+      setSortCol(col)
+      setSortDir('asc')
+    }
+  }
+
+  const sortedMissions = useMemo(() => {
+    if (!sortCol) return missions
+    return [...missions].sort((a, b) => {
+      let av = '', bv = ''
+      switch (sortCol) {
+        case 'reference': av = a.reference; bv = b.reference; break
+        case 'lot': av = a.lot_designation || ''; bv = b.lot_designation || ''; break
+        case 'date': av = a.date_planifiee || ''; bv = b.date_planifiee || ''; break
+        case 'statut': av = a.statut; bv = b.statut; break
+        case 'technicien': av = a.technicien ? `${a.technicien.prenom} ${a.technicien.nom}` : ''; bv = b.technicien ? `${b.technicien.prenom} ${b.technicien.nom}` : ''; break
+        case 'statut_rdv': av = a.statut_rdv || ''; bv = b.statut_rdv || ''; break
+        case 'created_at': av = a.created_at || ''; bv = b.created_at || ''; break
+        default: return 0
+      }
+      const cmp = av.localeCompare(bv, 'fr', { numeric: true })
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [missions, sortCol, sortDir])
+
   const displayedMissions = useMemo(
-    () => missions.slice(0, displayCount),
-    [missions, displayCount]
+    () => sortedMissions.slice(0, displayCount),
+    [sortedMissions, displayCount]
   )
-  const hasMore = displayCount < missions.length
+  const hasMore = displayCount < sortedMissions.length
 
   // Infinite scroll
   useEffect(() => {
@@ -207,7 +244,7 @@ export function MissionsPage() {
         {/* Quick filters */}
         <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
           <SelectTrigger className="h-10 w-[150px] text-sm">
-            <SelectValue placeholder="Periode" />
+            <SelectValue placeholder="Période" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tout</SelectItem>
@@ -257,65 +294,78 @@ export function MissionsPage() {
 
       {/* Table view */}
       {view === 'table' && (
-        <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
-          {/* Table header */}
-          <div className="flex items-center gap-4 px-6 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none bg-surface-sunken">
-            <div className="w-5 shrink-0" /> {/* pending dot space */}
-            {isCol('reference') && <div className="w-[110px] shrink-0">Reference</div>}
-            {isCol('lot') && <div className="flex-1 min-w-[180px]">Lot / Adresse</div>}
-            {isCol('date') && <div className="w-[100px] shrink-0">Date</div>}
-            {isCol('types') && <div className="w-[140px] shrink-0">Type(s)</div>}
-            {isCol('technicien') && <div className="w-[140px] shrink-0">Technicien</div>}
-            {isCol('statut') && <div className="w-[110px] shrink-0">Statut</div>}
-            {isCol('statut_rdv') && <div className="w-[100px] shrink-0">RDV</div>}
-            {isCol('invitation') && <div className="w-[100px] shrink-0">Invitation</div>}
-            {isCol('created_at') && <div className="w-[90px] shrink-0">Créée le</div>}
-          </div>
-
-          {/* Loading skeleton */}
-          {isLoading && (
-            <div>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className={`flex items-center gap-4 px-6 py-3 ${i % 2 === 0 ? 'bg-surface-sunken/50' : ''}`}>
-                  <div className="w-5" />
-                  <Skeleton className="h-4 w-20 rounded-full" />
-                  <Skeleton className="h-4 flex-1 rounded-full" />
-                  <Skeleton className="h-4 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
+        <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border/30 group/thead bg-muted/20">
+                <th className="w-[3%] px-2 py-3.5" />
+                {isCol('reference') && <MissionTh col="reference" label="Référence" w={colWidths.reference} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="reference" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('lot') && <MissionTh col="lot" label="Lot / Adresse" w={colWidths.lot} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="lot" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('date') && <MissionTh col="date" label="Date" w={colWidths.date} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="date" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('types') && <MissionTh col="" label="Type(s)" w={colWidths.types} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="types" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('technicien') && <MissionTh col="technicien" label="Technicien" w={colWidths.technicien} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="technicien" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('statut') && <MissionTh col="statut" label="Statut" w={colWidths.statut} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('statut_rdv') && <MissionTh col="statut_rdv" label="RDV" w={colWidths.statut_rdv} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut_rdv" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('invitation') && <MissionTh col="" label="Invitation" w={colWidths.invitation} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="invitation" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('created_at') && <MissionTh col="created_at" label="Créée le" w={colWidths.created_at} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="created_at" onResizeStart={onResizeStart} onResize={onResize} last />}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Loading */}
+              {isLoading && [1,2,3,4,5,6].map(i => (
+                <tr key={i} className="border-b border-border/20">
+                  <td className="px-2 py-3" /><td colSpan={9} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
+                </tr>
               ))}
-            </div>
-          )}
 
-          {/* Empty state */}
-          {!isLoading && missions.length === 0 && (
-            <div className="py-20 text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
-                <ClipboardText className="h-6 w-6 text-muted-foreground/50" />
-              </div>
-              <p className="text-sm font-semibold text-muted-foreground">
-                {search || statutFilter !== 'all' || techFilter !== 'all' || pendingFilter
-                  ? 'Aucune mission trouvee'
-                  : 'Aucune mission planifiee'}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {search || statutFilter !== 'all' || techFilter !== 'all' || pendingFilter
-                  ? 'Essayez avec d\'autres critères'
-                  : 'Créez votre première mission d\'intervention'}
-              </p>
-            </div>
-          )}
+              {/* Empty */}
+              {!isLoading && missions.length === 0 && (
+                <tr><td colSpan={10} className="py-20 text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
+                    <ClipboardText className="h-6 w-6 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {search || statutFilter !== 'all' || pendingFilter ? 'Aucune mission trouvée' : 'Aucune mission planifiée'}
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    {search || statutFilter !== 'all' || pendingFilter ? 'Essayez avec d\'autres critères' : 'Créez votre première mission'}
+                  </p>
+                </td></tr>
+              )}
 
-          {/* Rows */}
-          {!isLoading && displayedMissions.map((mission, idx) => (
-            <MissionRow
-              key={mission.id}
-              mission={mission}
-              visibleCols={visibleCols}
-              index={idx}
-              onClick={() => navigate(`/app/missions/${mission.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference }] } })}
-            />
-          ))}
+              {/* Rows */}
+              {!isLoading && displayedMissions.map((mission) => {
+                const pending = getPendingActions(mission)
+                const techName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
+                return (
+                  <tr
+                    key={mission.id}
+                    className="border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 group"
+                    onClick={() => navigate(`/app/missions/${mission.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference }] } })}
+                  >
+                    <td className="px-2 py-3 text-center">
+                      {pending.length > 0 && (
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                          <div className="w-2 h-2 rounded-full bg-orange-500 mx-auto" />
+                        </TooltipTrigger><TooltipContent side="right" className="text-xs">
+                          {pending.map((a, i) => <div key={i}>{a}</div>)}
+                        </TooltipContent></Tooltip></TooltipProvider>
+                      )}
+                    </td>
+                    {isCol('reference') && <td className="px-3 py-3 font-mono text-[13px] font-medium text-foreground group-hover:text-primary transition-colors truncate">{mission.reference}</td>}
+                    {isCol('lot') && <td className="px-3 py-3 truncate"><div className="text-[13px] font-medium text-foreground truncate">{mission.lot_designation}</div><div className="text-xs text-muted-foreground/50 truncate">{mission.adresse || mission.batiment_designation}</div></td>}
+                    {isCol('date') && <td className="px-3 py-3 text-[13px] text-muted-foreground">{formatDate(mission.date_planifiee)}{mission.heure_debut && <div className="text-xs text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}</td>}
+                    {isCol('types') && <td className="px-3 py-3"><div className="flex flex-wrap gap-1">{mission.edl_types.map(t => <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>{t === 'entree' || t === 'sortie' ? sensLabels[t as 'entree' | 'sortie'] : 'Inv.'}</span>)}</div></td>}
+                    {isCol('technicien') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate">{techName || <span className="text-muted-foreground/30">—</span>}</td>}
+                    {isCol('statut') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${missionStatutColors[mission.statut]}`}>{missionStatutLabels[mission.statut]}</span></td>}
+                    {isCol('statut_rdv') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutRdvLabels[mission.statut_rdv]}</span></td>}
+                    {isCol('invitation') && <td className="px-3 py-3">{mission.technicien ? <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
+                    {isCol('created_at') && <td className="px-3 py-3 text-[13px] text-muted-foreground/50">{formatDate(mission.created_at)}</td>}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
 
           {/* Infinite scroll sentinel */}
           {!isLoading && hasMore && (
@@ -324,7 +374,6 @@ export function MissionsPage() {
             </div>
           )}
 
-          {/* End of list */}
           {!isLoading && !hasMore && missions.length > BATCH_SIZE && (
             <div className="py-3.5 text-center text-xs text-muted-foreground/40">
               {missions.length} mission{missions.length > 1 ? 's' : ''}
@@ -351,162 +400,29 @@ export function MissionsPage() {
   )
 }
 
-/* ---- Mission Row ---- */
-function MissionRow({
-  mission,
-  visibleCols,
-  index,
-  onClick,
-}: {
-  mission: Mission
-  visibleCols: string[]
-  index: number
-  onClick: () => void
+/* ── Table header cell with separator + sort arrows ── */
+function MissionTh({ col, label, w, sortable = true, last, sortCol, sortDir, onSort, colId, onResizeStart, onResize }: {
+  col: string; label: string; w: number; sortable?: boolean; last?: boolean
+  sortCol: string | null; sortDir: 'asc' | 'desc'; onSort: (col: string) => void
+  colId: string; onResizeStart: () => void; onResize: (id: string, delta: number) => void
 }) {
-  const isCol = (id: string) => visibleCols.includes(id)
-  const pendingActions = getPendingActions(mission)
-  const hasPending = pendingActions.length > 0
-  const techName = mission.technicien
-    ? `${mission.technicien.prenom} ${mission.technicien.nom}`
-    : null
-
+  const isActive = sortCol === col && sortable
   return (
-    <div
-      className={`flex items-center gap-4 px-6 py-3 hover:bg-primary/[0.04] transition-colors duration-150 cursor-pointer group ${index % 2 === 1 ? 'bg-surface-sunken/50' : ''}`}
-      onClick={onClick}
+    <th
+      className={`text-left font-medium text-xs text-muted-foreground px-3 py-3.5 relative select-none transition-colors ${sortable ? 'cursor-pointer hover:text-foreground' : ''}`}
+      style={{ width: w, minWidth: 40 }}
+      onClick={() => sortable && col && onSort(col)}
     >
-      {/* Pending indicator */}
-      <div className="w-5 shrink-0 flex items-center justify-center">
-        {hasPending && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs">
-                {pendingActions.map((a, i) => (
-                  <div key={i}>{a}</div>
-                ))}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
+        {label}
+        {sortable && (
+          <span className="inline-flex flex-col -space-y-1 opacity-40">
+            <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
+            <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
+          </span>
         )}
-      </div>
-
-      {/* Reference */}
-      {isCol('reference') && (
-        <div className="w-[110px] shrink-0">
-          <span className="font-mono text-[13px] font-medium text-foreground group-hover:text-primary transition-colors duration-200">
-            {mission.reference}
-          </span>
-        </div>
-      )}
-
-      {/* Lot + Address */}
-      {isCol('lot') && (
-        <div className="flex-1 min-w-[180px]">
-          <p className="text-[13px] font-medium text-foreground truncate">{mission.lot_designation}</p>
-          <p className="text-xs text-muted-foreground/60 truncate">
-            {mission.batiment_designation}{mission.adresse ? ` - ${mission.adresse}` : ''}
-          </p>
-        </div>
-      )}
-
-      {/* Date */}
-      {isCol('date') && (
-        <div className="w-[100px] shrink-0 text-[13px] text-muted-foreground">
-          <div>{formatDate(mission.date_planifiee)}</div>
-          {mission.heure_debut && (
-            <div className="text-xs text-muted-foreground/50">
-              {formatTime(mission.heure_debut)}
-              {mission.heure_fin ? ` - ${formatTime(mission.heure_fin)}` : ''}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Type(s) */}
-      {isCol('types') && (
-        <div className="w-[140px] shrink-0 flex flex-wrap gap-1">
-          {mission.edl_types.map((type) => {
-            if (type === 'entree' || type === 'sortie') {
-              return (
-                <span
-                  key={type}
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${sensColors[type as 'entree' | 'sortie']}`}
-                >
-                  {sensLabels[type as 'entree' | 'sortie']}
-                </span>
-              )
-            }
-            return (
-              <span
-                key={type}
-                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
-              >
-                Inventaire
-              </span>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Technicien */}
-      {isCol('technicien') && (
-        <div className="w-[140px] shrink-0 text-[13px] text-muted-foreground truncate">
-          {techName || <span className="text-muted-foreground/30">Non assigne</span>}
-        </div>
-      )}
-
-      {/* Statut mission */}
-      {isCol('statut') && (
-        <div className="w-[110px] shrink-0">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${missionStatutColors[mission.statut]}`}>
-            {missionStatutLabels[mission.statut]}
-          </span>
-        </div>
-      )}
-
-      {/* Statut RDV */}
-      {isCol('statut_rdv') && (
-        <div className="w-[100px] shrink-0">
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-            mission.statut_rdv === 'confirme'
-              ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-              : mission.statut_rdv === 'reporte'
-                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-          }`}>
-            {statutRdvLabels[mission.statut_rdv]}
-          </span>
-        </div>
-      )}
-
-      {/* Invitation */}
-      {isCol('invitation') && (
-        <div className="w-[100px] shrink-0">
-          {mission.technicien ? (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-              mission.technicien.statut_invitation === 'accepte'
-                ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                : mission.technicien.statut_invitation === 'refuse'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-            }`}>
-              {statutInvitationLabels[mission.technicien.statut_invitation]}
-            </span>
-          ) : (
-            <span className="text-muted-foreground/30 text-xs">--</span>
-          )}
-        </div>
-      )}
-
-      {/* Created at */}
-      {isCol('created_at') && (
-        <div className="w-[90px] shrink-0 text-[13px] text-muted-foreground/60">
-          {formatDate(mission.created_at)}
-        </div>
-      )}
-    </div>
+      </span>
+      {!last && <ResizeHandle colId={colId} onResizeStart={onResizeStart} onResize={onResize} />}
+    </th>
   )
 }

@@ -22,14 +22,14 @@ export function MapStyleSwitcher({ currentStyle, onChange }: Props) {
     <div className="absolute top-3 left-3 z-10">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-border/60 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground shadow-elevation-raised hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-1.5 bg-card/95 backdrop-blur-sm border border-border/60 rounded-lg px-2.5 py-1.5 text-xs font-medium text-foreground shadow-elevation-raised hover:bg-muted/50 transition-colors"
         title="Changer le style de carte"
       >
         <Map className="h-3.5 w-3.5" />
         <span>{MAP_STYLES.find(s => s.id === currentStyle)?.label}</span>
       </button>
       {open && (
-        <div className="mt-1.5 bg-white/95 backdrop-blur-sm border border-border/60 rounded-lg shadow-elevation-overlay overflow-hidden">
+        <div className="mt-1.5 bg-card/95 backdrop-blur-sm border border-border/60 rounded-lg shadow-elevation-overlay overflow-hidden">
           {MAP_STYLES.map((s) => {
             const Icon = s.icon
             const isActive = currentStyle === s.id

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Component, useEffect, type ReactNode, type ErrorInfo } from 'react'
 import { AuthProvider, useAuth } from './hooks/use-auth'
 import { AuthLayout } from './layouts/auth-layout'
 import { MainLayout } from './layouts/main-layout'
@@ -57,7 +58,7 @@ function AppRoutes() {
 
       {/* Protected routes */}
       <Route element={<RequireAuth><MainLayout /></RequireAuth>}>
-        <Route path="/app/dashboard" element={<DashboardPage />} />
+        <Route path="/app/dashboard" element={<PageErrorBoundary><DashboardPage /></PageErrorBoundary>} />
         <Route path="/app/patrimoine" element={<PatrimoinePage />} />
         <Route path="/app/patrimoine/batiments/:id" element={<BuildingDetailPage />} />
         <Route path="/app/patrimoine/lots/:id" element={<LotDetailPage />} />
@@ -79,7 +80,47 @@ function AppRoutes() {
   )
 }
 
+class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state: { error: Error | null } = { error: null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('Page crash:', error, info) }
+  render() {
+    if (this.state.error) return (
+      <div className="px-8 py-20 text-center">
+        <p className="text-sm font-semibold text-destructive mb-2">Cette page a rencontre une erreur</p>
+        <p className="text-xs text-muted-foreground mb-4">{this.state.error.message}</p>
+        <button onClick={() => this.setState({ error: null })} className="text-xs text-primary hover:underline">Reessayer</button>
+      </div>
+    )
+    return this.props.children
+  }
+}
+
 export function App() {
+  useEffect(() => {
+    const timers = new Map<EventTarget, ReturnType<typeof setTimeout>>()
+
+    const handleScroll = (e: Event) => {
+      const target = e.target
+      if (!target || !(target instanceof Element)) return
+      target.classList.add('is-scrolling')
+      const existing = timers.get(target)
+      if (existing) clearTimeout(existing)
+      const timer = setTimeout(() => {
+        target.classList.remove('is-scrolling')
+        timers.delete(target)
+      }, 800)
+      timers.set(target, timer)
+    }
+
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll, { capture: true })
+      timers.forEach((timer) => clearTimeout(timer))
+      timers.clear()
+    }
+  }, [])
+
   return (
     <AuthProvider>
       <AppRoutes />

@@ -28,7 +28,7 @@ export function LoginPage() {
           state: { workspaces: result.workspaces, user: result.user },
         })
       } else {
-        navigate('/app/patrimoine')
+        navigate('/app/dashboard')
       }
     } catch (err: any) {
       setError(err.message || 'Email ou mot de passe incorrect')
@@ -50,7 +50,7 @@ export function LoginPage() {
       </div>
 
       {error && (
-        <div className="mb-5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2.5">
+        <div role="alert" className="mb-5 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2.5">
           <div className="h-1.5 w-1.5 rounded-full bg-destructive flex-shrink-0" />
           {error}
         </div>

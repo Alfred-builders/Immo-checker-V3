@@ -13,7 +13,7 @@
   --sidebar-accent-foreground: oklch(0.2050 0.005 80);
   --sidebar-border: oklch(0.9400 0.005 80);
   --sidebar-ring: oklch(0.7080 0 0);
-  --background: oklch(0.9850 0.004 80);
+  --background: oklch(0.9820 0.006 85);
   --foreground: oklch(0.1600 0.005 80);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.1600 0.005 80);
@@ -33,7 +33,7 @@
   --input: oklch(0.9550 0.003 80);
   --ring: oklch(0.5500 0.1800 260);
   --chart-1: oklch(0.7200 0.1200 260);
-  --chart-2: oklch(0.6500 0.1600 290);
+  --chart-2: oklch(0.7000 0.1400 195);
   --chart-3: oklch(0.7000 0.1400 160);
   --chart-4: oklch(0.7500 0.1200 50);
   --chart-5: oklch(0.6000 0.1800 340);
@@ -85,10 +85,11 @@
   --surface-raised-hovered: oklch(0.9700 0.004 80);
   --surface-overlay-hovered: oklch(0.9700 0.004 80);
   /* Shadows (paired with surfaces — never use alone) */
-  --shadow-elevation-raised: 0 1px 3px -1px hsl(0 0% 0% / 0.04), 0 1px 2px -1px hsl(0 0% 0% / 0.03);
-  --shadow-elevation-raised-hover: 0 4px 12px -2px hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.04);
-  --shadow-elevation-overlay: 0 8px 24px -4px hsl(0 0% 0% / 0.10), 0 2px 6px -1px hsl(0 0% 0% / 0.05);
-  --shadow-elevation-floating: 0 16px 48px -8px hsl(0 0% 0% / 0.12), 0 4px 12px -2px hsl(0 0% 0% / 0.06);
+  --shadow-elevation-raised: 0 1px 2px 0 hsl(0 0% 0% / 0.04), 0 1px 3px 0 hsl(0 0% 0% / 0.06);
+  --shadow-elevation-raised-hover: 0 3px 8px -2px hsl(0 0% 0% / 0.10), 0 1px 3px 0 hsl(0 0% 0% / 0.06);
+  --shadow-elevation-overlay: 0 4px 16px -2px hsl(0 0% 0% / 0.12), 0 1px 4px 0 hsl(0 0% 0% / 0.06);
+  --shadow-elevation-floating: 0 8px 32px -4px hsl(0 0% 0% / 0.16), 0 2px 8px 0 hsl(0 0% 0% / 0.06);
+  --shadow-elevation-overflow: 0 2px 8px 0 hsl(0 0% 0% / 0.08);
 }
 
 .dark {
@@ -120,7 +121,7 @@
   --input: oklch(0.2800 0.005 80);
   --ring: oklch(0.7200 0.1400 260);
   --chart-1: oklch(0.7200 0.1200 260);
-  --chart-2: oklch(0.6500 0.1600 290);
+  --chart-2: oklch(0.7000 0.1400 195);
   --chart-3: oklch(0.7000 0.1400 160);
   --chart-4: oklch(0.7500 0.1200 50);
   --chart-5: oklch(0.6000 0.1800 340);
@@ -154,10 +155,11 @@
   --surface-pressed: oklch(0.2500 0.005 80);
   --surface-raised-hovered: oklch(0.2100 0.004 80);
   --surface-overlay-hovered: oklch(0.2600 0.004 80);
-  --shadow-elevation-raised: 0 1px 3px -1px hsl(0 0% 0% / 0.20), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
-  --shadow-elevation-raised-hover: 0 4px 12px -2px hsl(0 0% 0% / 0.30), 0 2px 4px -1px hsl(0 0% 0% / 0.15);
-  --shadow-elevation-overlay: 0 8px 24px -4px hsl(0 0% 0% / 0.35), 0 2px 6px -1px hsl(0 0% 0% / 0.20);
-  --shadow-elevation-floating: 0 16px 48px -8px hsl(0 0% 0% / 0.45), 0 4px 12px -2px hsl(0 0% 0% / 0.25);
+  --shadow-elevation-raised: 0 1px 2px 0 hsl(0 0% 0% / 0.15), 0 1px 3px 0 hsl(0 0% 0% / 0.20);
+  --shadow-elevation-raised-hover: 0 3px 8px -2px hsl(0 0% 0% / 0.25), 0 1px 3px 0 hsl(0 0% 0% / 0.15);
+  --shadow-elevation-overlay: 0 4px 16px -2px hsl(0 0% 0% / 0.35), 0 1px 4px 0 hsl(0 0% 0% / 0.20);
+  --shadow-elevation-floating: 0 8px 32px -4px hsl(0 0% 0% / 0.45), 0 2px 8px 0 hsl(0 0% 0% / 0.25);
+  --shadow-elevation-overflow: 0 2px 8px 0 hsl(0 0% 0% / 0.20);
 }
 
 @theme inline {
@@ -234,6 +236,7 @@
   --shadow-elevation-raised-hover: var(--shadow-elevation-raised-hover);
   --shadow-elevation-overlay: var(--shadow-elevation-overlay);
   --shadow-elevation-floating: var(--shadow-elevation-floating);
+  --shadow-elevation-overflow: var(--shadow-elevation-overflow);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -247,10 +250,38 @@
   body {
     font-family: var(--font-sans);
     background-color: var(--color-background);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 0%, color-mix(in oklch, var(--primary) 3%, transparent), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 100%, color-mix(in oklch, var(--primary) 2%, transparent), transparent);
     color: var(--color-foreground);
     letter-spacing: var(--tracking-normal);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 0%, color-mix(in oklch, var(--primary) 5%, transparent), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 100%, color-mix(in oklch, var(--primary) 3%, transparent), transparent);
+  }
+
+  /* Background modes — controlled by data-fond attribute on body */
+  body[data-fond="plat"] {
+    background-image: none !important;
+  }
+
+  body[data-fond="gradient"] {
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 0%, color-mix(in oklch, var(--primary) 3%, transparent), transparent),
+      radial-gradient(ellipse 60% 40% at 90% 100%, color-mix(in oklch, var(--primary) 2%, transparent), transparent) !important;
+  }
+
+  body[data-fond="mesh"] {
+    background-image:
+      radial-gradient(ellipse 60% 50% at 0% 0%, color-mix(in oklch, var(--primary) 6%, transparent), transparent),
+      radial-gradient(ellipse 50% 40% at 100% 20%, color-mix(in oklch, var(--primary) 4%, transparent), transparent),
+      radial-gradient(ellipse 40% 50% at 50% 100%, color-mix(in oklch, var(--primary) 3%, transparent), transparent) !important;
   }
 
   code, pre, kbd {
@@ -260,40 +291,31 @@
 
 /* ── Modern form controls ── */
 
-/* Default state — very light border */
-[data-slot="input"],
-[data-slot="select-trigger"] {
-  border-color: var(--border) !important;
-  box-shadow: none !important;
+/* Input hover — subtle brightness shift */
+[data-slot="input"]:hover:not(:focus-visible):not(:disabled) {
+  background-color: color-mix(in oklch, var(--muted) 55%, transparent) !important;
 }
 
-/* Hover — slightly more visible */
-[data-slot="input"]:hover:not(:focus-visible):not(:disabled),
-[data-slot="select-trigger"]:hover:not([data-state="open"]):not(:disabled) {
-  border-color: oklch(0.88 0.006 80) !important;
+/* Search inputs (with pl-9/pl-10) — elevation style */
+[data-slot="input"][class*="pl-9"],
+[data-slot="input"][class*="pl-10"] {
+  border: 0 !important;
+  background-color: var(--card) !important;
+  box-shadow: var(--shadow-elevation-raised) !important;
 }
-
-/* Focus / Open — soft primary glow */
-[data-slot="input"]:focus-visible,
-[data-slot="select-trigger"][data-state="open"],
-[data-slot="select-trigger"]:focus-visible {
-  border-color: var(--ring) !important;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 12%, transparent) !important;
-  --tw-ring-shadow: 0 0 0 0 transparent !important;
+[data-slot="input"][class*="pl-9"]:hover,
+[data-slot="input"][class*="pl-10"]:hover {
+  box-shadow: var(--shadow-elevation-raised-hover) !important;
+}
+[data-slot="input"][class*="pl-9"]:focus-visible,
+[data-slot="input"][class*="pl-10"]:focus-visible {
+  box-shadow: var(--shadow-elevation-raised-hover), 0 0 0 2px color-mix(in oklch, var(--ring) 12%, transparent) !important;
   background-color: var(--card) !important;
 }
 
-/* Dropdown / popover content — soft border */
-[data-slot="select-content"],
-[data-slot="popover-content"],
-[data-slot="dropdown-menu-content"] {
-  border-color: var(--border) !important;
-}
-
-/* Dark mode overrides */
-.dark [data-slot="input"]:hover:not(:focus-visible):not(:disabled),
-.dark [data-slot="select-trigger"]:hover:not([data-state="open"]):not(:disabled) {
-  border-color: oklch(0.35 0.006 80) !important;
+/* Select trigger open state */
+[data-slot="select-trigger"][data-state="open"] {
+  box-shadow: var(--shadow-elevation-raised-hover), 0 0 0 2px color-mix(in oklch, var(--ring) 12%, transparent) !important;
 }
 
 /* ── Resizable columns ── */
@@ -368,6 +390,35 @@
 .card-hover {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Scrollbar — 4 px, transparent au repos, visible pendant le scroll ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.is-scrolling {
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground) 28%, transparent) transparent;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 99px;
+}
+.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--muted-foreground) 28%, transparent);
+}
+.is-scrolling::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+}
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-elevation-raised-hover);
@@ -390,22 +441,6 @@ button, a, input, select, textarea, [role="tab"], [role="tabpanel"] {
 
 .group:hover {
   transition: background-color 0.15s ease;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: oklch(0.7080 0 0);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5560 0 0);
 }
 
 /* ── Elevation composite utilities ── */

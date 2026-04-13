@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Sprint Audit Complet</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',system-ui,sans-serif;background:#fafaf9;color:#1c1917}.section{scroll-margin-top:72px}table{width:100%;border-collapse:collapse}th,td{padding:10px 14px;text-align:left;border-bottom:1px solid #e7e5e4;font-size:13px}th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#a8a29e;background:#f5f5f0}.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:700}.b-green{background:#dcfce7;color:#15803d}.b-yellow{background:#fef9c3;color:#a16207}.b-red{background:#fee2e2;color:#b91c1c}.b-blue{background:#dbeafe;color:#1d4ed8}.b-gray{background:#f3f4f6;color:#6b7280}.progress{height:8px;border-radius:9999px;background:#e7e5e4;overflow:hidden}.progress-bar{height:100%;border-radius:9999px;transition:width 0.5s}</style>
+</head>
+<body class="antialiased">
+
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-stone-200/50 px-8 py-3">
+<div class="max-w-6xl mx-auto flex items-center gap-6">
+<span class="text-sm font-extrabold tracking-tight">Sprint Audit — 13 avril 2026</span>
+<div class="flex gap-1 ml-auto text-xs">
+<a href="#s1" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Sprint 1</a>
+<a href="#s2" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Sprint 2</a>
+<a href="#s3" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Sprint 3</a>
+<a href="#s4" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Sprint 4</a>
+<a href="#next" class="px-3 py-1 rounded-lg text-stone-500 hover:bg-stone-100">Actions</a>
+</div>
+</div>
+</nav>
+
+<div class="max-w-6xl mx-auto pt-20 pb-20 px-6 space-y-16">
+
+<!-- Overview -->
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight mb-2">Audit Complet par Sprint</h1>
+<p class="text-sm text-stone-500 mb-8">Comparaison code vs specs Notion — chaque US auditee avec statut precis</p>
+
+<div class="grid grid-cols-4 gap-4 mb-8">
+<div class="bg-white rounded-2xl p-5 border border-stone-200/60">
+<div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-stone-400">SPRINT 1</span><span class="badge b-green">93%</span></div>
+<div class="progress"><div class="progress-bar bg-green-500" style="width:93%"></div></div>
+<p class="text-[10px] text-stone-400 mt-2">13/14 US done — 1 partielle</p>
+</div>
+<div class="bg-white rounded-2xl p-5 border border-stone-200/60">
+<div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-stone-400">SPRINT 2</span><span class="badge b-green">95%</span></div>
+<div class="progress"><div class="progress-bar bg-green-500" style="width:95%"></div></div>
+<p class="text-[10px] text-stone-400 mt-2">15/16 US done — 1 V2 (archivage froid)</p>
+</div>
+<div class="bg-white rounded-2xl p-5 border border-stone-200/60">
+<div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-stone-400">SPRINT 3</span><span class="badge b-green">90%</span></div>
+<div class="progress"><div class="progress-bar bg-green-500" style="width:90%"></div></div>
+<p class="text-[10px] text-stone-400 mt-2">10/11 US done — detail page gaps</p>
+</div>
+<div class="bg-white rounded-2xl p-5 border border-stone-200/60">
+<div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-stone-400">SPRINT 4</span><span class="badge b-blue">85%</span></div>
+<div class="progress"><div class="progress-bar bg-sky-500" style="width:85%"></div></div>
+<p class="text-[10px] text-stone-400 mt-2">6/6 US done — manque indispos calendrier + revalidation drawer</p>
+</div>
+</div>
+</div>
+
+<!-- SPRINT 1 -->
+<section id="s1" class="section">
+<h2 class="text-2xl font-extrabold tracking-tight mb-1">Sprint 1 — Fondations + Parc immobilier</h2>
+<p class="text-xs text-stone-400 mb-6">14 US • EPIC 11 (partiel) + EPIC 1 + EPIC 16 (socle)</p>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>US</th><th>Titre</th><th>Statut</th><th>Manquant</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">577</td><td>Creer workspace avec type profil</td><td><span class="badge b-yellow">PARTIEL</span></td><td class="text-xs text-stone-500">API OK, pas de page UI pour creation standalone (invitation-only)</td></tr>
+<tr><td class="font-mono text-xs">578</td><td>Auth JWT</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Complet : JWT 30min + refresh 7j + lockout 10/15min</td></tr>
+<tr><td class="font-mono text-xs">580</td><td>Inviter un utilisateur</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Token 7j, email Resend, acceptance</td></tr>
+<tr><td class="font-mono text-xs">581</td><td>Isolation workspace</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">workspace_id sur toutes les queries</td></tr>
+<tr><td class="font-mono text-xs">583</td><td>Creer un batiment</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">+ adresses multiples + geocoding</td></tr>
+<tr><td class="font-mono text-xs">584</td><td>Creer un lot</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Tous les champs (DPE, surface, chauffage...)</td></tr>
+<tr><td class="font-mono text-xs">585</td><td>Maison = 1 batiment + 1 lot</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">onMaisonCreated callback chain</td></tr>
+<tr><td class="font-mono text-xs">586</td><td>Lister/filtrer/rechercher parc</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Search + type filter + dynamic filters + vue carte</td></tr>
+<tr><td class="font-mono text-xs">609</td><td>Fiche detail lot</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Proprietaires, mandataire, adresse</td></tr>
+<tr><td class="font-mono text-xs">610</td><td>Fiche detail batiment</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Lots, adresses, stats</td></tr>
+<tr><td class="font-mono text-xs">824</td><td>Archiver batiment/lot</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Soft delete + validation missions actives</td></tr>
+<tr><td class="font-mono text-xs">843</td><td>Import CSV</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Upload → mapping → preview → execute</td></tr>
+<tr><td class="font-mono text-xs">817</td><td>Colonnes configurables</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">ColumnConfig + UserPreference</td></tr>
+<tr><td class="font-mono text-xs">818</td><td>Filtres dynamiques Notion</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">DynamicFilter AND-only, multi-champs</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- SPRINT 2 -->
+<section id="s2" class="section">
+<h2 class="text-2xl font-extrabold tracking-tight mb-1">Sprint 2 — Tiers + Templates + Parametres</h2>
+<p class="text-xs text-stone-400 mb-6">16 US • EPIC 2 + EPIC 4 + EPIC 11 (fin)</p>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>US</th><th>Titre</th><th>Statut</th><th>Manquant</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">588</td><td>Creer tiers (PP/PM)</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Modal + toggle PP/PM + validation SIREN</td></tr>
+<tr><td class="font-mono text-xs">589</td><td>TiersOrganisation (PP ↔ PM)</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Bidirectionnel, fonction, est_principal, type validation</td></tr>
+<tr><td class="font-mono text-xs">590</td><td>Lier proprietaires (indivision)</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">lot_proprietaire pivot + est_principal</td></tr>
+<tr><td class="font-mono text-xs">591</td><td>Lier mandataire</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">FK directe lot.mandataire_id</td></tr>
+<tr><td class="font-mono text-xs">592</td><td>Rechercher tiers</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Search nom/prenom/RS/email/tel + filtre role + type</td></tr>
+<tr><td class="font-mono text-xs">593</td><td>MAJ / archiver tiers</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Edit + soft delete + validation EDL/missions actifs</td></tr>
+<tr><td class="font-mono text-xs">806</td><td>Fiche proprietaire</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Lots, missions, organisations</td></tr>
+<tr><td class="font-mono text-xs">807</td><td>Fiche locataire</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Lots lies, historique EDL, missions</td></tr>
+<tr><td class="font-mono text-xs">808</td><td>Onglets tiers + colonnes</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">4 onglets, colonnes specifiques, mandataire masque agence</td></tr>
+<tr><td class="font-mono text-xs">809</td><td>Fiche mandataire</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">RS, lots gestion, contacts, missions</td></tr>
+<tr><td class="font-mono text-xs">832</td><td>CRUD TypePiece</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">6 categories, icon, source plateforme/workspace</td></tr>
+<tr><td class="font-mono text-xs">833</td><td>Items par piece</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">TemplatePieceItem CRUD + ordre</td></tr>
+<tr><td class="font-mono text-xs">834</td><td>Criteres d'exigence</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Matrice 8 criteres × 4 niveaux + overrides</td></tr>
+<tr><td class="font-mono text-xs">835</td><td>Catalogue items</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">CRUD + parent/child + valeurs referentiel</td></tr>
+<tr><td class="font-mono text-xs">810</td><td>Page Parametres</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">General + users + invitations + templates + catalogue</td></tr>
+<tr><td class="font-mono text-xs">582</td><td>Archivage froid</td><td><span class="badge b-gray">V2</span></td><td class="text-xs text-stone-400">V1 = tout en hot storage (correct par spec)</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- SPRINT 3 -->
+<section id="s3" class="section">
+<h2 class="text-2xl font-extrabold tracking-tight mb-1">Sprint 3 — Missions & Planification</h2>
+<p class="text-xs text-stone-400 mb-6">12 US • EPIC 13</p>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>US</th><th>Titre</th><th>Statut</th><th>Manquant</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">594</td><td>Creer mission</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Lot picker, sens, inventaire, locataires, bail, date, tech, comment</td></tr>
+<tr><td class="font-mono text-xs">595</td><td>Assigner technicien</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Dropdown + invitation tracking + statut_invitation</td></tr>
+<tr><td class="font-mono text-xs">597</td><td>Planning missions filtres</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Table + kanban + calendrier + carte + filtres</td></tr>
+<tr><td class="font-mono text-xs">811</td><td>Page detail mission</td><td><span class="badge b-yellow">90%</span></td><td class="text-xs text-red-600">Manque: historique/timeline actions, liens PDF legal dans EDL docs</td></tr>
+<tr><td class="font-mono text-xs">812</td><td>Vue Kanban</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">4 colonnes, cards riches, sans drag&drop</td></tr>
+<tr><td class="font-mono text-xs">813</td><td>Vue carte Mapbox</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Clustering, popups, legende, switcher style</td></tr>
+<tr><td class="font-mono text-xs">814</td><td>Stat cards missions</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Total, today, pending, upcoming</td></tr>
+<tr><td class="font-mono text-xs">822</td><td>Gestion cles (CleMission)</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">CRUD statut + lieu depot + transition validee</td></tr>
+<tr><td class="font-mono text-xs">823</td><td>Indisponibilites technicien</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">CRUD + recurrence + journee entiere + creneaux</td></tr>
+<tr><td class="font-mono text-xs">825</td><td>Annuler mission</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Motif obligatoire + bloque si terminee</td></tr>
+<tr><td class="font-mono text-xs">827</td><td>Warning conflit planning</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Detection conflits missions + indispos par tech</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="mt-4 bg-amber-50 rounded-xl border border-amber-200/60 p-4">
+<h4 class="text-xs font-bold text-amber-800 mb-2">Ecarts Sprint 3 a corriger</h4>
+<ul class="space-y-1 text-xs text-amber-700">
+<li>• <strong>US-811</strong>: Ajouter section "Historique" avec timeline des changements statut/tech/dates</li>
+<li>• <strong>US-811</strong>: Ajouter liens PDF legal + Web legal dans la section Documents EDL (url_pdf_legal, url_web_legal)</li>
+</ul>
+</div>
+</section>
+
+<!-- SPRINT 4 -->
+<section id="s4" class="section">
+<h2 class="text-2xl font-extrabold tracking-tight mb-1">Sprint 4 — Dashboard Admin</h2>
+<p class="text-xs text-stone-400 mb-6">6 US • EPIC 14</p>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 overflow-hidden">
+<table>
+<thead><tr><th>US</th><th>Titre</th><th>Statut</th><th>Manquant</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">837</td><td>Stat cards</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">4 cards: aujourd'hui, actions, a venir, terminees mois</td></tr>
+<tr><td class="font-mono text-xs">838</td><td>Calendrier semaine</td><td><span class="badge b-yellow">85%</span></td><td class="text-xs text-red-600">Manque: plages grisees indisponibilites + popup au clic indispo</td></tr>
+<tr><td class="font-mono text-xs">839</td><td>Mini calendrier mensuel</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Pastilles, clic jour → modal, lien tableau missions</td></tr>
+<tr><td class="font-mono text-xs">840</td><td>Bouton "+"</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">Choice mission/indispo, date prefill, reutilise modals existants</td></tr>
+<tr><td class="font-mono text-xs">841</td><td>Bloc actions en attente</td><td><span class="badge b-green">FAIT</span></td><td class="text-xs text-stone-400">3 types actions, tags colores, click → drawer</td></tr>
+<tr><td class="font-mono text-xs">842</td><td>Drawer lateral</td><td><span class="badge b-yellow">90%</span></td><td class="text-xs text-red-600">Manque: revalidation dialog dans le drawer (existe dans detail page)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="mt-4 bg-sky-50 rounded-xl border border-sky-200/60 p-4">
+<h4 class="text-xs font-bold text-sky-800 mb-2">Ecarts Sprint 4 a corriger</h4>
+<ul class="space-y-1 text-xs text-sky-700">
+<li>• <strong>US-838</strong>: Remettre l'affichage des indisponibilites dans le calendrier (code retire car crash API — besoin restart backend)</li>
+<li>• <strong>US-838</strong>: Popup au clic sur une indispo (nom, dates, motif, modifier/supprimer)</li>
+<li>• <strong>US-838</strong>: Icone recurrence ↻ sur les indispos recurrentes</li>
+<li>• <strong>US-842</strong>: Ajouter le dialog de revalidation (date/heure change + tech accepte) dans le drawer</li>
+<li>• <strong>US-842</strong>: Locataires affiches dans la section EDL du drawer (nom + role entrant/sortant)</li>
+</ul>
+</div>
+</section>
+
+<!-- ACTIONS -->
+<section id="next" class="section">
+<h2 class="text-2xl font-extrabold tracking-tight mb-1">Plan d'action — Corrections restantes</h2>
+<p class="text-xs text-stone-400 mb-6">Toutes les corrections necessaires pour atteindre 100% sur chaque sprint</p>
+
+<div class="space-y-4">
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Sprint 1 — 1 correction <span class="badge b-yellow">Quick</span></h3>
+<table>
+<thead><tr><th>US</th><th>Action</th><th>Effort</th><th>Impact</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">577</td><td class="text-xs">Page creation workspace standalone (hors invitation)</td><td><span class="badge b-yellow">3h</span></td><td class="text-xs text-stone-500">Faible — seed/admin suffit pour V1</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Sprint 2 — 0 corrections <span class="badge b-green">Complete</span></h3>
+<p class="text-xs text-stone-400">US-582 (archivage froid) reporte V2 par spec. Tout le reste est fait.</p>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Sprint 3 — 2 corrections <span class="badge b-yellow">Moyen</span></h3>
+<table>
+<thead><tr><th>US</th><th>Action</th><th>Effort</th><th>Impact</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">811</td><td class="text-xs">Section "Historique" timeline (changements statut/tech/dates)</td><td><span class="badge b-yellow">4h</span></td><td class="text-xs text-stone-500">Moyen — audit trail pour gestionnaires</td></tr>
+<tr><td class="font-mono text-xs">811</td><td class="text-xs">Liens PDF legal + Web legal dans Documents EDL</td><td><span class="badge b-green">30min</span></td><td class="text-xs text-stone-500">Faible — champs existent dans le type, juste affichage</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="bg-white rounded-2xl border border-stone-200/60 p-5">
+<h3 class="text-sm font-bold mb-3">Sprint 4 — 5 corrections <span class="badge b-blue">Prioritaire</span></h3>
+<table>
+<thead><tr><th>US</th><th>Action</th><th>Effort</th><th>Impact</th></tr></thead>
+<tbody>
+<tr><td class="font-mono text-xs">838</td><td class="text-xs">Remettre indisponibilites dans calendrier (useIndisponibilites + render)</td><td><span class="badge b-yellow">2h</span></td><td class="text-xs text-red-600">Fort — spec core du calendrier</td></tr>
+<tr><td class="font-mono text-xs">838</td><td class="text-xs">Popup au clic indispo (Popover: nom, dates, motif, edit/delete)</td><td><span class="badge b-yellow">2h</span></td><td class="text-xs text-stone-500">Moyen</td></tr>
+<tr><td class="font-mono text-xs">838</td><td class="text-xs">Icone ↻ sur indispos recurrentes</td><td><span class="badge b-green">15min</span></td><td class="text-xs text-stone-500">Faible</td></tr>
+<tr><td class="font-mono text-xs">842</td><td class="text-xs">Revalidation dialog dans le drawer (copier pattern detail page)</td><td><span class="badge b-yellow">1h</span></td><td class="text-xs text-stone-500">Moyen — coherence UX</td></tr>
+<tr><td class="font-mono text-xs">842</td><td class="text-xs">Locataires dans section EDL du drawer</td><td><span class="badge b-green">30min</span></td><td class="text-xs text-stone-500">Faible — donnees deja dans API</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+
+<div class="mt-8 bg-green-50 rounded-xl border border-green-200/60 p-5">
+<h3 class="text-sm font-bold text-green-800 mb-2">Effort total restant</h3>
+<div class="grid grid-cols-4 gap-4">
+<div class="text-center"><div class="text-2xl font-extrabold text-green-700">~13h</div><div class="text-[10px] text-green-600">Total corrections</div></div>
+<div class="text-center"><div class="text-2xl font-extrabold text-green-700">8</div><div class="text-[10px] text-green-600">Corrections a faire</div></div>
+<div class="text-center"><div class="text-2xl font-extrabold text-green-700">91%</div><div class="text-[10px] text-green-600">Avancement global</div></div>
+<div class="text-center"><div class="text-2xl font-extrabold text-green-700">46/49</div><div class="text-[10px] text-green-600">US completees (hors Sprint 5)</div></div>
+</div>
+</div>
+</section>
+
+<div class="text-center pt-8 border-t border-stone-200/60">
+<p class="text-xs text-stone-400">Audit genere le 13 avril 2026 — Sprint 1-4 compares avec specs Notion</p>
+</div>
+
+</div>
+</body>
+</html>

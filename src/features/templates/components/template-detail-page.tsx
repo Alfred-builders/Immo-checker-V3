@@ -160,7 +160,7 @@ export function TemplateDetailPage() {
       {/* Empty state */}
       {!isLoading && filteredItems.length === 0 && (
         <div className="py-20 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
             <Package className="h-6 w-6 text-muted-foreground/50" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">
@@ -174,7 +174,7 @@ export function TemplateDetailPage() {
 
       {/* Grouped items */}
       {!isLoading && grouped.map(([cat, items]) => (
-        <div key={cat} className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+        <div key={cat} className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
           {/* Category header */}
           <div className="flex items-center gap-2.5 px-5 py-3.5 border-b border-border/60 bg-muted/30">
             <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${categorieColors[cat as CatalogueCategorie] || 'bg-muted text-muted-foreground'}`}>

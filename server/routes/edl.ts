@@ -5,6 +5,7 @@ import { verifyToken, requireRole } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
+import { dispatchWebhook } from '../services/webhook-service.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -136,6 +137,10 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
             `UPDATE mission SET statut = 'terminee', updated_at = now() WHERE id = $1 AND statut NOT IN ('terminee', 'annulee')`,
             [edl.mission_id]
           )
+          // Dispatch mission.terminee webhook (after commit)
+          setImmediate(() => dispatchWebhook(req.user!.workspaceId, 'mission.terminee', {
+            mission_id: edl.mission_id,
+          }))
         }
       }
 
@@ -145,6 +150,15 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
       throw err
     } finally {
       client.release()
+    }
+
+    // Dispatch edl.signe webhook
+    if (req.body.statut === 'signe') {
+      dispatchWebhook(req.user!.workspaceId, 'edl.signe', {
+        edl_id: req.params.id,
+        mission_id: edl.mission_id,
+        lot_id: edl.lot_id,
+      })
     }
 
     sendSuccess(res, edl)
@@ -257,6 +271,15 @@ router.patch('/:edlId/cles/:cleId', requireRole('admin', 'gestionnaire', 'techni
     )
 
     if (result.rows.length === 0) throw new NotFoundError('Cle')
+
+    // Dispatch cle.deposee webhook
+    if (req.body.statut === 'deposee') {
+      dispatchWebhook(req.user!.workspaceId, 'cle.deposee', {
+        cle_id: req.params.cleId,
+        edl_id: req.params.edlId,
+      })
+    }
+
     sendSuccess(res, result.rows[0])
   } catch (error) {
     sendError(res, error)

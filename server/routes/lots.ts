@@ -76,19 +76,31 @@ router.get('/:id', async (req, res) => {
       `SELECT l.*,
         (SELECT json_build_object('id', b.id, 'designation', b.designation, 'type', b.type)
          FROM batiment b WHERE b.id = l.batiment_id) as batiment,
+        (SELECT json_build_object('rue', ab.rue, 'complement', ab.complement, 'code_postal', ab.code_postal, 'ville', ab.ville)
+         FROM adresse_batiment ab WHERE ab.batiment_id = l.batiment_id AND ab.type = 'principale' LIMIT 1) as batiment_adresse,
         (SELECT json_agg(json_build_object(
           'id', t.id, 'nom', t.nom, 'prenom', t.prenom, 'type_personne', t.type_personne,
           'raison_sociale', t.raison_sociale, 'email', t.email, 'tel', t.tel, 'est_principal', lp.est_principal
         )) FROM lot_proprietaire lp JOIN tiers t ON t.id = lp.tiers_id WHERE lp.lot_id = l.id) as proprietaires,
         (SELECT json_build_object('id', t.id, 'nom', t.nom, 'prenom', t.prenom, 'raison_sociale', t.raison_sociale, 'email', t.email)
-         FROM tiers t WHERE t.id = l.mandataire_id) as mandataire
+         FROM tiers t WHERE t.id = l.mandataire_id) as mandataire,
+        (SELECT json_build_object('id', t.id, 'nom', t.nom, 'prenom', t.prenom, 'tel', t.tel, 'date_entree', ei.date_realisation)
+         FROM edl_locataire el
+         JOIN tiers t ON t.id = el.tiers_id
+         JOIN edl_inventaire ei ON ei.id = el.edl_id
+         WHERE ei.lot_id = l.id AND ei.sens = 'entree' AND ei.statut = 'signe'
+         ORDER BY ei.date_realisation DESC NULLS LAST, ei.created_at DESC
+         LIMIT 1) as dernier_locataire
       FROM lot l
       WHERE l.id = $1 AND l.workspace_id = $2`,
       [req.params.id, workspaceId]
     )
 
     if (result.rows.length === 0) throw new NotFoundError('Lot')
-    sendSuccess(res, result.rows[0])
+    const row = result.rows[0]
+    if (row.batiment && row.batiment_adresse) row.batiment.adresse = row.batiment_adresse
+    delete row.batiment_adresse
+    sendSuccess(res, row)
   } catch (error) {
     sendError(res, error)
   }

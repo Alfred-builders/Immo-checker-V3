@@ -58,9 +58,9 @@ export function EditLotForm({ lot, onSave, onCancel }: Props) {
           <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Appartement 201" required />
         </div>
 
-        {/* Reference interne */}
+        {/* Référence interne */}
         <div className="space-y-2">
-          <Label>Reference interne</Label>
+          <Label>Référence interne</Label>
           <Input value={referenceInterne} onChange={(e) => setReferenceInterne(e.target.value)} placeholder="REF-001" />
         </div>
 

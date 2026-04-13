@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Archive, ArrowCounterClockwise, Plus, PencilSimple, Warning, Trash } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
@@ -36,9 +36,17 @@ interface AddressForm {
 export function BuildingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showCreateLot, setShowCreateLot] = useState(false)
   const [editing, setEditing] = useState(false)
   const { data: batiment, isLoading } = useBatimentDetail(id)
+
+  // Auto-set breadcrumbs when data loads (survives page refresh)
+  useEffect(() => {
+    if (batiment?.designation && !(location.state as any)?.breadcrumbs) {
+      navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation }] } })
+    }
+  }, [batiment?.designation])
   const { data: lots } = useBatimentLots(id)
   const updateMutation = useUpdateBatiment()
   const updateAddr = useUpdateAddress()
@@ -448,7 +456,7 @@ function AddAddressDialog({ open, onOpenChange, batimentId, hasExistingAddresses
 
   async function handleSubmit() {
     if (!rue || !codePostal || !ville) {
-      toast.error('Veuillez selectionner une adresse')
+      toast.error('Veuillez sélectionner une adresse')
       return
     }
     setSaving(true)
@@ -463,7 +471,7 @@ function AddAddressDialog({ open, onOpenChange, batimentId, hasExistingAddresses
         latitude,
         longitude,
       })
-      toast.success('Adresse ajoutee')
+      toast.success('Adresse ajoutée')
       onAdded()
     } catch {
       toast.error('Erreur lors de l\'ajout')

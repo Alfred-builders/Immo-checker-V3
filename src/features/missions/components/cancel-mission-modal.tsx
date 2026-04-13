@@ -29,7 +29,7 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
 
     try {
       await cancelMission.mutateAsync({ id: missionId, motif: motif.trim() })
-      toast.success('Mission annulee')
+      toast.success('Mission annulée')
       setMotif('')
       onOpenChange(false)
     } catch (err: any) {

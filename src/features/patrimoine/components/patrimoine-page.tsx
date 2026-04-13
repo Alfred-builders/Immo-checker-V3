@@ -5,6 +5,7 @@ import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
+import { useQueryClient } from '@tanstack/react-query'
 import { useBatiments, useBatimentLots } from '../api'
 import { formatDate } from '../../../lib/formatters'
 import { useNavigate } from 'react-router-dom'
@@ -85,8 +86,10 @@ const SORTABLE_COLS: Set<string> = new Set(['designation', 'nb_lots', 'nb_etages
 
 function useDebounce(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value)
-  useState(() => { const t = setTimeout(() => setDebounced(value), delay); return () => clearTimeout(t) })
-  if (debounced !== value) setDebounced(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
   return debounced
 }
 
@@ -174,6 +177,7 @@ export function PatrimoinePage() {
 
   const debouncedSearch = useDebounce(search, 300)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('patrimoine_batiments', BATIMENT_COLUMNS)
 
   // Check if archive filter is active
@@ -245,7 +249,7 @@ export function PatrimoinePage() {
       <CreateBuildingModal
         open={showCreateBuilding}
         onOpenChange={setShowCreateBuilding}
-        onCreated={() => {}}
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ['batiments'] })}
         onMaisonCreated={(batId) => { setMaisonBatimentId(batId); setShowCreateLot(true) }}
       />
       <CreateLotModal
@@ -341,9 +345,9 @@ export function PatrimoinePage() {
 
       {/* Table view */}
       {view === 'table' && (
-        <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
           {/* Table header */}
-          <div className="flex items-center gap-4 px-6 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground select-none bg-surface-sunken">
+          <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
             <div className="w-7 shrink-0" />
             {isCol('designation') && (
               <SortableHeader colId="designation" label="Désignation" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.designation} onResizeStart={handleResizeStart} onResize={handleResize} />
@@ -383,7 +387,7 @@ export function PatrimoinePage() {
           {isLoading && (
             <div>
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className={`flex items-center gap-4 px-6 py-3 ${i % 2 === 0 ? 'bg-surface-sunken/50' : ''}`}>
+                <div key={i} className="flex items-center gap-4 px-5 py-3 border-b border-border/15">
                   <div className="w-7" />
                   <Skeleton className="h-4 flex-1 rounded-lg" />
                   <Skeleton className="h-4 w-20 rounded-lg" />
@@ -395,7 +399,7 @@ export function PatrimoinePage() {
 
           {!isLoading && filteredBatiments.length === 0 && (
             <div className="py-20 text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
                 <BuildingOffice className="h-6 w-6 text-muted-foreground/50" />
               </div>
               <p className="text-sm font-medium text-muted-foreground">
@@ -442,11 +446,11 @@ function SortableHeader({ colId, label, sortKey, sortDir, onSort, width, onResiz
       style={{ width, minWidth: 40 }}
       onClick={() => onSort(colId)}
     >
-      <span className={`inline-flex items-center gap-1 ${isActive ? 'text-foreground' : ''}`}>
+      <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
         {label}
-        <span className={`inline-flex flex-col -space-y-1.5 ${isActive ? 'opacity-100' : 'opacity-0 group-hover/sort:opacity-100'} transition-opacity`}>
-          <CaretUp className={`h-2 w-2 ${isActive && sortDir === 'asc' ? 'text-primary' : 'text-muted-foreground/30'}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
-          <CaretDown className={`h-2 w-2 ${isActive && sortDir === 'desc' ? 'text-primary' : 'text-muted-foreground/30'}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
+        <span className="inline-flex flex-col -space-y-1 opacity-40">
+          <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
+          <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
         </span>
       </span>
       <ResizeHandle colId={colId} onResizeStart={onResizeStart} onResize={onResize} />
@@ -465,7 +469,7 @@ function BatimentRow({ batiment, visibleCols, colWidths, index }: { batiment: Ba
   return (
     <div className="group/row">
       <div
-        className={`flex items-center gap-4 px-6 py-3 hover:bg-primary/[0.04] transition-colors duration-150 cursor-pointer ${index % 2 === 1 ? 'bg-surface-sunken/50' : ''}`}
+        className="flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150"
         onClick={() => navigate(`/app/patrimoine/batiments/${batiment.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation }] } })}
       >
         <button

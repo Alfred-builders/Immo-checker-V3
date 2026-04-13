@@ -46,6 +46,9 @@ export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCre
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!designation.trim()) { toast.error('Désignation requise'); return }
+    if (nbEtages && (isNaN(parseInt(nbEtages)) || parseInt(nbEtages) < 0)) { toast.error('Nombre d\'étages invalide'); return }
+    if (anneeConstruction && (isNaN(parseInt(anneeConstruction)) || parseInt(anneeConstruction) < 1800 || parseInt(anneeConstruction) > new Date().getFullYear() + 5)) { toast.error('Année de construction invalide'); return }
     try {
       const result = await createMutation.mutateAsync({
         designation,

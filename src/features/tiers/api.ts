@@ -47,6 +47,7 @@ export function useCreateTiers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tiers'] })
       queryClient.invalidateQueries({ queryKey: ['tiers-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['search-tiers'] })
     },
   })
 }

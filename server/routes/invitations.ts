@@ -8,10 +8,9 @@ import { ConflictError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
-router.use(requireRole('admin'))
 
-// GET /api/invitations — List workspace invitations
-router.get('/', async (req, res) => {
+// GET /api/invitations — List workspace invitations (admin only — settings page)
+router.get('/', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const result = await query(
@@ -29,17 +28,27 @@ router.get('/', async (req, res) => {
   }
 })
 
-// GET /api/invitations/users — List workspace users
-router.get('/users', async (req, res) => {
+// GET /api/invitations/users — List workspace users (admin + gestionnaire — needed for pickers)
+router.get('/users', requireRole('admin', 'gestionnaire'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const { role } = req.query as { role?: string }
+    const validRoles = ['admin', 'gestionnaire', 'technicien']
+
+    const params: unknown[] = [workspaceId]
+    let roleClause = ''
+    if (role && validRoles.includes(role)) {
+      params.push(role)
+      roleClause = `AND wu.role = $2`
+    }
+
     const result = await query(
       `SELECT u.id, u.email, u.nom, u.prenom, wu.role, wu.created_at
        FROM workspace_user wu
        JOIN utilisateur u ON u.id = wu.user_id
-       WHERE wu.workspace_id = $1
+       WHERE wu.workspace_id = $1 ${roleClause}
        ORDER BY wu.created_at DESC`,
-      [workspaceId]
+      params
     )
     sendSuccess(res, result.rows)
   } catch (error) {
@@ -47,13 +56,13 @@ router.get('/users', async (req, res) => {
   }
 })
 
-// POST /api/invitations — Send invitation
+// POST /api/invitations — Send invitation (admin only)
 const inviteSchema = z.object({
   email: z.email(),
   role: z.enum(['admin', 'gestionnaire', 'technicien']),
 })
 
-router.post('/', validate(inviteSchema), async (req, res) => {
+router.post('/', requireRole('admin'), validate(inviteSchema), async (req, res) => {
   try {
     const { workspaceId, userId } = req.user!
     const { email, role } = req.body
@@ -100,8 +109,8 @@ router.post('/', validate(inviteSchema), async (req, res) => {
   }
 })
 
-// PATCH /api/invitations/users/:userId/role — Change user role
-router.patch('/users/:userId/role', async (req, res) => {
+// PATCH /api/invitations/users/:userId/role — Change user role (admin only)
+router.patch('/users/:userId/role', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const { role } = req.body
@@ -128,8 +137,8 @@ router.patch('/users/:userId/role', async (req, res) => {
   }
 })
 
-// POST /api/invitations/:id/resend — Resend invitation (extend expiry + re-send email)
-router.post('/:id/resend', async (req, res) => {
+// POST /api/invitations/:id/resend — Resend invitation (admin only)
+router.post('/:id/resend', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -158,8 +167,8 @@ router.post('/:id/resend', async (req, res) => {
   }
 })
 
-// DELETE /api/invitations/:id — Cancel invitation
-router.delete('/:id', async (req, res) => {
+// DELETE /api/invitations/:id — Cancel invitation (admin only)
+router.delete('/:id', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const result = await query(

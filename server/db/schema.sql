@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS workspace (
   ville VARCHAR(255),
   logo_url TEXT,
   couleur_primaire VARCHAR(7), -- Hex color #RRGGBB
+  couleur_fond VARCHAR(7), -- Hex background color
+  fond_style VARCHAR(10) DEFAULT 'gradient' CHECK (fond_style IN ('plat', 'gradient', 'mesh')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -532,4 +534,57 @@ CREATE INDEX IF NOT EXISTS idx_mission_archive ON mission(est_archive) WHERE est
 -- Invitation
 CREATE INDEX IF NOT EXISTS idx_invitation_token ON invitation(token);
 CREATE INDEX IF NOT EXISTS idx_invitation_email ON invitation(email);
+CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_token(token_hash);
+
+-- ============================================================
+-- COUCHE 6 : API PUBLIQUE (EPIC 10)
+-- ============================================================
+
+-- API Keys par workspace
+CREATE TABLE IF NOT EXISTS api_key (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id  UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  name          VARCHAR(255) NOT NULL,
+  key_hash      VARCHAR(255) NOT NULL UNIQUE,   -- SHA-256 du token complet
+  key_prefix    VARCHAR(16)  NOT NULL,           -- ex: "imk_live_a3f2" (affiché en UI)
+  scope         VARCHAR(10)  NOT NULL DEFAULT 'write'
+                  CHECK (scope IN ('read', 'write')),
+  created_by    UUID NOT NULL REFERENCES utilisateur(id),
+  last_used_at  TIMESTAMPTZ,
+  expires_at    TIMESTAMPTZ,                     -- NULL = pas d'expiration
+  est_active    BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_api_key_hash      ON api_key(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_key_workspace ON api_key(workspace_id);
+
+-- Webhooks — configuration par workspace
+CREATE TABLE IF NOT EXISTS webhook_config (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  url          VARCHAR(2048) NOT NULL,
+  secret       VARCHAR(255)  NOT NULL,           -- stocké en clair (utilisé pour signer HMAC)
+  events       TEXT[]        NOT NULL DEFAULT '{}',
+  est_active   BOOLEAN       NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_config_workspace ON webhook_config(workspace_id);
+
+-- Webhooks — historique des livraisons
+CREATE TABLE IF NOT EXISTS webhook_delivery (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  webhook_id      UUID NOT NULL REFERENCES webhook_config(id) ON DELETE CASCADE,
+  event_type      VARCHAR(50) NOT NULL,
+  payload         JSONB       NOT NULL,
+  statut          VARCHAR(20) NOT NULL DEFAULT 'pending'
+                    CHECK (statut IN ('pending', 'success', 'failed', 'retrying')),
+  attempts        INT         NOT NULL DEFAULT 0,
+  last_attempt_at TIMESTAMPTZ,
+  response_code   INT,
+  response_body   TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_webhook_delivery_webhook ON webhook_delivery(webhook_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_delivery_status  ON webhook_delivery(statut, created_at);
 CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_token(token_hash);

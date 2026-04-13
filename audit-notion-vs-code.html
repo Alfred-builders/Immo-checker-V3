@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Audit Notion vs Code</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #222232;
+    --border: #2a2a3a;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --text-muted: #555568;
+    --accent: #6366f1;
+    --accent-dim: #4f46e5;
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.12);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --purple: #a855f7;
+    --purple-dim: rgba(168,85,247,0.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 40px; }
+  .stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 40px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  .stat-num.green { color: var(--green); }
+  .stat-num.yellow { color: var(--yellow); }
+  .stat-num.red { color: var(--red); }
+  .stat-num.orange { color: var(--orange); }
+  .stat-num.blue { color: var(--blue); }
+  .stat-num.purple { color: var(--purple); }
+
+  .section { margin-bottom: 48px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; cursor: pointer; }
+  .section-header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .section-header .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-orange { background: var(--orange-dim); color: var(--orange); }
+  .badge-blue { background: var(--blue-dim); color: var(--blue); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); }
+
+  .progress-bar { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; max-width: 200px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .progress-fill.green { background: var(--green); }
+  .progress-fill.yellow { background: var(--yellow); }
+  .progress-fill.orange { background: var(--orange); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); background: var(--surface); border-bottom: 1px solid var(--border); }
+  td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: var(--surface-2); }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+  .status-done { background: var(--green-dim); color: var(--green); }
+  .status-partial { background: var(--yellow-dim); color: var(--yellow); }
+  .status-missing { background: var(--red-dim); color: var(--red); }
+  .status-deviation { background: var(--orange-dim); color: var(--orange); }
+  .status-ok { background: var(--blue-dim); color: var(--blue); }
+
+  .issue-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+  .issue-card.critical { border-left: 3px solid var(--red); }
+  .issue-card.high { border-left: 3px solid var(--orange); }
+  .issue-card.medium { border-left: 3px solid var(--yellow); }
+  .issue-card.low { border-left: 3px solid var(--blue); }
+  .issue-card.logic { border-left: 3px solid var(--purple); }
+  .issue-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .issue-desc { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+  .issue-desc code { background: var(--surface-3); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--text); }
+  .issue-meta { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--surface-3); color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+  .tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+  .tab:hover { color: var(--text); background: var(--surface-2); }
+  .tab.active { color: var(--text); background: var(--surface-3); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .epic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+  .epic-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .epic-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .epic-card .pct { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0; }
+  .epic-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  .epic-items { font-size: 12px; color: var(--text-dim); }
+  .epic-items li { margin-bottom: 4px; padding-left: 12px; position: relative; }
+  .epic-items li::before { content: ''; position: absolute; left: 0; top: 8px; width: 4px; height: 4px; border-radius: 50%; }
+  .epic-items li.done::before { background: var(--green); }
+  .epic-items li.partial::before { background: var(--yellow); }
+  .epic-items li.missing::before { background: var(--red); }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .epic-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Audit <span>Notion vs Code</span></h1>
+  <p class="subtitle">Comparaison exhaustive des specs Notion (EPICs & US) avec l'implementation actuelle — 10 avril 2026</p>
+
+  <!-- Stats overview -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num green">47</div>
+      <div class="stat-label">Implemente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num yellow">12</div>
+      <div class="stat-label">Partiel</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num red">8</div>
+      <div class="stat-label">Manquant</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num orange">6</div>
+      <div class="stat-label">Ecarts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num purple">5</div>
+      <div class="stat-label">Contradictions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num blue">4</div>
+      <div class="stat-label">Illogiques</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('epics')">EPICs Coverage</div>
+    <div class="tab" onclick="switchTab('contradictions')">Contradictions</div>
+    <div class="tab" onclick="switchTab('illogiques')">Points Illogiques</div>
+    <div class="tab" onclick="switchTab('ecarts')">Ecarts Code/Spec</div>
+    <div class="tab" onclick="switchTab('manquants')">Manquants</div>
+  </div>
+
+  <!-- TAB 1: EPIC Coverage -->
+  <div class="tab-content active" id="tab-epics">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Implemente</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Partiel</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Manquant</div>
+    </div>
+    <div class="epic-grid">
+
+      <!-- EPIC 11 -->
+      <div class="epic-card">
+        <h3>EPIC 11 — Auth & Settings</h3>
+        <div class="pct" style="color:var(--yellow)">75%</div>
+        <div class="epic-bar"><div class="progress-fill yellow" style="width:75%"></div></div>
+        <ul class="epic-items">
+          <li class="done">JWT auth (access + refresh + httpOnly)</li>
+          <li class="done">Multi-workspace switching</li>
+          <li class="done">Invitation-only registration</li>
+          <li class="done">3 roles (Admin/Gestionnaire/Technicien)</li>
+          <li class="done">User management (list, role change, deactivate)</li>
+          <li class="done">Workspace settings (nom, type, SIRET, email)</li>
+          <li class="done">API keys CRUD + webhooks</li>
+          <li class="partial">Password lockout (rate-limit present, no DB lockout counter)</li>
+          <li class="partial">Logo upload (UI exists, backend storage incomplete)</li>
+          <li class="missing">Templates/Pieces config UI (EPIC 4 sub-sections)</li>
+          <li class="missing">Catalogue items config UI</li>
+          <li class="missing">Criteres config UI</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 1 -->
+      <div class="epic-card">
+        <h3>EPIC 1 — Parc Immobilier</h3>
+        <div class="pct" style="color:var(--green)">92%</div>
+        <div class="epic-bar"><div class="progress-fill green" style="width:92%"></div></div>
+        <ul class="epic-items">
+          <li class="done">Batiments CRUD + multi-addresses</li>
+          <li class="done">Lots CRUD + proprietaires linking</li>
+          <li class="done">Maison individuelle shortcut (1 bat + 1 lot)</li>
+          <li class="done">Table view + colonnes configurables</li>
+          <li class="done">Map view (Mapbox) + clustering + couleurs</li>
+          <li class="done">Recherche transversale (bat + lots)</li>
+          <li class="done">Filtres rapides dropdown</li>
+          <li class="done">CSV import avec mapping</li>
+          <li class="done">Geocoding (AddressAutocomplete)</li>
+          <li class="done">Archive (soft delete)</li>
+          <li class="partial">Lot detail page (manque historique EDL)</li>
+          <li class="missing">Colonnes computed "missions a venir" sur lots</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 2 -->
+      <div class="epic-card">
+        <h3>EPIC 2 — Tiers</h3>
+        <div class="pct" style="color:var(--green)">85%</div>
+        <div class="epic-bar"><div class="progress-fill green" style="width:85%"></div></div>
+        <ul class="epic-items">
+          <li class="done">4 onglets (Proprio/Loca/Manda/Tous)</li>
+          <li class="done">Type personne (physique/morale) + champs conditionnels</li>
+          <li class="done">TiersOrganisation (PP &lt;-&gt; PM linking)</li>
+          <li class="done">Colonnes aggregees (Nom/RS)</li>
+          <li class="done">Computed columns (nb_lots, derniere_mission)</li>
+          <li class="done">Masquage Mandataire pour agence</li>
+          <li class="done">Recherche + filtre type_personne</li>
+          <li class="done">Archive avec check missions actives</li>
+          <li class="partial">Detail page multi-role (sections conditionnelles partielles)</li>
+          <li class="partial">Historique locataire — tous lots passes (pas seulement dernier)</li>
+          <li class="missing">Badges roles multiples sur onglet "Tous"</li>
+          <li class="missing">Procuration field sur detail locataire</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 13 -->
+      <div class="epic-card">
+        <h3>EPIC 13 — Missions</h3>
+        <div class="pct" style="color:var(--green)">88%</div>
+        <div class="epic-bar"><div class="progress-fill green" style="width:88%"></div></div>
+        <ul class="epic-items">
+          <li class="done">4 vues (Table/Kanban/Calendar/Map)</li>
+          <li class="done">Creation modale avec enriched picker</li>
+          <li class="done">Colocation (bail individuel/collectif)</li>
+          <li class="done">Detail page complete (7 sections)</li>
+          <li class="done">Technicien assignment + invitation</li>
+          <li class="done">Revalidation dialog (date change)</li>
+          <li class="done">Cles management (type, qty, statut, lieu)</li>
+          <li class="done">Conflict detection (tech agenda)</li>
+          <li class="done">Annulation avec motif</li>
+          <li class="done">FloatingSaveBar + unsaved changes warning</li>
+          <li class="partial">Auto-terminaison (logique backend, pas automatique)</li>
+          <li class="partial">Verrouillage post-terminaison (partiel — lot editable)</li>
+          <li class="missing">EDL liens PDF/Web (4 liens par document signe)</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 14 -->
+      <div class="epic-card">
+        <h3>EPIC 14 — Dashboard</h3>
+        <div class="pct" style="color:var(--yellow)">80%</div>
+        <div class="epic-bar"><div class="progress-fill yellow" style="width:80%"></div></div>
+        <ul class="epic-items">
+          <li class="done">Stat cards (total, today, pending, upcoming)</li>
+          <li class="done">Calendrier semaine (cartes pastel)</li>
+          <li class="done">Mini-calendrier mensuel + dots</li>
+          <li class="done">Actions en attente (3 types)</li>
+          <li class="done">Drawer lateral mission (7 sections)</li>
+          <li class="done">Bouton "+" (Mission + Indisponibilite)</li>
+          <li class="done">Click jour → modal missions</li>
+          <li class="done">Filtre technicien sur calendrier</li>
+          <li class="partial">Indisponibilites (creation OK, recurrence incomplete)</li>
+          <li class="partial">Drawer lock si terminee (partiel)</li>
+          <li class="missing">Popup click indispo (nom, dates, motif, edit/delete)</li>
+          <li class="missing">Indisponibilite recurrence Google Calendar style</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 4 -->
+      <div class="epic-card">
+        <h3>EPIC 4 — Templates & Catalogue</h3>
+        <div class="pct" style="color:var(--orange)">30%</div>
+        <div class="epic-bar"><div class="progress-fill orange" style="width:30%"></div></div>
+        <ul class="epic-items">
+          <li class="done">Backend: CatalogueItem CRUD routes</li>
+          <li class="done">Backend: TypePiece CRUD routes</li>
+          <li class="done">Backend: TemplatePieceItem linking</li>
+          <li class="done">Backend: ConfigCritereCategorie + Item</li>
+          <li class="missing">UI: Page catalogue items</li>
+          <li class="missing">UI: Page pieces & templates</li>
+          <li class="missing">UI: Page criteres config (matrice)</li>
+          <li class="missing">UI: Page referentiels/tags</li>
+          <li class="missing">UI: Separation EDL/Inventaire par tabs</li>
+          <li class="missing">Seed data (155 items + 30 pieces)</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 16 -->
+      <div class="epic-card">
+        <h3>EPIC 16 — Transverses</h3>
+        <div class="pct" style="color:var(--yellow)">60%</div>
+        <div class="epic-bar"><div class="progress-fill yellow" style="width:60%"></div></div>
+        <ul class="epic-items">
+          <li class="done">Recherche globale (partiellement)</li>
+          <li class="done">Colonnes configurables + persistance</li>
+          <li class="done">Composant carte partagee (Mapbox)</li>
+          <li class="done">AddressAutocomplete partagee</li>
+          <li class="done">CSV Import (batiments + lots)</li>
+          <li class="partial">Filtres dynamiques Notion-style (basique)</li>
+          <li class="missing">Recherche globale cross-entite (spotlight)</li>
+          <li class="missing">Export CSV/PDF</li>
+          <li class="missing">Notifications in-app</li>
+        </ul>
+      </div>
+
+      <!-- EPIC 10 -->
+      <div class="epic-card">
+        <h3>EPIC 10 — API & Integrations</h3>
+        <div class="pct" style="color:var(--yellow)">70%</div>
+        <div class="epic-bar"><div class="progress-fill yellow" style="width:70%"></div></div>
+        <ul class="epic-items">
+          <li class="done">API Keys CRUD (create, list, revoke)</li>
+          <li class="done">Webhooks CRUD + event filtering</li>
+          <li class="done">Webhook test + delivery logs</li>
+          <li class="done">API v1 endpoints (missions, edl, lots)</li>
+          <li class="done">API key authentication middleware</li>
+          <li class="partial">OpenAPI/Swagger docs (route exists, completeness?)</li>
+          <li class="missing">Rate limiting per API key</li>
+          <li class="missing">Usage analytics per key</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 2: Contradictions -->
+  <div class="tab-content" id="tab-contradictions">
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">Contradictions detectees entre differentes User Stories, EPICs, ou entre specs et decisions CLAUDE.md.</p>
+
+    <div class="issue-card critical">
+      <div class="issue-title">
+        <span class="badge badge-red">Critique</span>
+        Auto-creation EDL : US-594 vs US-811
+      </div>
+      <div class="issue-desc">
+        <strong>US-594</strong> dit que les EDL sont <strong>auto-crees a la creation de mission</strong> selon le sens + inventaire + type de bail.<br>
+        <strong>US-811</strong> mentionne un bouton <strong>"Ajouter EDL"</strong> sur la page detail, ce qui implique un ajout a la demande.<br><br>
+        <strong>Question :</strong> Les EDL sont-ils crees automatiquement OU ajoutes manuellement apres coup ? Les deux ne sont pas contradictoires si la creation auto couvre le cas initial et le bouton permet d'en ajouter supplementaires — mais ce n'est pas explicite dans les specs.
+        <br><br>
+        <strong>Etat code :</strong> Les EDL sont crees automatiquement a la creation de mission (backend <code>missions.ts POST</code>). Le bouton "Ajouter EDL" n'existe pas dans le detail page.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 13</span>
+        <span class="tag">US-594</span>
+        <span class="tag">US-811</span>
+        <span class="tag">EDL lifecycle</span>
+      </div>
+    </div>
+
+    <div class="issue-card critical">
+      <div class="issue-title">
+        <span class="badge badge-red">Critique</span>
+        Locataire optionnel a la creation : vide = placeholder ou erreur ?
+      </div>
+      <div class="issue-desc">
+        <strong>US-594</strong> accepte un <strong>champ locataire vide</strong> : "Mission created + 1 EDL without tenant (add later via US-811)".<br>
+        Mais <strong>EPIC 13</strong> definit le workflow EDL comme "entrant/sortant" necessitant des locataires pour la signature.<br><br>
+        <strong>Probleme :</strong> Un EDL sans locataire n'a pas de signataire. Est-ce un brouillon non-signable, ou un placeholder pour ajout ulterieur ? L'auto-terminaison attend "tous EDL signes" — un EDL sans locataire bloque-t-il la terminaison indefiniment ?
+        <br><br>
+        <strong>Etat code :</strong> Le code permet la creation sans locataire. L'EDL est en brouillon. Le locataire peut etre ajoute plus tard. Pas de logique de blocage explicite.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 13</span>
+        <span class="tag">US-594</span>
+        <span class="tag">Data integrity</span>
+      </div>
+    </div>
+
+    <div class="issue-card high">
+      <div class="issue-title">
+        <span class="badge badge-orange">Haut</span>
+        Revalidation UX : page detail vs drawer dashboard
+      </div>
+      <div class="issue-desc">
+        <strong>US-811</strong> dit que la modification date/heure sur la page detail declenche une <strong>modale de revalidation</strong> avec choix (demander revalidation OU confirmer tel quel).<br>
+        <strong>US-842</strong> dit la meme chose pour le drawer dashboard.<br><br>
+        <strong>Etat code :</strong> La page detail utilise un <code>RevalidationDialog</code> (modale). Le drawer utilise un pattern different (inline ou simplifie). Les deux devraient etre identiques selon les specs.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 13</span>
+        <span class="tag">EPIC 14</span>
+        <span class="tag">US-811</span>
+        <span class="tag">US-842</span>
+        <span class="tag">UX consistency</span>
+      </div>
+    </div>
+
+    <div class="issue-card high">
+      <div class="issue-title">
+        <span class="badge badge-orange">Haut</span>
+        Mission.statut = "assignee" : quand exactement ?
+      </div>
+      <div class="issue-desc">
+        <strong>CLAUDE.md 7d</strong> dit : "planifiee &rarr; assignee : quand technicien accepte l'invitation".<br>
+        <strong>US-594</strong> dit : le statut initial est "assignee" si un technicien est selectionne a la creation (avant meme que le tech n'accepte).<br><br>
+        <strong>Contradiction :</strong> Un tech selectionne mais qui n'a pas encore accepte = planifiee ou assignee ?
+        Les deux logiques coexistent dans le code. La creation met "assignee" si tech present, mais les transitions d'etat disent que "assignee" = tech a accepte.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">CLAUDE.md</span>
+        <span class="tag">US-594</span>
+        <span class="tag">State machine</span>
+      </div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span class="badge badge-yellow">Moyen</span>
+        Stat card "Actions en attente" : definition variable
+      </div>
+      <div class="issue-desc">
+        <strong>EPIC 14 (US-837)</strong> definit 3 types d'actions : <em>mission sans tech, invitation en attente/refusee, RDV a confirmer</em>.<br>
+        <strong>US-841</strong> definit les memes 3 types mais ajoute implicitement "cles a deposer".<br>
+        <strong>Dashboard code</strong> utilise <code>pending_actions</code> qui inclut : missions sans tech + invitations pendantes + RDV non confirmes.<br><br>
+        Les cles a deposer sont dans le drawer (US-842) mais pas dans le compteur "Actions en attente".
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 14</span>
+        <span class="tag">US-837</span>
+        <span class="tag">US-841</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 3: Points Illogiques -->
+  <div class="tab-content" id="tab-illogiques">
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">Points dans les specs qui semblent illogiques, sur-ingenies, ou qui meritent une remise en question.</p>
+
+    <div class="issue-card logic">
+      <div class="issue-title">
+        <span class="badge badge-purple">Logique</span>
+        CleMission FK vers edl_id au lieu de mission_id
+      </div>
+      <div class="issue-desc">
+        La justification est "colocation geree" — chaque co-locataire a ses propres cles.<br><br>
+        <strong>Probleme :</strong> Dans la grande majorite des cas (95%+), il y a 1 seul EDL par mission. La FK vers <code>edl_id</code> ajoute de la complexite (jointure supplementaire pour afficher les cles d'une mission) sans benefice tangible pour le cas simple.
+        De plus, les cles physiques sont les memes (une serrure = un jeu de cles), c'est le <strong>document de remise</strong> qui differe par co-locataire, pas les cles elles-memes.
+        <br><br>
+        <strong>Suggestion :</strong> FK vers <code>mission_id</code> + champ optionnel <code>edl_id</code> pour les cas de colocation specifique. Simplifie 95% des queries.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">Architecture</span>
+        <span class="tag">Over-engineering</span>
+        <span class="tag">CleMission</span>
+      </div>
+    </div>
+
+    <div class="issue-card logic">
+      <div class="issue-title">
+        <span class="badge badge-purple">Logique</span>
+        3 statuts separes sur Mission (statut + statut_rdv + statut_invitation)
+      </div>
+      <div class="issue-desc">
+        Chaque mission a 3 axes de statut independants :<br>
+        - <code>statut</code> : planifiee | assignee | terminee | annulee<br>
+        - <code>statut_rdv</code> : a_confirmer | confirme | reporte<br>
+        - <code>MissionTechnicien.statut_invitation</code> : en_attente | accepte | refuse<br><br>
+        <strong>Probleme :</strong> Cela cree 4 &times; 3 &times; 3 = <strong>36 combinaisons</strong> d'etats possibles. Beaucoup sont invalides (ex: terminee + refuse). Aucune matrice de validite n'est definie dans les specs.
+        Le "Actions en attente" du dashboard filtre sur ces 3 axes simultanement, rendant la logique fragile.
+        <br><br>
+        <strong>Suggestion :</strong> Definir explicitement les <strong>combinaisons valides</strong> et ajouter des contraintes DB (CHECK ou trigger) pour empecher les etats incoherents.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">State machine</span>
+        <span class="tag">Complexite</span>
+        <span class="tag">Validation</span>
+      </div>
+    </div>
+
+    <div class="issue-card logic">
+      <div class="issue-title">
+        <span class="badge badge-purple">Logique</span>
+        Record Picker avec creation en cascade (3 niveaux de modales)
+      </div>
+      <div class="issue-desc">
+        US-594 decrit un flow de creation mission ou :<br>
+        1. Modale creation mission<br>
+        2. → Picker lot → bouton "Creer lot" → sous-modale lot<br>
+        3. → Picker batiment → bouton "Creer batiment" → sous-sous-modale batiment<br><br>
+        <strong>Probleme :</strong> 3 niveaux de modales empilees = UX lourde et disorienting. Chaque sous-modale doit gerer son propre etat + auto-selectionner le resultat au retour.<br><br>
+        <strong>Etat code :</strong> Le code implemente 2 niveaux (mission → lot creation). Le 3eme niveau (batiment creation dans lot creation) est present dans <code>create-lot-modal.tsx</code> qui peut appeler <code>create-building-modal.tsx</code>.<br><br>
+        <strong>Suggestion :</strong> Limiter a 2 niveaux max. Si le batiment n'existe pas, rediriger vers la page patrimoine plutot qu'ouvrir une 3eme modale.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">UX</span>
+        <span class="tag">Over-engineering</span>
+        <span class="tag">US-594</span>
+      </div>
+    </div>
+
+    <div class="issue-card logic">
+      <div class="issue-title">
+        <span class="badge badge-purple">Logique</span>
+        Absence de gestion locative MAIS affichage "dernier locataire"
+      </div>
+      <div class="issue-desc">
+        <strong>CLAUDE.md 7b</strong> : "PAS de gestion locative — l'occupation des logements n'est pas geree".<br>
+        Pourtant, <strong>EPIC 1</strong> affiche "dernier locataire" sur la fiche lot, et <strong>EPIC 2</strong> montre "lots passes" du locataire.<br><br>
+        <strong>Paradoxe :</strong> Sans gestion locative, le "dernier locataire" est derive des EDL les plus recents. Mais si un locataire change sans qu'il y ait d'EDL (rare mais possible), l'info est fausse.
+        L'affichage cree une <strong>attente de precision</strong> que le systeme ne peut pas garantir.
+        <br><br>
+        <strong>Suggestion :</strong> Soit ajouter un label "Dernier locataire (selon EDL)" pour gerer l'attente, soit ne pas l'afficher du tout.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">Product</span>
+        <span class="tag">Data accuracy</span>
+        <span class="tag">EPIC 1</span>
+        <span class="tag">EPIC 2</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB 4: Ecarts Code/Spec -->
+  <div class="tab-content" id="tab-ecarts">
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">Differences entre ce que disent les specs Notion et ce qui est reellement implemente dans le code.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sujet</th>
+            <th>Spec Notion</th>
+            <th>Code actuel</th>
+            <th>Severite</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Auto-terminaison mission</strong></td>
+            <td>Automatique quand tous les EDL sont signes (EPIC 13, CLAUDE.md 7d)</td>
+            <td>Backend a la logique dans <code>edl.ts</code> (transaction + SELECT FOR UPDATE) mais declenchee par PATCH EDL status, pas par un event automatique</td>
+            <td><span class="status status-deviation">Ecart</span></td>
+          </tr>
+          <tr>
+            <td><strong>Lot non-modifiable sur mission</strong></td>
+            <td>"lot_id immutable des la creation de mission" (CLAUDE.md 7b)</td>
+            <td><code>PATCH /api/missions/:id</code> n'interdit pas explicitement la modification du lot_id. Le frontend ne l'envoie pas, mais le backend ne valide pas.</td>
+            <td><span class="status status-deviation">Ecart</span></td>
+          </tr>
+          <tr>
+            <td><strong>Verrouillage post-terminaison</strong></td>
+            <td>Tout en lecture seule SAUF commentaire + cles (CLAUDE.md 7d)</td>
+            <td>Le frontend gere le lock (disabled fields), mais le backend PATCH ne valide pas que la mission est non-terminee avant de modifier date/heure/tech.</td>
+            <td><span class="status status-deviation">Ecart</span></td>
+          </tr>
+          <tr>
+            <td><strong>Annulation bloquee si terminee</strong></td>
+            <td>"IMPOSSIBLE si terminee" avec erreur MISSION_LOCKED (CLAUDE.md 7d)</td>
+            <td><code>POST /api/missions/:id/cancel</code> a un check <code>if (mission.statut === 'terminee')</code> mais retourne une erreur generique, pas <code>MISSION_LOCKED</code></td>
+            <td><span class="status status-partial">Partiel</span></td>
+          </tr>
+          <tr>
+            <td><strong>EDL liens PDF/Web (4 liens)</strong></td>
+            <td>Chaque EDL signe doit avoir : PDF, Web, PDF Legal, Web Legal (US-811)</td>
+            <td>Les champs <code>url_pdf</code>, <code>url_web</code>, <code>url_pdf_legal</code>, <code>url_web_legal</code> existent en DB mais ne sont pas generes (pas de generation PDF cote webapp)</td>
+            <td><span class="status status-missing">Manquant</span></td>
+          </tr>
+          <tr>
+            <td><strong>Reference auto M-YYYY-XXXX</strong></td>
+            <td>Format specifie dans EPIC 13 et CLAUDE.md</td>
+            <td>Implemente dans <code>missions.ts POST</code> avec sequence. UNIQUE constraint ajoutee.</td>
+            <td><span class="status status-done">OK</span></td>
+          </tr>
+          <tr>
+            <td><strong>Indispo recurrence</strong></td>
+            <td>Google Calendar style : daily/weekly/biweekly/monthly (US-838, EPIC 14)</td>
+            <td><code>IndisponibiliteTechnicien</code> a <code>est_recurrent</code> + <code>recurrence_config</code> (JSON) en DB, mais le frontend <code>UnavailabilityModal</code> ne supporte que la plage simple (pas de recurrence UI)</td>
+            <td><span class="status status-partial">Partiel</span></td>
+          </tr>
+          <tr>
+            <td><strong>Archive bloquee si missions actives</strong></td>
+            <td>Tiers : archivage bloque si missions actives, pas seulement EDL brouillon (US-593)</td>
+            <td>Le backend check les missions actives. Implemente correctement.</td>
+            <td><span class="status status-done">OK</span></td>
+          </tr>
+          <tr>
+            <td><strong>Bouton "Ajouter EDL" sur detail mission</strong></td>
+            <td>US-811 : bouton pour ajouter EDL supplementaire (tant que mission non terminee)</td>
+            <td>Non implemente dans <code>mission-detail-page.tsx</code>. La section EDL est read-only.</td>
+            <td><span class="status status-missing">Manquant</span></td>
+          </tr>
+          <tr>
+            <td><strong>Edit inline pattern (detail pages)</strong></td>
+            <td>US-811 : "Edit CTA → inline edit → Save/Cancel. Layout unchanged." + modal "Save & exit" / "Exit without saving"</td>
+            <td>Mission detail : FloatingSaveBar + beforeunload warning. OK mais pas d'inline edit au sens strict — les champs sont toujours editables.</td>
+            <td><span class="status status-deviation">Ecart</span></td>
+          </tr>
+          <tr>
+            <td><strong>Mandataire snapshot sur EDL</strong></td>
+            <td>US-591 : "snapshot EDL_Inventaire.mandataire_id a la creation" (fige le mandataire au moment de l'EDL)</td>
+            <td>Le schema EDL n'a pas de champ <code>mandataire_id</code>. Le mandataire est derive du <code>Lot.mandataire_id</code> en temps reel.</td>
+            <td><span class="status status-missing">Manquant</span></td>
+          </tr>
+          <tr>
+            <td><strong>Popup indisponibilite</strong></td>
+            <td>EPIC 14 : "Light popup on click (name, dates, motif, edit/delete)"</td>
+            <td>Le calendrier affiche les indispos mais le click n'ouvre pas de popup de detail.</td>
+            <td><span class="status status-missing">Manquant</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: Manquants -->
+  <div class="tab-content" id="tab-manquants">
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">Fonctionnalites specifiees dans les Notion EPICs/US mais completement absentes du code.</p>
+
+    <div class="issue-card critical">
+      <div class="issue-title">
+        <span class="badge badge-red">P0</span>
+        EPIC 4 — UI Templates, Catalogue, Criteres
+      </div>
+      <div class="issue-desc">
+        Les routes backend existent (<code>catalogue-items.ts</code>, <code>templates.ts</code>, <code>type-pieces.ts</code>) mais <strong>aucune interface utilisateur</strong> n'existe pour gerer :<br>
+        - Les types de pieces (30 types par defaut)<br>
+        - Le catalogue d'items (155 items EDL/Inventaire)<br>
+        - La matrice criteres x categories<br>
+        - Les valeurs referentiels (tags)<br>
+        - Les templates piece-item (association)<br><br>
+        <strong>Impact :</strong> Sprint 2 entier bloque. Sans templates, l'app tablette (EPIC 5) ne peut pas fonctionner.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">Sprint 2</span>
+        <span class="tag">EPIC 4</span>
+        <span class="tag">Bloquant EPIC 5</span>
+      </div>
+    </div>
+
+    <div class="issue-card high">
+      <div class="issue-title">
+        <span class="badge badge-orange">P1</span>
+        Seed data — 155 items + 30 pieces
+      </div>
+      <div class="issue-desc">
+        Les donnees de reference plateforme (base Flat Checker) ne sont pas chargees :<br>
+        - 30 types de pieces par defaut<br>
+        - 155 items catalogue (EDL + Inventaire) avec sous-items<br>
+        - Config criteres par defaut (17 categories x 8 criteres)<br>
+        - Valeurs referentiels par defaut<br><br>
+        <strong>Source :</strong> <code>knowledge/notion/databases/pieces.md</code> et <code>items-edl-inventaire.md</code>
+      </div>
+      <div class="issue-meta">
+        <span class="tag">Sprint 2</span>
+        <span class="tag">EPIC 4</span>
+        <span class="tag">Data seeding</span>
+      </div>
+    </div>
+
+    <div class="issue-card high">
+      <div class="issue-title">
+        <span class="badge badge-orange">P1</span>
+        Recherche globale cross-entite (Spotlight)
+      </div>
+      <div class="issue-desc">
+        EPIC 16 prevoit une recherche globale qui couvre batiments, lots, tiers, missions depuis un seul champ. Un lot trouve affiche aussi son batiment parent.<br><br>
+        <strong>Etat :</strong> Chaque page a sa propre recherche locale. Pas de composant de recherche globale.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 16</span>
+        <span class="tag">UX transversal</span>
+      </div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span class="badge badge-yellow">P2</span>
+        Export CSV / PDF
+      </div>
+      <div class="issue-desc">
+        EPIC 16 prevoit l'export des listes (batiments, lots, tiers, missions) en CSV et/ou PDF. Non implemente.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 16</span>
+      </div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span class="badge badge-yellow">P2</span>
+        Notifications triggers
+      </div>
+      <div class="issue-desc">
+        Les specs mentionnent des notifications a envoyer sur certains evenements :<br>
+        - Tech assigne a une mission → notification<br>
+        - Date/heure modifiee + revalidation → notification tech<br>
+        - Mission annulee → notification tech<br><br>
+        <strong>Etat :</strong> Aucun systeme de notification implemente (ni in-app, ni email, ni push).
+        Les webhooks existent (EPIC 10) mais sont pour les integrations externes, pas pour les notifications utilisateur.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 13</span>
+        <span class="tag">Notifications</span>
+      </div>
+    </div>
+
+    <div class="issue-card medium">
+      <div class="issue-title">
+        <span class="badge badge-yellow">P2</span>
+        Historique / Timeline sur page detail mission
+      </div>
+      <div class="issue-desc">
+        US-811 prevoit une section "Historical Timeline" sur la page detail mission : creation, assignment, changements de date, signatures EDL, etc.<br><br>
+        <strong>Etat :</strong> Non implemente. Pas d'event log en base de donnees.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">US-811</span>
+        <span class="tag">Audit trail</span>
+      </div>
+    </div>
+
+    <div class="issue-card low">
+      <div class="issue-title">
+        <span class="badge badge-blue">P3</span>
+        Gestion chevauchement indisponibilites
+      </div>
+      <div class="issue-desc">
+        Aucune spec ne definit ce qui se passe quand deux indisponibilites se chevauchent pour le meme technicien, ou quand une indisponibilite est creee sur un jour ou le tech a deja des missions assignees.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 14</span>
+        <span class="tag">Edge case</span>
+      </div>
+    </div>
+
+    <div class="issue-card low">
+      <div class="issue-title">
+        <span class="badge badge-blue">P3</span>
+        Gestion photos (CleMission)
+      </div>
+      <div class="issue-desc">
+        La spec mentionne des photos sur les cles (table Photo, entity_type = 'cle'). Le backend n'implemente pas l'upload/affichage de photos sur les cles.
+      </div>
+      <div class="issue-meta">
+        <span class="tag">EPIC 13</span>
+        <span class="tag">CleMission</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,571 @@
+openapi: "3.0.3"
+info:
+  title: ImmoChecker API
+  version: "1.0.0"
+  description: |
+    API publique ImmoChecker pour créer et consulter des missions, EDL, lots et bâtiments.
+
+    ## Authentification
+    Toutes les requêtes nécessitent une clé API créée depuis **Paramètres → API & Intégrations**.
+
+    ```
+    Authorization: Bearer imk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ```
+
+    ## Rate Limiting
+    100 requêtes par minute par clé API. Les headers de réponse indiquent les limites restantes.
+
+    ## Pagination
+    Toutes les listes sont paginées avec un curseur :
+    ```
+    GET /missions?limit=25&cursor=<id>
+    ```
+    La réponse contient `meta.cursor` (prochain curseur) et `meta.has_more`.
+
+servers:
+  - url: /api/v1
+    description: ImmoChecker API v1
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "imk_live_..."
+      description: Clé API créée depuis Paramètres → API & Intégrations
+
+  schemas:
+    Meta:
+      type: object
+      properties:
+        cursor:
+          type: string
+          nullable: true
+          description: Curseur pour la page suivante
+        has_more:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+
+    Lot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        designation:
+          type: string
+        type_bien:
+          type: string
+          enum: [appartement, maison, local_commercial, bureau, parking, cave, autre]
+        etage:
+          type: string
+          nullable: true
+        surface:
+          type: number
+          nullable: true
+        reference_interne:
+          type: string
+          nullable: true
+        batiment:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            designation:
+              type: string
+            adresse:
+              type: string
+
+    Batiment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        designation:
+          type: string
+        type:
+          type: string
+        nb_etages:
+          type: integer
+          nullable: true
+        annee_construction:
+          type: integer
+          nullable: true
+        rue:
+          type: string
+        code_postal:
+          type: string
+        ville:
+          type: string
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        nb_lots:
+          type: integer
+
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          example: "M-2026-0001"
+        date_planifiee:
+          type: string
+          format: date
+        heure_debut:
+          type: string
+          nullable: true
+          example: "09:00"
+        heure_fin:
+          type: string
+          nullable: true
+          example: "11:00"
+        statut:
+          type: string
+          enum: [planifiee, assignee, terminee, annulee]
+        statut_rdv:
+          type: string
+          enum: [a_confirmer, confirme, reporte]
+        avec_inventaire:
+          type: boolean
+        commentaire:
+          type: string
+          nullable: true
+        lot:
+          $ref: '#/components/schemas/Lot'
+        edls:
+          type: array
+          items:
+            $ref: '#/components/schemas/EDL'
+
+    EDL:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [etat_des_lieux, inventaire]
+        sens:
+          type: string
+          enum: [entree, sortie]
+        statut:
+          type: string
+          enum: [brouillon, signe, infructueux]
+        mission_id:
+          type: string
+          format: uuid
+        date_realisation:
+          type: string
+          format: date-time
+          nullable: true
+        date_signature:
+          type: string
+          format: date-time
+          nullable: true
+        pdf_url:
+          type: string
+          nullable: true
+          description: URL du PDF EDL standard
+        web_url:
+          type: string
+          nullable: true
+          description: URL de consultation web
+        pdf_url_legal:
+          type: string
+          nullable: true
+          description: URL du PDF version légale
+        web_url_legal:
+          type: string
+          nullable: true
+          description: URL de consultation légale
+        locataires:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              tiers_id:
+                type: string
+                format: uuid
+              nom:
+                type: string
+              prenom:
+                type: string
+                nullable: true
+              role_locataire:
+                type: string
+                enum: [entrant, sortant]
+        cles:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              type_cle:
+                type: string
+              quantite:
+                type: integer
+              statut:
+                type: string
+                enum: [remise, a_deposer, deposee]
+              lieu_depot:
+                type: string
+                nullable: true
+
+  responses:
+    Unauthorized:
+      description: Clé API manquante ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimit:
+      description: Trop de requêtes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  /missions:
+    get:
+      summary: Lister les missions
+      operationId: listMissions
+      tags: [Missions]
+      parameters:
+        - in: query
+          name: statut
+          schema:
+            type: string
+            enum: [planifiee, assignee, terminee, annulee]
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        '200':
+          description: Liste paginée de missions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Mission'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+
+    post:
+      summary: Créer une mission
+      operationId: createMission
+      tags: [Missions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lot_id, sens, date_planifiee]
+              properties:
+                lot_id:
+                  type: string
+                  format: uuid
+                sens:
+                  type: string
+                  enum: [entree, sortie, entree_sortie]
+                avec_inventaire:
+                  type: boolean
+                  default: false
+                date_planifiee:
+                  type: string
+                  format: date
+                heure_debut:
+                  type: string
+                  example: "09:00"
+                heure_fin:
+                  type: string
+                  example: "11:00"
+                commentaire:
+                  type: string
+      responses:
+        '201':
+          description: Mission créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '400':
+          description: Données invalides
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Clé API en lecture seule
+
+  /missions/{id}:
+    get:
+      summary: Détail d'une mission
+      operationId: getMission
+      tags: [Missions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Détail mission avec EDLs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /edl-inventaires:
+    get:
+      summary: Lister les EDL
+      operationId: listEDL
+      tags: [EDL]
+      parameters:
+        - in: query
+          name: mission_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: statut
+          schema:
+            type: string
+            enum: [brouillon, signe, infructueux]
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        '200':
+          description: Liste paginée d'EDL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EDL'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /edl-inventaires/{id}:
+    get:
+      summary: Détail d'un EDL avec toutes les URLs
+      operationId: getEDL
+      tags: [EDL]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: EDL avec locataires, clés et URLs PDF/web
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EDL'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /lots:
+    get:
+      summary: Lister les lots
+      operationId: listLots
+      tags: [Référentiel]
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: batiment_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        '200':
+          description: Liste paginée de lots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lot'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /lots/{id}:
+    get:
+      summary: Détail d'un lot
+      operationId: getLot
+      tags: [Référentiel]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lot'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /batiments:
+    get:
+      summary: Lister les bâtiments
+      operationId: listBatiments
+      tags: [Référentiel]
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        '200':
+          description: Liste paginée de bâtiments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Batiment'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+
+  /batiments/{id}:
+    get:
+      summary: Détail d'un bâtiment
+      operationId: getBatiment
+      tags: [Référentiel]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Bâtiment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batiment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+tags:
+  - name: Missions
+    description: Créer et consulter des missions d'inspection
+  - name: EDL
+    description: Consulter les états des lieux et leurs documents
+  - name: Référentiel
+    description: Lots et bâtiments (lookup pour créer des missions)

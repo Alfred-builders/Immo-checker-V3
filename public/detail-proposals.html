@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Fiche Lot & Mission — Design Proposals</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Nunito Sans','system-ui','sans-serif'],mono:['JetBrains Mono','monospace']}}}}</script>
+<script src="https://unpkg.com/@phosphor-icons/web@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,300..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07070a;color:#fff;font-family:'Nunito Sans',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+
+/* Shell */
+.shell{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;backdrop-filter:blur(24px) saturate(1.6);background:rgba(7,7,10,.78);border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;padding:0 28px;gap:8px}
+.shell-brand{font-weight:700;font-size:14px;letter-spacing:-.03em;display:flex;align-items:center;gap:10px;margin-right:20px}
+.shell-brand .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#2d526c,#3a6d8e);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;box-shadow:0 2px 8px rgba(45,82,108,.3)}
+.sep{width:1px;height:20px;background:rgba(255,255,255,.08);margin:0 6px}
+.label{font-size:10px;color:rgba(255,255,255,.2);letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-right:4px}
+
+/* Page tabs */
+.page-tabs{display:flex;gap:2px;padding:3px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04)}
+.ptab{height:32px;padding:0 14px;border:none;background:transparent;color:rgba(255,255,255,.3);font-size:11.5px;font-weight:600;cursor:pointer;border-radius:7px;transition:all .25s;font-family:inherit;white-space:nowrap}
+.ptab:hover{color:rgba(255,255,255,.5);background:rgba(255,255,255,.03)}
+.ptab.on{color:#fff;background:rgba(255,255,255,.1);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+/* Design tabs */
+.dtabs{display:flex;gap:3px;margin-left:auto}
+.dtab{height:28px;padding:0 12px;border:none;background:transparent;color:rgba(255,255,255,.25);font-size:10.5px;font-weight:600;cursor:pointer;border-radius:6px;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dtab:hover{color:rgba(255,255,255,.5)}
+.dtab.on{color:#fff;background:rgba(255,255,255,.08)}
+.dtab .dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
+
+/* Panes */
+.page-pane{display:none}.page-pane.on{display:block}
+.design-pane{display:none;padding:72px 24px 32px;animation:up .4s cubic-bezier(.16,1,.3,1)}
+.design-pane.on{display:block}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.frame{border-radius:16px;overflow:hidden;box-shadow:0 4px 60px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);max-width:1300px;margin:0 auto;position:relative;background:#f8f9fb}
+.frame::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08) 30%,rgba(255,255,255,.08) 70%,transparent);z-index:1}
+
+/* Shared inner styles */
+.inner{font-family:'Nunito Sans',sans-serif;color:#1a1a2e;min-height:700px;display:flex}
+.sb{width:200px;flex-shrink:0;background:#fff;border-right:1px solid #f0f0f3;padding:14px 8px;display:flex;flex-direction:column;gap:1px}
+.sb-h{padding:6px 10px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:-.02em}
+.sb-h .ico{width:26px;height:26px;border-radius:7px;background:#2d526c;display:flex;align-items:center;justify-content:center}
+.sb-sec{padding:0 10px;margin-top:14px;margin-bottom:4px;font-size:9px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:#b0b4c0}
+.sb a{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;font-weight:500;text-decoration:none;color:#8b8fa4;border-radius:7px;cursor:pointer;transition:.15s}
+.sb a:hover{background:rgba(45,82,108,.04);color:#5b6178}
+.sb a.on{background:rgba(45,82,108,.07);color:#2d526c;font-weight:600}
+.sb a i{font-size:15px;width:16px;text-align:center}
+.main{flex:1;padding:24px 28px;overflow-y:auto;background:#f8f9fb}
+
+/* Cards */
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 20px rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.03);transition:all .2s}
+.card-sm{background:#fff;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.03)}
+
+/* Section headers */
+.sec-h{display:flex;align-items:center;gap:8px;padding:14px 18px;font-size:13px;font-weight:700;cursor:pointer;user-select:none;color:#1a1a2e}
+.sec-h:hover{background:rgba(0,0,0,.01)}
+.sec-h i{font-size:16px;color:#8b8fa4}
+.sec-body{padding:4px 18px 16px}
+
+/* Fields */
+.field{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f8}
+.field:last-child{border-bottom:none}
+.field-label{width:160px;flex-shrink:0;font-size:12px;color:#8b8fa4;font-weight:500}
+.field-value{font-size:13px;font-weight:500;color:#1a1a2e}
+.field-empty{font-size:12px;color:#c0c4d0;font-style:italic}
+
+/* Badges */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:8px;font-size:10.5px;font-weight:650;line-height:1.6}
+.pill-blue{background:#dbeafe;color:#1d4ed8}
+.pill-green{background:#dcfce7;color:#15803d}
+.pill-amber{background:#fef3c7;color:#b45309}
+.pill-red{background:#fee2e2;color:#dc2626}
+.pill-sky{background:#e0f2fe;color:#0369a1}
+.pill-violet{background:#ede9fe;color:#6d28d9}
+.pill-slate{background:#f1f5f9;color:#475569}
+
+/* Person row */
+.person{display:flex;align-items:center;gap:10px;padding:8px 0}
+.person:not(:last-child){border-bottom:1px solid #f5f5f8}
+.avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:8px 10px;font-weight:600;color:#8b8fa4;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f0f0f3}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f8f8fa}
+.tbl tr:hover td{background:#fafbfc}
+
+/* Breadcrumb */
+.bread{display:flex;align-items:center;gap:6px;font-size:12px;color:#8b8fa4;margin-bottom:16px}
+.bread a{color:#8b8fa4;text-decoration:none;cursor:pointer}.bread a:hover{color:#2d526c}
+.bread .curr{color:#1a1a2e;font-weight:600}
+
+/* Banner */
+.banner{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500}
+.banner-amber{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.banner-red{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.banner-orange{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+
+/* Button */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:.2s}
+.btn-primary{background:#2d526c;color:#fff;box-shadow:0 2px 6px rgba(45,82,108,.15)}
+.btn-primary:hover{background:#234560}
+.btn-outline{background:#fff;color:#475569;border:1px solid #e2e4e8;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn-outline:hover{border-color:#c0c4d0;background:#fafbfc}
+.btn-ghost{background:transparent;color:#8b8fa4;border:none}.btn-ghost:hover{color:#2d526c;background:rgba(45,82,108,.04)}
+.btn-destructive{background:#fff;color:#dc2626;border:1px solid rgba(220,38,38,.2)}.btn-destructive:hover{background:#fef2f2;border-color:rgba(220,38,38,.4)}
+
+/* Tag */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600}
+
+/* Spec box */
+.spec-box{margin:72px 24px 24px;max-width:1300px;margin-left:auto;margin-right:auto;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 24px;font-size:12px;color:rgba(255,255,255,.5);line-height:1.7}
+.spec-box h3{font-size:14px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.spec-box ul{padding-left:16px;margin-top:6px}
+.spec-box li{margin-bottom:4px}
+.spec-box .gap{color:#f59e0b;font-weight:600}
+.spec-box .ok{color:#22c55e;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- Shell -->
+<div class="shell">
+  <div class="shell-brand"><div class="logo"><i class="ph-fill ph-buildings" style="font-size:13px"></i></div>ImmoChecker</div>
+  <div class="sep"></div>
+  <div class="page-tabs">
+    <button class="ptab on" onclick="swPage(0,this)">Fiche Lot</button>
+    <button class="ptab" onclick="swPage(1,this)">Fiche Mission</button>
+  </div>
+  <div class="sep"></div>
+  <span class="label">Design</span>
+  <div class="dtabs" id="dtabs-lot">
+    <button class="dtab on" onclick="swDesign(0,0,this)"><span class="dot" style="background:#2d526c"></span>Sidebar Info</button>
+    <button class="dtab" onclick="swDesign(0,1,this)"><span class="dot" style="background:#3b82f6"></span>Full Width</button>
+    <button class="dtab" onclick="swDesign(0,2,this)"><span class="dot" style="background:#0d9488"></span>Tabbed Compact</button>
+  </div>
+  <div class="dtabs" id="dtabs-mission" style="display:none">
+    <button class="dtab on" onclick="swDesign(1,0,this)"><span class="dot" style="background:#2d526c"></span>Hero + Grid</button>
+    <button class="dtab" onclick="swDesign(1,1,this)"><span class="dot" style="background:#3b82f6"></span>Timeline</button>
+    <button class="dtab" onclick="swDesign(1,2,this)"><span class="dot" style="background:#0d9488"></span>Compact Split</button>
+  </div>
+</div>
+
+<div id="root"></div>
+
+<script>
+// ═══════════════════════════════════════
+// LOT DETAIL — PROPOSALS
+// ═══════════════════════════════════════
+
+function sidebar() {
+  return `<div class="sb">
+    <div class="sb-h"><div class="ico"><i class="ph-fill ph-buildings" style="font-size:12px;color:#fff"></i></div>ImmoChecker</div>
+    <div class="sb-sec">Opérationnel</div>
+    <a><i class="ph ph-squares-four"></i>Tableau de bord</a>
+    <a><i class="ph ph-clipboard-text"></i>Missions</a>
+    <div class="sb-sec">Référentiel</div>
+    <a class="on"><i class="ph ph-building-office"></i>Parc immobilier</a>
+    <a><i class="ph ph-users-three"></i>Tiers</a>
+    <div style="flex:1"></div>
+    <a style="opacity:.5"><i class="ph ph-gear-six"></i>Paramètres</a>
+  </div>`;
+}
+
+// ─── LOT PROPOSAL A: Sidebar Info Panel ───
+function lotA() {
+  return `<div class="frame"><div class="inner">
+    ${sidebar()}
+    <div class="main">
+      <div class="bread">
+        <a>Parc immobilier</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <a>Résidence Victor Hugo</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">Appartement T3 — Lot 302</span>
+      </div>
+
+      <div style="display:flex;gap:16px">
+        <!-- LEFT: Main content -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+          <!-- Header card -->
+          <div class="card" style="padding:20px 22px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="display:flex;gap:14px;align-items:center">
+                <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center">
+                  <i class="ph ph-building-apartment" style="font-size:22px;color:#2563eb"></i>
+                </div>
+                <div>
+                  <h1 style="font-size:18px;font-weight:700;letter-spacing:-.02em;color:#0f172a">Appartement T3 — Lot 302</h1>
+                  <div style="display:flex;gap:6px;margin-top:5px">
+                    <span class="pill pill-blue">Appartement</span>
+                    <span class="pill pill-green">Meublé</span>
+                    <span class="pill pill-slate">3ème étage</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-outline"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+                <button class="btn btn-destructive"><i class="ph ph-archive" style="font-size:13px"></i>Archiver</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informations -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-info"></i>Informations générales<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div class="field"><span class="field-label">Désignation</span><span class="field-value">Appartement T3 — Lot 302</span></div>
+              <div class="field"><span class="field-label">Référence libre</span><span class="field-value" style="font-family:'JetBrains Mono',monospace;font-size:12px">BAIL-2025-0302</span></div>
+              <div class="field"><span class="field-label">Type de bien</span><span class="field-value">Appartement</span></div>
+              <div class="field"><span class="field-label">Étage</span><span class="field-value">3ème</span></div>
+              <div class="field"><span class="field-label">Emplacement</span><span class="field-value">Porte de gauche</span></div>
+              <div class="field"><span class="field-label">Surface</span><span class="field-value">67 m²</span></div>
+              <div class="field"><span class="field-label">Nombre de pièces</span><span class="field-value">3</span></div>
+              <div class="field"><span class="field-label">Meublé</span><span class="field-value" style="color:#16a34a">Oui</span></div>
+              <div class="field"><span class="field-label">DPE</span><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#dcfce7;color:#15803d;font-weight:700;font-size:13px">C</span></div>
+              <div class="field"><span class="field-label">GES</span><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#fef3c7;color:#b45309;font-weight:700;font-size:13px">D</span></div>
+              <div class="field"><span class="field-label">N° Cave</span><span class="field-value">C-14</span></div>
+              <div class="field"><span class="field-label">N° Parking</span><span class="field-value">P-302</span></div>
+              <div class="field"><span class="field-label">Commentaire</span><span class="field-value" style="color:#64748b">Rénovation cuisine prévue T3 2026</span></div>
+            </div>
+          </div>
+
+          <!-- Tiers -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-users-three"></i>Tiers liés<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <!-- Propriétaires -->
+              <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Propriétaire(s)</div>
+              <div class="person">
+                <div class="avatar" style="background:#dbeafe;color:#1d4ed8">JD</div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#0f172a">Jean Dupont</div><div style="font-size:10.5px;color:#8b8fa4">Propriétaire principal · 06 12 34 56 78</div></div>
+                <span class="pill pill-sky">Principal</span>
+              </div>
+              <div class="person">
+                <div class="avatar" style="background:#ede9fe;color:#6d28d9">MD</div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#0f172a">Marie Dupont</div><div style="font-size:10.5px;color:#8b8fa4">Indivision · 06 98 76 54 32</div></div>
+              </div>
+
+              <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;padding-top:10px;border-top:1px solid #f0f0f3">Mandataire</div>
+              <div class="person">
+                <div class="avatar" style="background:#fae8ff;color:#a21caf">IG</div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#0f172a">Immo Gestion SARL</div><div style="font-size:10.5px;color:#8b8fa4">Agence · 01 23 45 67 89</div></div>
+                <i class="ph ph-arrow-square-out" style="font-size:14px;color:#8b8fa4;cursor:pointer;opacity:.5"></i>
+              </div>
+
+              <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;padding-top:10px;border-top:1px solid #f0f0f3">Dernier locataire</div>
+              <div class="person">
+                <div class="avatar" style="background:#dcfce7;color:#15803d">PL</div>
+                <div style="flex:1"><div style="font-size:12.5px;font-weight:600;color:#0f172a">Pierre Leroy</div><div style="font-size:10.5px;color:#8b8fa4">Entrée le 15/03/2026 · 06 55 44 33 22</div></div>
+                <span class="tag" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">Informatif</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Missions -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-clipboard-text"></i>Missions<span style="margin-left:6px;background:#dbeafe;color:#1d4ed8;font-size:10px;padding:1px 7px;border-radius:6px;font-weight:700">4</span><i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div style="padding:0 4px 4px">
+              <table class="tbl">
+                <thead><tr><th>Référence</th><th>Date</th><th>Type</th><th>Technicien</th><th>Statut</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0042</td><td>11/04/2026</td><td><span class="tag" style="background:#dbeafe;color:#1d4ed8">Entrée</span></td><td>Lucas Martin</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+                  <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0038</td><td>05/04/2026</td><td><span class="tag" style="background:#fed7aa;color:#9a3412">Sortie</span></td><td>Lucas Martin</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+                  <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0051</td><td>18/04/2026</td><td><span class="tag" style="background:#dbeafe;color:#1d4ed8">Entrée</span></td><td>Sophie Petit</td><td><span class="pill pill-sky">Planifiée</span></td><td></td></tr>
+                  <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0023</td><td>20/03/2026</td><td><span class="tag" style="background:#fef3c7;color:#92400e">Inventaire</span></td><td>Marc Durand</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Sidebar summary panel -->
+        <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+          <!-- Quick info -->
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Résumé</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="text-align:center;padding:10px 0;background:#f8f9fb;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#0f172a">67</div><div style="font-size:10px;color:#8b8fa4;margin-top:2px">m²</div></div>
+              <div style="text-align:center;padding:10px 0;background:#f8f9fb;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#0f172a">3</div><div style="font-size:10px;color:#8b8fa4;margin-top:2px">pièces</div></div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:6px;justify-content:center">
+              <div style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;background:#dcfce7;color:#15803d">DPE C</div>
+              <div style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;background:#fef3c7;color:#b45309">GES D</div>
+            </div>
+          </div>
+
+          <!-- Bâtiment parent -->
+          <div class="card" style="padding:14px 16px;cursor:pointer" onmouseenter="this.style.borderColor='#2d526c30'" onmouseleave="this.style.borderColor='rgba(0,0,0,.03)'">
+            <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Bâtiment parent</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:8px;background:#f1f5f9;display:flex;align-items:center;justify-content:center"><i class="ph ph-building-office" style="font-size:16px;color:#475569"></i></div>
+              <div>
+                <div style="font-size:12.5px;font-weight:600;color:#0f172a">Résidence Victor Hugo</div>
+                <div style="font-size:10.5px;color:#8b8fa4">12 rue Victor Hugo, 75016 Paris</div>
+              </div>
+              <i class="ph ph-arrow-square-out" style="font-size:12px;color:#8b8fa4;margin-left:auto;opacity:.4"></i>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:11px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Actions rapides</div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center"><i class="ph ph-plus" style="font-size:13px"></i>Créer une mission</button>
+          </div>
+
+          <!-- Dates -->
+          <div style="padding:0 4px;font-size:10.5px;color:#b0b4c0">
+            <div style="display:flex;justify-content:space-between;padding:4px 0">Créé le<span>15/01/2026</span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 0">Modifié le<span>10/04/2026</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+// ─── LOT PROPOSAL B: Full Width Sections ───
+function lotB() {
+  return `<div class="frame"><div class="inner">
+    ${sidebar()}
+    <div class="main">
+      <div class="bread">
+        <a>Parc immobilier</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <a>Résidence Victor Hugo</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">Appartement T3 — Lot 302</span>
+      </div>
+
+      <!-- Hero with gradient accent -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="height:4px;background:linear-gradient(90deg,#3b82f6,#60a5fa,#93c5fd)"></div>
+        <div style="padding:22px 24px;display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:16px;align-items:center">
+            <div style="width:52px;height:52px;border-radius:14px;background:#eff6ff;display:flex;align-items:center;justify-content:center"><i class="ph-duotone ph-building-apartment" style="font-size:24px;color:#3b82f6"></i></div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px"><h1 style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:-.02em">Appartement T3 — Lot 302</h1><span class="pill pill-green">Actif</span></div>
+              <div style="display:flex;gap:6px;margin-top:5px;align-items:center;font-size:12px;color:#8b8fa4">
+                <i class="ph ph-building-office" style="font-size:13px"></i>Résidence Victor Hugo · 12 rue Victor Hugo, 75016 Paris
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+            <button class="btn btn-destructive"><i class="ph ph-archive" style="font-size:13px"></i></button>
+          </div>
+        </div>
+        <!-- Quick stats strip -->
+        <div style="border-top:1px solid #f0f0f3;padding:12px 24px;display:flex;gap:32px;background:#fafbfc">
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Type</span><div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:2px">Appartement</div></div>
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Surface</span><div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:2px">67 m²</div></div>
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Pièces</span><div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:2px">3</div></div>
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Étage</span><div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:2px">3ème</div></div>
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">DPE / GES</span><div style="display:flex;gap:4px;margin-top:4px"><span style="padding:2px 8px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700;font-size:12px">C</span><span style="padding:2px 8px;border-radius:4px;background:#fef3c7;color:#b45309;font-weight:700;font-size:12px">D</span></div></div>
+          <div><span style="font-size:10px;color:#8b8fa4;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Meublé</span><div style="font-size:13px;font-weight:600;color:#16a34a;margin-top:2px">Oui</div></div>
+          <div style="margin-left:auto"><button class="btn btn-primary"><i class="ph ph-plus" style="font-size:12px"></i>Nouvelle mission</button></div>
+        </div>
+      </div>
+
+      <!-- 2-col grid: Info + Tiers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <!-- Détails -->
+        <div class="card">
+          <div class="sec-h"><i class="ph ph-list-dashes"></i>Détails du bien<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+          <div class="sec-body">
+            <div class="field"><span class="field-label">Référence</span><span class="field-value" style="font-family:'JetBrains Mono',monospace;font-size:12px">BAIL-2025-0302</span></div>
+            <div class="field"><span class="field-label">Emplacement</span><span class="field-value">Porte de gauche</span></div>
+            <div class="field"><span class="field-label">N° Cave</span><span class="field-value">C-14</span></div>
+            <div class="field"><span class="field-label">N° Parking</span><span class="field-value">P-302</span></div>
+            <div class="field"><span class="field-label">Commentaire</span><span class="field-value" style="color:#64748b;font-size:12px">Rénovation cuisine prévue T3 2026</span></div>
+          </div>
+        </div>
+
+        <!-- Tiers -->
+        <div class="card">
+          <div class="sec-h"><i class="ph ph-users-three"></i>Tiers liés<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+          <div class="sec-body">
+            <div class="person"><div class="avatar" style="background:#dbeafe;color:#1d4ed8">JD</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Jean Dupont <span class="pill pill-sky" style="margin-left:4px">Principal</span></div><div style="font-size:10.5px;color:#8b8fa4">Propriétaire · 06 12 34 56 78</div></div></div>
+            <div class="person"><div class="avatar" style="background:#ede9fe;color:#6d28d9">MD</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Marie Dupont</div><div style="font-size:10.5px;color:#8b8fa4">Propriétaire (indivision)</div></div></div>
+            <div style="border-top:1px solid #f0f0f3;margin:6px 0"></div>
+            <div class="person"><div class="avatar" style="background:#fae8ff;color:#a21caf">IG</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Immo Gestion SARL</div><div style="font-size:10.5px;color:#8b8fa4">Mandataire · 01 23 45 67 89</div></div><i class="ph ph-arrow-square-out" style="font-size:13px;color:#8b8fa4;opacity:.4;cursor:pointer"></i></div>
+            <div style="border-top:1px solid #f0f0f3;margin:6px 0"></div>
+            <div class="person"><div class="avatar" style="background:#dcfce7;color:#15803d">PL</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pierre Leroy</div><div style="font-size:10.5px;color:#8b8fa4">Dernier locataire · Entrée 15/03/2026</div></div><span class="tag" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:9px">Informatif</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missions full width -->
+      <div class="card">
+        <div class="sec-h"><i class="ph ph-clipboard-text"></i>Historique des missions<span style="margin-left:6px;background:#dbeafe;color:#1d4ed8;font-size:10px;padding:1px 7px;border-radius:6px;font-weight:700">4</span><i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+        <div style="padding:0 4px 4px">
+          <table class="tbl"><thead><tr><th>Référence</th><th>Date</th><th>Type(s)</th><th>Technicien</th><th>Statut</th><th>PDF</th></tr></thead>
+          <tbody>
+            <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0042</td><td>11/04/2026</td><td><span class="tag" style="background:#dbeafe;color:#1d4ed8">Entrée</span></td><td>Lucas Martin</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0038</td><td>05/04/2026</td><td><span class="tag" style="background:#fed7aa;color:#9a3412">Sortie</span></td><td>Lucas Martin</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0051</td><td>18/04/2026</td><td><span class="tag" style="background:#dbeafe;color:#1d4ed8">Entrée</span></td><td>Sophie Petit</td><td><span class="pill pill-sky">Planifiée</span></td><td></td></tr>
+            <tr><td style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">M-2026-0023</td><td>20/03/2026</td><td><span class="tag" style="background:#fef3c7;color:#92400e">Inventaire</span></td><td>Marc Durand</td><td><span class="pill pill-green">Terminée</span></td><td><i class="ph ph-file-pdf" style="font-size:14px;color:#dc2626;cursor:pointer"></i></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+// ─── LOT PROPOSAL C: Tabbed Compact ───
+function lotC() {
+  return `<div class="frame"><div class="inner">
+    ${sidebar()}
+    <div class="main">
+      <div class="bread">
+        <a>Parc immobilier</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <a>Résidence Victor Hugo</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">Appartement T3 — Lot 302</span>
+      </div>
+
+      <!-- Compact header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="width:42px;height:42px;border-radius:10px;background:#f0fdfa;display:flex;align-items:center;justify-content:center"><i class="ph ph-building-apartment" style="font-size:20px;color:#0d9488"></i></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px"><h1 style="font-size:17px;font-weight:700;color:#0f172a">Appartement T3 — Lot 302</h1><span class="pill pill-green" style="font-size:10px">Actif</span></div>
+            <div style="font-size:11.5px;color:#8b8fa4;margin-top:2px"><i class="ph ph-building-office" style="font-size:12px"></i> Résidence Victor Hugo · 67 m² · 3 pièces · 3ème</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline" style="height:34px"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+          <button class="btn btn-primary" style="height:34px"><i class="ph ph-plus" style="font-size:12px"></i>Mission</button>
+        </div>
+      </div>
+
+      <!-- Tab strip -->
+      <div style="display:flex;gap:2px;padding:3px;border-radius:10px;background:#f1f3f5;width:fit-content;margin-bottom:16px;border:1px solid rgba(0,0,0,.03)">
+        <div style="padding:6px 16px;border-radius:8px;background:#fff;font-size:12px;font-weight:600;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer">Informations</div>
+        <div style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:500;color:#8b8fa4;cursor:pointer">Tiers (3)</div>
+        <div style="padding:6px 16px;border-radius:8px;font-size:12px;font-weight:500;color:#8b8fa4;cursor:pointer">Missions (4)</div>
+      </div>
+
+      <!-- 3-col info grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="card" style="padding:16px 18px">
+          <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Identification</div>
+          <div class="field"><span class="field-label" style="width:110px">Désignation</span><span class="field-value" style="font-size:12px">Appt T3 — Lot 302</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Référence</span><span class="field-value" style="font-family:'JetBrains Mono',monospace;font-size:11px">BAIL-2025-0302</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Type</span><span class="field-value" style="font-size:12px">Appartement</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Meublé</span><span style="color:#16a34a;font-weight:600;font-size:12px">Oui</span></div>
+        </div>
+        <div class="card" style="padding:16px 18px">
+          <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Caractéristiques</div>
+          <div class="field"><span class="field-label" style="width:110px">Surface</span><span class="field-value" style="font-size:12px">67 m²</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Pièces</span><span class="field-value" style="font-size:12px">3</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Étage</span><span class="field-value" style="font-size:12px">3ème</span></div>
+          <div class="field"><span class="field-label" style="width:110px">Emplacement</span><span class="field-value" style="font-size:12px">Porte de gauche</span></div>
+        </div>
+        <div class="card" style="padding:16px 18px">
+          <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Énergie & Annexes</div>
+          <div class="field"><span class="field-label" style="width:110px">DPE</span><span style="padding:2px 8px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:700;font-size:12px">C</span></div>
+          <div class="field"><span class="field-label" style="width:110px">GES</span><span style="padding:2px 8px;border-radius:4px;background:#fef3c7;color:#b45309;font-weight:700;font-size:12px">D</span></div>
+          <div class="field"><span class="field-label" style="width:110px">N° Cave</span><span class="field-value" style="font-size:12px">C-14</span></div>
+          <div class="field"><span class="field-label" style="width:110px">N° Parking</span><span class="field-value" style="font-size:12px">P-302</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+// ═══════════════════════════════════════
+// MISSION DETAIL — PROPOSALS
+// ═══════════════════════════════════════
+
+function missionSidebar() {
+  return `<div class="sb">
+    <div class="sb-h"><div class="ico"><i class="ph-fill ph-buildings" style="font-size:12px;color:#fff"></i></div>ImmoChecker</div>
+    <div class="sb-sec">Opérationnel</div>
+    <a><i class="ph ph-squares-four"></i>Tableau de bord</a>
+    <a class="on"><i class="ph ph-clipboard-text"></i>Missions</a>
+    <div class="sb-sec">Référentiel</div>
+    <a><i class="ph ph-building-office"></i>Parc immobilier</a>
+    <a><i class="ph ph-users-three"></i>Tiers</a>
+    <div style="flex:1"></div>
+    <a style="opacity:.5"><i class="ph ph-gear-six"></i>Paramètres</a>
+  </div>`;
+}
+
+// ─── MISSION PROPOSAL A: Hero + Grid ───
+function missionA() {
+  return `<div class="frame"><div class="inner">
+    ${missionSidebar()}
+    <div class="main" style="max-width:none">
+      <div class="bread">
+        <a>Missions</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">M-2026-0042</span>
+      </div>
+
+      <!-- Hero card -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="padding:22px 24px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <h1 style="font-size:22px;font-weight:800;letter-spacing:-.03em;color:#0f172a">M-2026-0042</h1>
+                <span class="pill" style="background:#dcfce7;color:#15803d"><i class="ph-bold ph-check-circle" style="font-size:10px"></i> Terminée</span>
+                <span class="pill" style="background:#dcfce7;color:#15803d">RDV: Confirmé</span>
+                <span class="pill pill-blue"><i class="ph-bold ph-sign-in" style="font-size:10px"></i> Entrée</span>
+              </div>
+              <p style="font-size:13px;color:#475569;margin-top:6px;font-weight:500">Appartement T3 — Lot 302 <span style="color:#94a3b8;font-weight:400">— Résidence Victor Hugo</span></p>
+              <div style="display:flex;gap:20px;margin-top:8px;font-size:12px;color:#8b8fa4">
+                <span style="display:flex;align-items:center;gap:5px"><i class="ph-duotone ph-calendar" style="font-size:14px;opacity:.5"></i>11 avril 2026</span>
+                <span style="display:flex;align-items:center;gap:5px"><i class="ph-duotone ph-clock" style="font-size:14px;opacity:.5"></i>09:00 – 11:30</span>
+                <span style="display:flex;align-items:center;gap:5px"><i class="ph-duotone ph-user" style="font-size:14px;opacity:.5"></i>Lucas Martin</span>
+                <span style="display:flex;align-items:center;gap:5px"><i class="ph-duotone ph-map-pin" style="font-size:14px;opacity:.5"></i>12 rue V. Hugo, 75016</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="btn btn-outline" style="opacity:.5;cursor:not-allowed"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+            </div>
+          </div>
+        </div>
+        <!-- Lock banner -->
+        <div style="border-top:1px solid #fde68a;background:#fffbeb;padding:10px 24px;display:flex;align-items:center;gap:10px">
+          <i class="ph ph-lock" style="font-size:14px;color:#d97706"></i>
+          <span style="font-size:12px;color:#92400e;font-weight:500">Mission terminée — édition limitée. Seuls le commentaire et les clés sont modifiables.</span>
+        </div>
+      </div>
+
+      <!-- 2-col grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <!-- LEFT COL -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <!-- Bien -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-house"></i>Bien<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div style="display:flex;gap:12px;align-items:center;padding:6px 0;cursor:pointer">
+                <div style="width:40px;height:40px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center"><i class="ph ph-building-apartment" style="font-size:18px;color:#3b82f6"></i></div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:#0f172a">Appartement T3 — Lot 302</div>
+                  <div style="font-size:11px;color:#8b8fa4">Appartement · 3ème étage · 67 m²</div>
+                </div>
+                <i class="ph ph-arrow-square-out" style="font-size:13px;color:#8b8fa4;opacity:.4"></i>
+              </div>
+              <div style="border-top:1px solid #f5f5f8;margin:6px 0"></div>
+              <div style="display:flex;gap:12px;align-items:center;padding:6px 0;cursor:pointer">
+                <div style="width:40px;height:40px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center"><i class="ph ph-building-office" style="font-size:18px;color:#475569"></i></div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:#0f172a">Résidence Victor Hugo</div>
+                  <div style="font-size:11px;color:#8b8fa4">12 rue Victor Hugo, 75016 Paris</div>
+                </div>
+                <i class="ph ph-arrow-square-out" style="font-size:13px;color:#8b8fa4;opacity:.4"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parties -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-users-three"></i>Parties<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div class="person"><div class="avatar" style="background:#e0f2fe;color:#0369a1">JD</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Jean Dupont</div><div style="font-size:10.5px;color:#8b8fa4">Propriétaire</div></div><i class="ph ph-arrow-square-out" style="font-size:12px;color:#8b8fa4;opacity:.4;cursor:pointer"></i></div>
+              <div class="person"><div class="avatar" style="background:#dcfce7;color:#15803d">PL</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pierre Leroy</div><div style="font-size:10.5px;color:#8b8fa4">Locataire entrant</div></div><span class="pill pill-green" style="font-size:9px">Entrant</span></div>
+              <div class="person"><div class="avatar" style="background:#fae8ff;color:#a21caf">IG</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Immo Gestion SARL</div><div style="font-size:10.5px;color:#8b8fa4">Mandataire</div></div></div>
+            </div>
+          </div>
+
+          <!-- Commentaire -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-chat-text"></i>Commentaire<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div style="background:#f8f9fb;border:1px solid #e8eaef;border-radius:8px;padding:10px 12px;font-size:12px;color:#475569;line-height:1.6;min-height:60px">RAS — État des lieux conforme. Remise des clés effectuée.</div>
+              <div style="font-size:10px;color:#b0b4c0;margin-top:6px"><i class="ph ph-info" style="font-size:10px"></i> Le commentaire reste modifiable après terminaison.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <!-- Planning -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-calendar"></i>Planning<i class="ph ph-lock" style="margin-left:6px;font-size:11px;color:#d97706"></i><i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div class="field"><span class="field-label">Date</span><span class="field-value">11 avril 2026</span></div>
+              <div class="field"><span class="field-label">Horaire</span><span class="field-value">09:00 — 11:30</span></div>
+              <div class="field"><span class="field-label">Statut RDV</span><span class="pill pill-green">Confirmé</span></div>
+            </div>
+          </div>
+
+          <!-- Technicien -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-user"></i>Technicien<i class="ph ph-lock" style="margin-left:6px;font-size:11px;color:#d97706"></i><i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div class="avatar" style="background:#dbeafe;color:#1d4ed8;width:38px;height:38px;border-radius:10px;font-size:13px">LM</div>
+                <div><div style="font-size:13px;font-weight:600;color:#0f172a">Lucas Martin</div><div style="font-size:11px;color:#8b8fa4">lucas.martin@email.com</div></div>
+                <span class="pill pill-green" style="margin-left:auto"><i class="ph-bold ph-check" style="font-size:9px"></i> Accepté</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents EDL -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-file-text"></i>Documents EDL<i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fdf8;border:1px solid #dcfce7;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="pill pill-blue" style="font-size:9px">Entrée</span>
+                  <span style="font-size:12px;font-weight:600;color:#0f172a">État des lieux</span>
+                  <span class="pill pill-green" style="font-size:9px">Signé</span>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <a style="font-size:11px;color:#2d526c;cursor:pointer;display:flex;align-items:center;gap:3px;text-decoration:none"><i class="ph ph-file-pdf" style="font-size:13px;color:#dc2626"></i>PDF</a>
+                  <a style="font-size:11px;color:#2d526c;cursor:pointer;display:flex;align-items:center;gap:3px;text-decoration:none"><i class="ph ph-globe" style="font-size:13px;color:#3b82f6"></i>Web</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clés -->
+          <div class="card">
+            <div class="sec-h"><i class="ph ph-key"></i>Clés<span style="margin-left:6px;font-size:10px;color:#8b8fa4;font-weight:400">Modifiable après terminaison</span><i class="ph ph-caret-up" style="margin-left:auto;font-size:12px;opacity:.3"></i></div>
+            <div class="sec-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f8">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:14px;color:#8b8fa4"></i><span style="font-size:12px;font-weight:600">Clé porte d'entrée</span><span style="font-size:10px;color:#8b8fa4">×2</span></div>
+                <span class="pill pill-green" style="font-size:9.5px">Remise</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f8">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:14px;color:#8b8fa4"></i><span style="font-size:12px;font-weight:600">Badge parking</span><span style="font-size:10px;color:#8b8fa4">×1</span></div>
+                <span class="pill pill-amber" style="font-size:9.5px">À déposer</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:14px;color:#8b8fa4"></i><span style="font-size:12px;font-weight:600">Clé boîte aux lettres</span><span style="font-size:10px;color:#8b8fa4">×1</span></div>
+                <span class="pill pill-green" style="font-size:9.5px">Remise</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+// ─── MISSION PROPOSAL B: Timeline ───
+function missionB() {
+  return `<div class="frame"><div class="inner">
+    ${missionSidebar()}
+    <div class="main" style="max-width:none">
+      <div class="bread">
+        <a>Missions</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">M-2026-0051</span>
+      </div>
+
+      <!-- Header — compact with actions pending -->
+      <div class="card" style="padding:20px 24px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <h1 style="font-size:20px;font-weight:800;letter-spacing:-.03em;color:#0f172a">M-2026-0051</h1>
+              <span class="pill pill-sky">Planifiée</span>
+              <span class="pill pill-amber">RDV: À confirmer</span>
+              <span class="pill pill-blue">Entrée</span>
+            </div>
+            <p style="font-size:12.5px;color:#64748b;margin-top:5px">Appartement T3 — Lot 302 · Résidence Victor Hugo</p>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+            <button class="btn btn-destructive"><i class="ph ph-prohibit" style="font-size:13px"></i>Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending actions banner -->
+      <div class="banner banner-orange" style="margin-bottom:16px">
+        <i class="ph ph-warning" style="font-size:16px"></i>
+        <div style="display:flex;gap:12px;font-size:12px;font-weight:500">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:#ea580c"></span>Technicien à assigner</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:#ea580c"></span>RDV à confirmer</span>
+        </div>
+      </div>
+
+      <!-- 3-col: Left info | Center Timeline | Right docs -->
+      <div style="display:grid;grid-template-columns:280px 1fr 280px;gap:14px">
+        <!-- LEFT -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Planning</div>
+            <div class="field"><span class="field-label" style="width:80px">Date</span><span class="field-value">18/04/2026</span></div>
+            <div class="field"><span class="field-label" style="width:80px">Horaire</span><span class="field-value">09:00 – 11:00</span></div>
+            <div class="field"><span class="field-label" style="width:80px">RDV</span><span class="pill pill-amber">À confirmer</span></div>
+          </div>
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Technicien</div>
+            <div style="text-align:center;padding:12px 0">
+              <div style="width:44px;height:44px;border-radius:12px;background:#f1f3f5;display:flex;align-items:center;justify-content:center;margin:0 auto"><i class="ph ph-user-plus" style="font-size:20px;color:#8b8fa4"></i></div>
+              <p style="font-size:11px;color:#8b8fa4;font-style:italic;margin-top:8px">Non assigné</p>
+              <button class="btn btn-primary" style="margin-top:10px;width:100%;justify-content:center;font-size:11px">Assigner</button>
+            </div>
+          </div>
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Bien</div>
+            <div style="display:flex;gap:10px;align-items:center;cursor:pointer">
+              <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;display:flex;align-items:center;justify-content:center"><i class="ph ph-building-apartment" style="font-size:14px;color:#3b82f6"></i></div>
+              <div><div style="font-size:12px;font-weight:600;color:#0f172a">Lot 302</div><div style="font-size:10px;color:#8b8fa4">3ème · 67 m²</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER: Timeline -->
+        <div class="card" style="padding:20px 24px">
+          <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:16px;display:flex;align-items:center;gap:8px"><i class="ph ph-flow-arrow" style="font-size:16px;color:#8b8fa4"></i>Chronologie de la mission</div>
+          <div style="position:relative;padding-left:24px">
+            <!-- Timeline line -->
+            <div style="position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:#e8eaef;border-radius:1px"></div>
+
+            <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-20px;top:2px;width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2px solid #fff;box-shadow:0 0 0 2px #dbeafe"></div><div style="font-size:12px;font-weight:600;color:#0f172a">Mission créée</div><div style="font-size:10.5px;color:#8b8fa4;margin-top:2px">10 avril 2026 à 14:30 · par Admin Flat Checker</div></div>
+
+            <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-20px;top:2px;width:12px;height:12px;border-radius:50%;background:#f59e0b;border:2px solid #fff;box-shadow:0 0 0 2px #fef3c7"></div><div style="font-size:12px;font-weight:600;color:#0f172a">EDL entrée ajouté</div><div style="font-size:10.5px;color:#8b8fa4;margin-top:2px">10 avril 2026 à 14:32 · Locataire: Pierre Leroy</div></div>
+
+            <div style="position:relative;padding-bottom:20px"><div style="position:absolute;left:-20px;top:2px;width:12px;height:12px;border-radius:50%;background:#e8eaef;border:2px solid #fff;box-shadow:0 0 0 2px #f1f3f5"></div><div style="font-size:12px;font-weight:600;color:#8b8fa4">En attente d'assignation</div><div style="font-size:10.5px;color:#b0b4c0;margin-top:2px">Aucun technicien assigné</div></div>
+
+            <div style="position:relative"><div style="position:absolute;left:-20px;top:2px;width:12px;height:12px;border-radius:50%;background:#e8eaef;border:2px solid #fff;box-shadow:0 0 0 2px #f1f3f5"></div><div style="font-size:12px;font-weight:600;color:#8b8fa4">RDV à confirmer</div><div style="font-size:10.5px;color:#b0b4c0;margin-top:2px">Date: 18/04/2026</div></div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Parties</div>
+            <div class="person" style="padding:6px 0"><div class="avatar" style="background:#e0f2fe;color:#0369a1;width:28px;height:28px;font-size:9px">JD</div><div><div style="font-size:12px;font-weight:600">Jean Dupont</div><div style="font-size:10px;color:#8b8fa4">Propriétaire</div></div></div>
+            <div class="person" style="padding:6px 0"><div class="avatar" style="background:#dcfce7;color:#15803d;width:28px;height:28px;font-size:9px">PL</div><div><div style="font-size:12px;font-weight:600">Pierre Leroy</div><div style="font-size:10px;color:#8b8fa4">Loc. entrant</div></div></div>
+          </div>
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Documents EDL</div>
+            <div style="text-align:center;padding:16px 0">
+              <i class="ph ph-file-dashed" style="font-size:24px;color:#d0d4dc"></i>
+              <p style="font-size:11px;color:#b0b4c0;font-style:italic;margin-top:6px">Aucun document</p>
+            </div>
+          </div>
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Commentaire</div>
+            <div style="background:#f8f9fb;border:1px dashed #e2e4e8;border-radius:8px;padding:10px 12px;font-size:11px;color:#b0b4c0;font-style:italic;min-height:50px">Ajouter un commentaire...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+// ─── MISSION PROPOSAL C: Compact Split ───
+function missionC() {
+  return `<div class="frame"><div class="inner">
+    ${missionSidebar()}
+    <div class="main" style="max-width:none">
+      <div class="bread">
+        <a>Missions</a><i class="ph ph-caret-right" style="font-size:10px;opacity:.3"></i>
+        <span class="curr">M-2026-0042</span>
+      </div>
+
+      <!-- Compact header with inline stats -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <h1 style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:-.02em">M-2026-0042</h1>
+          <span class="pill pill-green"><i class="ph-bold ph-check-circle" style="font-size:9px"></i> Terminée</span>
+          <span class="pill pill-blue">Entrée</span>
+          <span style="font-size:12px;color:#8b8fa4">·</span>
+          <span style="font-size:12px;color:#8b8fa4">11 avril 2026</span>
+          <span style="font-size:12px;color:#8b8fa4">·</span>
+          <span style="font-size:12px;color:#8b8fa4">Lucas Martin</span>
+        </div>
+        <button class="btn btn-ghost"><i class="ph ph-pencil-simple" style="font-size:13px"></i>Modifier</button>
+      </div>
+
+      <div class="banner banner-amber" style="margin-bottom:14px">
+        <i class="ph ph-lock" style="font-size:14px"></i>
+        <span style="font-size:11.5px">Mission terminée — édition limitée. Seuls le commentaire et les clés sont modifiables.</span>
+      </div>
+
+      <!-- Dense 2-col: stacked cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <!-- LEFT: All info in dense rows -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <!-- Planning + Tech compact -->
+          <div class="card" style="padding:14px 16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ph ph-calendar" style="font-size:11px"></i> Planning</div>
+                <div style="font-size:13px;font-weight:600;color:#0f172a">11 avril 2026</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px">09:00 — 11:30</div>
+                <div style="margin-top:4px"><span class="pill pill-green" style="font-size:9px">RDV Confirmé</span></div>
+              </div>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ph ph-user" style="font-size:11px"></i> Technicien</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="avatar" style="background:#dbeafe;color:#1d4ed8;width:30px;height:30px;font-size:10px">LM</div>
+                  <div><div style="font-size:12px;font-weight:600">Lucas Martin</div><span class="pill pill-green" style="font-size:8.5px">Accepté</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bien + Bâtiment -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ph ph-house" style="font-size:11px"></i> Bien & Bâtiment</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="padding:10px 12px;background:#f8f9fb;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:.15s" onmouseenter="this.style.borderColor='#2d526c30'" onmouseleave="this.style.borderColor='transparent'">
+                <div style="font-size:12px;font-weight:600;color:#0f172a">Lot 302</div>
+                <div style="font-size:10.5px;color:#8b8fa4">Appartement · 3ème · 67 m²</div>
+              </div>
+              <div style="padding:10px 12px;background:#f8f9fb;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:.15s" onmouseenter="this.style.borderColor='#2d526c30'" onmouseleave="this.style.borderColor='transparent'">
+                <div style="font-size:12px;font-weight:600;color:#0f172a">Rés. Victor Hugo</div>
+                <div style="font-size:10.5px;color:#8b8fa4">12 rue V. Hugo, 75016</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parties compact -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ph ph-users-three" style="font-size:11px"></i> Parties</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;background:#f8f9fb;border-radius:8px"><div class="avatar" style="background:#e0f2fe;color:#0369a1;width:24px;height:24px;font-size:8px;border-radius:6px">JD</div><span style="font-size:11px;font-weight:600">J. Dupont</span><span style="font-size:9px;color:#8b8fa4">Proprio</span></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;background:#f0fdf4;border-radius:8px"><div class="avatar" style="background:#dcfce7;color:#15803d;width:24px;height:24px;font-size:8px;border-radius:6px">PL</div><span style="font-size:11px;font-weight:600">P. Leroy</span><span style="font-size:9px;color:#15803d">Entrant</span></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;background:#faf5ff;border-radius:8px"><div class="avatar" style="background:#fae8ff;color:#a21caf;width:24px;height:24px;font-size:8px;border-radius:6px">IG</div><span style="font-size:11px;font-weight:600">Immo Gestion</span><span style="font-size:9px;color:#8b8fa4">Mandataire</span></div>
+            </div>
+          </div>
+
+          <!-- Commentaire -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ph ph-chat-text" style="font-size:11px"></i> Commentaire <span style="font-weight:400;text-transform:none;letter-spacing:0">(toujours éditable)</span></div>
+            <div style="background:#f8f9fb;border:1px solid #e8eaef;border-radius:8px;padding:10px 12px;font-size:12px;color:#475569;line-height:1.5">RAS — État des lieux conforme.</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Documents + Clés -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <!-- EDL Documents -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px"><i class="ph ph-file-text" style="font-size:11px"></i> Documents EDL</div>
+            <div style="padding:12px 14px;background:#f8fdf8;border:1px solid #dcfce7;border-radius:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span class="pill pill-blue" style="font-size:9px">Entrée</span>
+                  <span style="font-size:12.5px;font-weight:600;color:#0f172a">État des lieux</span>
+                </div>
+                <span class="pill pill-green" style="font-size:9px"><i class="ph-bold ph-check" style="font-size:8px"></i> Signé</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#8b8fa4;margin-bottom:8px"><i class="ph ph-user" style="font-size:12px"></i>Pierre Leroy <span class="pill pill-green" style="font-size:8px;padding:1px 6px">Entrant</span></div>
+              <div style="display:flex;gap:8px;border-top:1px solid #dcfce7;padding-top:8px">
+                <a style="display:flex;align-items:center;gap:4px;font-size:11px;color:#2d526c;cursor:pointer;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #e8eaef;text-decoration:none"><i class="ph ph-file-pdf" style="font-size:13px;color:#dc2626"></i>PDF</a>
+                <a style="display:flex;align-items:center;gap:4px;font-size:11px;color:#2d526c;cursor:pointer;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #e8eaef;text-decoration:none"><i class="ph ph-globe" style="font-size:13px;color:#3b82f6"></i>Web</a>
+                <a style="display:flex;align-items:center;gap:4px;font-size:11px;color:#2d526c;cursor:pointer;padding:4px 10px;background:#fff;border-radius:6px;border:1px solid #e8eaef;text-decoration:none"><i class="ph ph-scales" style="font-size:13px;color:#8b5cf6"></i>Légal</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clés -->
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;color:#8b8fa4;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px"><i class="ph ph-key" style="font-size:11px"></i> Clés <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#d97706">(modifiable)</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8f9fb;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:13px;color:#64748b"></i><span style="font-size:12px;font-weight:600">Porte d'entrée</span><span style="font-size:10px;padding:1px 6px;background:#e8eaef;border-radius:4px;color:#64748b;font-weight:600">×2</span></div>
+                <span class="pill pill-green" style="font-size:9px">Remise</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:13px;color:#d97706"></i><span style="font-size:12px;font-weight:600">Badge parking</span><span style="font-size:10px;padding:1px 6px;background:#fef3c7;border-radius:4px;color:#92400e;font-weight:600">×1</span></div>
+                <div style="display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:#8b8fa4">Lieu:</span><span style="font-size:10px;color:#92400e;font-weight:500">Agence</span><span class="pill pill-amber" style="font-size:9px">À déposer</span></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8f9fb;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:8px"><i class="ph ph-key" style="font-size:13px;color:#64748b"></i><span style="font-size:12px;font-weight:600">Boîte aux lettres</span><span style="font-size:10px;padding:1px 6px;background:#e8eaef;border-radius:4px;color:#64748b;font-weight:600">×1</span></div>
+                <span class="pill pill-green" style="font-size:9px">Remise</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+
+// ═══════════════════════════════════════
+// SPEC BOXES
+// ═══════════════════════════════════════
+
+function specLot() {
+  return `<div class="spec-box">
+    <h3><i class="ph ph-book-open" style="font-size:16px;color:rgba(255,255,255,.4)"></i>Normes Notion — Fiche Lot (US-609, EPIC 1)</h3>
+    <ul>
+      <li><span class="ok">&#10003;</span> Navigation une page avec sections collapsibles (toutes ouvertes par défaut)</li>
+      <li><span class="ok">&#10003;</span> Header : icône par type de bien + désignation + badge type + meublé + archivé</li>
+      <li><span class="ok">&#10003;</span> Mode édition : "Modifier" CTA → inputs inline (même layout) → FloatingSaveBar</li>
+      <li><span class="ok">&#10003;</span> Lot archivé : bannière avertissement + lecture seule + "Restaurer" uniquement</li>
+      <li><span class="ok">&#10003;</span> Champs : désignation, référence_libre, type, étage, emplacement, surface, nb_pièces, meublé, DPE, GES, N° cave/parking, commentaire</li>
+      <li><span class="ok">&#10003;</span> <strong>Tiers liés — 3 sous-sections distinctes :</strong> Propriétaire(s) (indivision), Mandataire (1 seul), Dernier locataire (lecture seule, depuis EDL)</li>
+      <li><span class="gap">&#9888;</span> <strong>Section Missions</strong> : tableau avec référence, date, type, technicien, statut, lien PDF si signé. CTA "Créer une mission" si vide</li>
+      <li><span class="gap">&#9888;</span> Bâtiment parent affiché comme lien cliquable vers sa fiche</li>
+      <li><span class="gap">&#9888;</span> Archivage bloqué si missions en cours (planifiée/assignée)</li>
+      <li><span class="gap">&#9888;</span> Guard navigation : modale si modifications non sauvegardées</li>
+      <li>code_accès <strong>exclu</strong> du lot (migré vers EDL). Compteurs <strong>exclus</strong> (tablette uniquement)</li>
+    </ul>
+  </div>`;
+}
+
+function specMission() {
+  return `<div class="spec-box">
+    <h3><i class="ph ph-book-open" style="font-size:16px;color:rgba(255,255,255,.4)"></i>Normes Notion — Fiche Mission (US-811, EPIC 13) & Drawer (US-842, EPIC 14)</h3>
+    <ul>
+      <li><span class="ok">&#10003;</span> Hero : référence + statut mission + statut RDV + types EDL (Entrée/Sortie/Inventaire) + lot + adresse + date/heure/tech</li>
+      <li><span class="ok">&#10003;</span> Bannières : ambre si terminée (Lock), rouge si annulée (motif), orange si actions en attente</li>
+      <li><span class="ok">&#10003;</span> <strong>Post-terminaison :</strong> TOUT verrouillé SAUF commentaire + clés (statut_cle + lieu_depot)</li>
+      <li><span class="ok">&#10003;</span> <strong>Revalidation dialog :</strong> si date/heure change + technicien accepté → choix "Demander revalidation" / "Confirmer d'office"</li>
+      <li><span class="ok">&#10003;</span> 7 sections : Bien (lot+bâtiment), Planning, Technicien, Parties (proprio+locataire+mandataire), Documents EDL, Clés, Commentaire</li>
+      <li><span class="ok">&#10003;</span> Clés groupées par EDL avec type, quantité, statut (remise/à_déposer/déposée), lieu_depot</li>
+      <li><span class="ok">&#10003;</span> Documents EDL : sens badge + type + statut + liens PDF/Web si signé</li>
+      <li><span class="gap">&#9888;</span> <strong>Timeline/historique</strong> : création, assignation, changements de statut (spécifié mais non implémenté)</li>
+      <li><span class="gap">&#9888;</span> <strong>"Ajouter un EDL"</strong> : bouton + mini-formulaire inline (sens + type + locataire picker)</li>
+      <li><span class="gap">&#9888;</span> <strong>Annulation :</strong> admin + motif obligatoire. IMPOSSIBLE si terminée. EDL non signés → infructueux</li>
+      <li><span class="gap">&#9888;</span> Drawer vs Full page : drawer = inline editing, full page = "Modifier" CTA global</li>
+      <li>lot_id <strong>immutable</strong> après création. Auto-terminaison quand tous EDL signés</li>
+    </ul>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+
+const lotPanels = [lotA, lotB, lotC];
+const missionPanels = [missionA, missionB, missionC];
+
+const root = document.getElementById('root');
+
+// Build page containers
+const lotPage = document.createElement('div');
+lotPage.className = 'page-pane on';
+lotPage.id = 'page-lot';
+
+const missionPage = document.createElement('div');
+missionPage.className = 'page-pane';
+missionPage.id = 'page-mission';
+
+// Build design panes for lot
+lotPanels.forEach((fn, i) => {
+  const d = document.createElement('div');
+  d.className = 'design-pane' + (i === 0 ? ' on' : '');
+  d.innerHTML = fn();
+  lotPage.appendChild(d);
+});
+// Spec box for lot
+const ls = document.createElement('div');
+ls.className = 'design-pane on';
+ls.innerHTML = specLot();
+ls.style.padding = '0';
+lotPage.appendChild(ls);
+
+// Build design panes for mission
+missionPanels.forEach((fn, i) => {
+  const d = document.createElement('div');
+  d.className = 'design-pane' + (i === 0 ? ' on' : '');
+  d.innerHTML = fn();
+  missionPage.appendChild(d);
+});
+// Spec box for mission
+const ms = document.createElement('div');
+ms.className = 'design-pane on';
+ms.innerHTML = specMission();
+ms.style.padding = '0';
+missionPage.appendChild(ms);
+
+root.appendChild(lotPage);
+root.appendChild(missionPage);
+
+function swPage(idx, btn) {
+  document.querySelectorAll('.page-pane').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('on'));
+  (idx === 0 ? lotPage : missionPage).classList.add('on');
+  btn.classList.add('on');
+  // Toggle design tabs
+  document.getElementById('dtabs-lot').style.display = idx === 0 ? 'flex' : 'none';
+  document.getElementById('dtabs-mission').style.display = idx === 1 ? 'flex' : 'none';
+  // Reset design tabs
+  const dtabs = document.getElementById(idx === 0 ? 'dtabs-lot' : 'dtabs-mission');
+  dtabs.querySelectorAll('.dtab').forEach((b, i) => b.classList.toggle('on', i === 0));
+  const page = idx === 0 ? lotPage : missionPage;
+  page.querySelectorAll('.design-pane').forEach((p, i) => {
+    // Show first design + spec (last child)
+    if (i === 0 || i === (idx === 0 ? lotPanels.length : missionPanels.length)) p.classList.add('on');
+    else p.classList.remove('on');
+  });
+}
+
+function swDesign(pageIdx, designIdx, btn) {
+  const page = pageIdx === 0 ? lotPage : missionPage;
+  const panels = pageIdx === 0 ? lotPanels : missionPanels;
+  const dtabsId = pageIdx === 0 ? 'dtabs-lot' : 'dtabs-mission';
+
+  // Toggle design tabs
+  document.getElementById(dtabsId).querySelectorAll('.dtab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+
+  // Show selected design + spec box (always last child)
+  const panes = page.querySelectorAll('.design-pane');
+  panes.forEach((p, i) => {
+    if (i === designIdx || i === panels.length) p.classList.add('on');
+    else p.classList.remove('on');
+  });
+}
+</script>
+</body>
+</html>

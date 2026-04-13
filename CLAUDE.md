@@ -1,38 +1,38 @@
 # ImmoChecker — Contexte Permanent Claude Code
 
-> Ce fichier centralise toutes les informations necessaires au developpement de la webapp ImmoChecker.
-> Derniere mise a jour : 26 mars 2026.
+> Ce fichier centralise toutes les informations nécessaires au développement de la webapp ImmoChecker.
+> Dernière mise à jour : 26 mars 2026.
 
 ---
 
 ## 1. Vision Produit
 
-**ImmoChecker** est un outil de creation d'etats des lieux (EDL) et d'inventaires pour l'immobilier. Le produit se compose d'une webapp back-office (admin/gestionnaire) et d'une app mobile/tablette (technicien terrain). **Ce fichier concerne uniquement la webapp.**
+**ImmoChecker** est un outil de création d'états des lieux (EDL) et d'inventaires pour l'immobilier. Le produit se compose d'une webapp back-office (admin/gestionnaire) et d'une app mobile/tablette (technicien terrain). **Ce fichier concerne uniquement la webapp.**
 
-L'objectif est de remplacer Immopad, fiabiliser les donnees, fluidifier l'operationnel et preparer une commercialisation SaaS.
+L'objectif est de remplacer Immopad, fiabiliser les données, fluidifier l'opérationnel et préparer une commercialisation SaaS.
 
-**ImmoChecker n'est PAS un logiciel de gestion locative.** L'occupation des logements n'est pas geree.
+**ImmoChecker n'est PAS un logiciel de gestion locative.** L'occupation des logements n'est pas gérée.
 
-> Document de reference complet : `knowledge/notion/pages/vision-fonctionnelle-cible-immochecker-v1.md`
+> Document de référence complet : `knowledge/notion/pages/vision-fonctionnelle-cible-immochecker-v1.md`
 
 ### 3 types de workspace
 
-- **societe_edl** — Societe d'EDL (ex: FlatChecker). Cas le plus complexe : missions, techniciens, mandataires.
-- **bailleur** — Bailleur direct. Simplifie : EDL sans mission possible, pas de mandataire.
-- **agence** — Agence immobiliere. Gestion interne, onglet Mandataire masque.
+- **societe_edl** — Société d'EDL (ex: FlatChecker). Cas le plus complexe : missions, techniciens, mandataires.
+- **bailleur** — Bailleur direct. Simplifié : EDL sans mission possible, pas de mandataire.
+- **agence** — Agence immobilière. Gestion interne, onglet Mandataire masqué.
 
-### Perimetre webapp (Lot 1)
+### Périmètre webapp (Lot 1)
 
-La webapp ne descend jamais en dessous du niveau EDL_Inventaire. Les donnees de saisie terrain (pieces, items, photos) sont consultables uniquement via le PDF/Web genere. Le back-office pilote et consulte, la tablette saisit.
+La webapp ne descend jamais en dessous du niveau EDL_Inventaire. Les données de saisie terrain (pièces, items, photos) sont consultables uniquement via le PDF/Web généré. Le back-office pilote et consulte, la tablette saisit.
 
 ---
 
-## 2. Architecture de Donnees
+## 2. Architecture de Données
 
-> Document de reference complet : `knowledge/notion/pages/architecture-de-donnees-immochecker-v1.md`
-> Attributs detailles par table : `knowledge/notion/pages/attributs-par-table-immochecker-v1.md`
+> Document de référence complet : `knowledge/notion/pages/architecture-de-donnees-immochecker-v1.md`
+> Attributs détaillés par table : `knowledge/notion/pages/attributs-par-table-immochecker-v1.md`
 
-### Couches du modele (28 tables)
+### Couches du modèle (28 tables)
 
 - **Couche Auth** : Workspace, Utilisateur, WorkspaceUser (pivot)
 - **Couche Tiers** : Tiers, TiersOrganisation (pivot), LotProprietaire (pivot), EDLLocataire (pivot)
@@ -43,34 +43,34 @@ La webapp ne descend jamais en dessous du niveau EDL_Inventaire. Les donnees de 
 
 ---
 
-## 3. Decisions d'Architecture Cles
+## 3. Décisions d'Architecture Clés
 
-Ces decisions sont dispersees dans les EPICs et les docs de reference. Elles sont centralisees ici pour Claude Code.
+Ces décisions sont dispersées dans les EPICs et les docs de référence. Elles sont centralisées ici pour Claude Code.
 
-### Separation Auth / Metier
+### Séparation Auth / Métier
 
-- **Utilisateur** = personne authentifiee (identite humaine, auth JWT)
-- **Tiers** = entite juridique/documentaire (proprietaire, locataire, mandataire)
-- Pas de pont User <> Tiers : WorkspaceUser n'a PAS de `tiers_id`. La table Tiers est reservee aux stakeholders autour des lots.
-- La societe realisatrice d'un EDL est derivee du **Workspace** (nom, SIRET, adresse), pas d'un Tiers.
+- **Utilisateur** = personne authentifiée (identité humaine, auth JWT)
+- **Tiers** = entité juridique/documentaire (propriétaire, locataire, mandataire)
+- Pas de pont User <> Tiers : WorkspaceUser n'a PAS de `tiers_id`. La table Tiers est réservée aux stakeholders autour des lots.
+- La société réalisatrice d'un EDL est dérivée du **Workspace** (nom, SIRET, adresse), pas d'un Tiers.
 
-### Roles portes par les relations
+### Rôles portés par les relations
 
-- Un Tiers n'est ni "proprietaire" ni "locataire" intrinsequement — c'est la FK qui qualifie le role.
-- Un meme Tiers peut jouer plusieurs roles (proprio ET locataire).
+- Un Tiers n'est ni "propriétaire" ni "locataire" intrinsèquement — c'est la FK qui qualifie le rôle.
+- Un même Tiers peut jouer plusieurs rôles (proprio ET locataire).
 
 ### Tables pivots pour le N:N
 
 - **WorkspaceUser** : user <> workspace (role)
 - **TiersOrganisation** : personne physique <> personne morale (fonction)
-- **LotProprietaire** : lot <> tiers proprietaire(s) (supporte indivision)
+- **LotProprietaire** : lot <> tiers propriétaire(s) (supporte indivision)
 - **EDLLocataire** : EDL <> tiers locataire(s) (supporte colocation)
 - **MissionTechnicien** : mission <> user technicien (1 en V1, pivot pour anticiper multi)
 - **TemplatePieceItem** : type de piece <> catalogue item
 
 ### Multi-tenant
 
-- Isolation par `workspace_id` sur toutes les tables metier.
+- Isolation par `workspace_id` sur toutes les tables métier.
 - JWT avec gestion workspaces et permissions.
 - 3 roles : Admin / Gestionnaire / Technicien.
 
@@ -315,20 +315,24 @@ Ces regles sont non-negociables en V1. Elles evitent le scope creep et clarifien
 
 ImmoChecker utilise un systeme d'elevation a 5 niveaux inspire d'Atlassian Design System. Chaque element visuel appartient a exactement un niveau. **Surface + Shadow sont TOUJOURS apparies.** Ce systeme est la source de verite pour toute decision visuelle de profondeur.
 
-### Les 5 niveaux
+### Les 6 niveaux
 
 | # | Niveau | Surface | Shadow | Z-index | Utilisation |
 |---|---|---|---|---|---|
 | 0 | **Sunken** | `bg-surface-sunken` | aucune | 0 | Table headers (sur Default), filter bars, disabled inputs, kanban column bg |
 | 1 | **Default** | `bg-background` | aucune | 0 | Fond de page uniquement — point de depart |
-| 2 | **Raised** | `bg-card` + `shadow-elevation-raised` + `border border-border/60` | `shadow-elevation-raised` | 0, z-20 (header), z-30 (sidebar) | Cards, sidebar, header, sections, formulaires |
-| 3 | **Overlay** | `bg-popover` + `shadow-elevation-overlay` + `border border-border/60` | `shadow-elevation-overlay` | z-40 | Dropdowns, selects, popovers, tooltips, autocomplete |
-| 4 | **Floating** | `bg-surface-floating` + `shadow-elevation-floating` + `border border-border/60` | `shadow-elevation-floating` | z-50 | Dialogs, sheets, alert-dialogs, floating save bar |
+| 2 | **Raised** | `bg-card` + `shadow-elevation-raised` + `border border-border/40` | `shadow-elevation-raised` | 0, z-20 (header), z-30 (sidebar) | Cards, sidebar, header, sections, formulaires |
+| 3 | **Overlay** | `bg-popover` + `shadow-elevation-overlay` + `border border-border/40` | `shadow-elevation-overlay` | z-40 | Dropdowns, selects, popovers, tooltips, autocomplete |
+| 4 | **Floating** | `bg-surface-floating` + `shadow-elevation-floating` + `border border-border/40` | `shadow-elevation-floating` | z-50 | Dialogs, sheets, alert-dialogs, floating save bar |
+| — | **Overflow** | aucune | `shadow-elevation-overflow` | — | Indicateurs de scroll (contenu depasse) |
 
 ### Regles d'appariement
 
 1. **Surface + Shadow toujours apparies** : jamais de shadow-elevation-raised sur un bg-background, jamais de bg-card sans shadow.
-2. **Border toujours inclus** : tous les elements Raised/Overlay/Floating ont `border border-border/60`.
+2. **Border toujours inclus** : tous les elements Raised/Overlay/Floating ont `border border-border/40`.
+3. **Dropdowns/Popovers/Selects** : TOUJOURS `shadow-elevation-overlay`. Ne JAMAIS utiliser `shadow-md` ou `shadow-lg`.
+4. **`shadow-sm` sur boutons/toggles** : accepte pour indiquer l'etat actif d'un toggle/tab (pas de l'elevation).
+5. **Pas de `bg-white`** : utiliser `bg-card` (ou `bg-card/95` pour glassmorphism).
 
 ### Regles d'imbrication
 
@@ -367,13 +371,15 @@ ImmoChecker utilise un systeme d'elevation a 5 niveaux inspire d'Atlassian Desig
 
 | Interdit | Utiliser a la place |
 |---|---|
-| `bg-white` | `bg-card` ou `bg-surface-raised` |
+| `bg-white` | `bg-card` ou `bg-card/95` (glassmorphism) |
 | `shadow-sm` / `shadow-md` / `shadow-lg` pour elevation | `shadow-elevation-raised` / `-overlay` / `-floating` |
+| `shadow-md` sur dropdown/popover/select | `shadow-elevation-overlay` TOUJOURS |
 | `shadow-xs` pour elevation | `shadow-xs` = form controls UNIQUEMENT |
 | `bg-muted/50` pour zones en retrait | `bg-surface-sunken` (sur Default) ou `bg-muted/30` (dans Raised) |
 | `z-50` sur elements non-modaux | Sidebar=z-30, header=z-20, dropdowns=z-40 |
 | `bg-surface-sunken` dans une card | `bg-muted/30` (sunken = Default surface seulement) |
 | `hover:shadow-md` sur une card | `hover:shadow-elevation-raised-hover` |
+| `border border-border/60` sur Raised/Overlay | `border border-border/40` (plus subtil) |
 
 ### Dark mode
 

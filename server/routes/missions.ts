@@ -5,6 +5,7 @@ import { verifyToken, requireRole } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendList, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
+import { dispatchWebhook } from '../services/webhook-service.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -42,7 +43,7 @@ router.get('/', async (req, res) => {
     const workspaceId = req.user!.workspaceId
     const {
       search, statut, statut_rdv, technicien_id, date_from, date_to,
-      pending_actions, cursor, limit: rawLimit
+      pending_actions, lot_id, cursor, limit: rawLimit
     } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
 
@@ -89,6 +90,12 @@ router.get('/', async (req, res) => {
     if (date_to) {
       where += ` AND m.date_planifiee <= $${paramIndex}`
       params.push(date_to)
+      paramIndex++
+    }
+
+    if (lot_id) {
+      where += ` AND m.lot_id = $${paramIndex}`
+      params.push(lot_id)
       paramIndex++
     }
 
@@ -291,7 +298,7 @@ router.get('/:id', async (req, res) => {
       lot: { ...row.lot, batiment: row.batiment, adresse: row.adresse },
       techniciens,
       proprietaires: row.proprietaires ?? [],
-      edls: edls.map((e: any) => ({ ...e, locataires: e.locataires ?? [] })),
+      edls: edls.map((e: any) => ({ ...e, locataires: e.locataires ?? [], url_pdf: e.pdf_url || null, url_web: e.web_url || null, url_pdf_legal: null, url_web_legal: null })),
       cles: row.cles ?? [],
       created_by_nom: creator ? `${creator.prenom} ${creator.nom}` : '',
     }
@@ -560,6 +567,13 @@ router.post('/:id/cancel', requireRole('admin', 'gestionnaire', 'technicien'), v
        WHERE mission_id = $1 AND statut = 'brouillon'`,
       [req.params.id]
     )
+
+    // Dispatch mission.annulee webhook
+    dispatchWebhook(workspaceId, 'mission.annulee', {
+      mission_id: req.params.id,
+      reference: result.rows[0].reference,
+      motif: req.body.motif,
+    })
 
     sendSuccess(res, result.rows[0])
   } catch (error) {

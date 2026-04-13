@@ -191,7 +191,7 @@ router.get('/me', verifyToken, async (req, res) => {
     const { rows } = await import('../db/index.js').then(db =>
       db.query(
         `SELECT u.id, u.email, u.nom, u.prenom, w.id as workspace_id, w.nom as workspace_nom,
-                w.type_workspace, w.logo_url, w.couleur_primaire, wu.role
+                w.type_workspace, w.logo_url, w.couleur_primaire, w.couleur_fond, w.fond_style, wu.role
          FROM utilisateur u
          JOIN workspace_user wu ON wu.user_id = u.id
          JOIN workspace w ON w.id = wu.workspace_id
@@ -217,6 +217,8 @@ router.get('/me', verifyToken, async (req, res) => {
         type_workspace: row.type_workspace,
         logo_url: row.logo_url,
         couleur_primaire: row.couleur_primaire,
+        couleur_fond: row.couleur_fond,
+        fond_style: row.fond_style,
       },
       role: row.role,
     })
@@ -230,7 +232,7 @@ router.get('/me/workspaces', verifyToken, async (req, res) => {
   try {
     const db = await import('../db/index.js')
     const { rows } = await db.query(
-      `SELECT w.id, w.nom, w.type_workspace, w.logo_url, w.couleur_primaire, wu.role
+      `SELECT w.id, w.nom, w.type_workspace, w.logo_url, w.couleur_primaire, w.couleur_fond, w.fond_style, wu.role
        FROM workspace_user wu
        JOIN workspace w ON w.id = wu.workspace_id
        WHERE wu.user_id = $1

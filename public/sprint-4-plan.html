@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sprint 4 — Plan d'implémentation · ImmoChecker</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --border: #2a2a35;
+    --border2: #35354a;
+    --text: #e8e8f0;
+    --muted: #7878a0;
+    --muted2: #50506a;
+    --primary: #7c6ff7;
+    --primary-glow: #7c6ff730;
+    --primary-light: #a89eff;
+    --green: #34d399;
+    --green-bg: #06291e;
+    --amber: #fbbf24;
+    --amber-bg: #2a1f06;
+    --red: #f87171;
+    --red-bg: #2a0a0a;
+    --blue: #60a5fa;
+    --blue-bg: #0a1a2a;
+    --purple: #c084fc;
+    --purple-bg: #1a0a2a;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── Layout ── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .logo-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-light);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .sidebar-logo .logo-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sidebar-logo .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .sidebar-section {
+    padding: 16px 12px 8px;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding: 0 8px 8px;
+  }
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .sidebar-link:hover, .sidebar-link.active {
+    background: var(--primary-glow);
+    color: var(--primary-light);
+  }
+  .sidebar-link .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  .sidebar-progress {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .progress-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    overflow-x: hidden;
+    max-width: calc(100vw - 240px);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #0d0d1a 0%, #100f20 50%, #0a0a15 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 48px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary-light);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px; height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+  }
+  .hero h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #ffffff 30%, var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-desc {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 28px;
+  }
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .pill-green { background: var(--green-bg); color: var(--green); border-color: #34d39930; }
+  .pill-amber { background: var(--amber-bg); color: var(--amber); border-color: #fbbf2430; }
+  .pill-red { background: var(--red-bg); color: var(--red); border-color: #f8717130; }
+  .pill-purple { background: var(--purple-bg); color: var(--purple); border-color: #c084fc30; }
+  .pill-blue { background: var(--blue-bg); color: var(--blue); border-color: #60a5fa30; }
+
+  /* ── Content ── */
+  .content {
+    padding: 40px 48px;
+    max-width: 960px;
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .icon-amber { background: var(--amber-bg); }
+  .icon-purple { background: var(--purple-bg); }
+  .icon-green { background: var(--green-bg); }
+  .icon-blue { background: var(--blue-bg); }
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .section-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .section-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card-us-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* ── Task list ── */
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .task-item:hover { border-color: var(--border2); }
+  .task-item.done {
+    opacity: 0.55;
+    background: var(--bg);
+  }
+  .task-item.done .task-text { text-decoration: line-through; color: var(--muted2); }
+  .task-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 10px;
+  }
+  .task-item.done .task-check {
+    background: var(--green);
+    border-color: var(--green);
+    color: #000;
+  }
+  .task-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .task-tag {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 100px;
+    font-weight: 600;
+    flex-shrink: 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .tag-backend { background: #1a2030; color: #60a5fa; }
+  .tag-frontend { background: #1a1a30; color: #a78bfa; }
+  .tag-schema { background: #1a2820; color: #34d399; }
+  .tag-config { background: #2a1a10; color: #fb923c; }
+
+  /* ── Code blocks ── */
+  .code-block {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin: 12px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+  .code-block pre {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: #c8c8e8;
+    white-space: pre;
+  }
+  .code-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .str { color: #86efac; }
+  .cm { color: #4a4a6a; font-style: italic; }
+  .ty { color: #fbbf24; }
+  .co { color: #f87171; }
+
+  /* ── Timeline ── */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary), var(--border));
+    border-radius: 1px;
+  }
+  .timeline-day {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .timeline-day::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 8px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+  }
+  .timeline-day-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .timeline-day-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-light);
+  }
+  .timeline-day-title {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .timeline-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .timeline-task {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .timeline-task:hover { border-color: var(--border2); }
+  .timeline-task.done { opacity: 0.45; }
+  .timeline-task.done span { text-decoration: line-through; color: var(--muted2); }
+  .timeline-task-check {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--border2);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    transition: all 0.15s;
+  }
+  .timeline-task.done .timeline-task-check {
+    background: var(--green); border-color: var(--green); color: #000;
+  }
+
+  /* ── File tree ── */
+  .file-tree {
+    background: #0d0d15;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .file-new { color: var(--green); }
+  .file-modified { color: var(--amber); }
+  .file-dir { color: var(--muted); }
+  .file-tree-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: system-ui;
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ── 2-col grid ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Improvement cards ── */
+  .improve-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .improve-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .improve-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: var(--primary-glow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .improve-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .improve-desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .improve-effort {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-light);
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  /* ── Alert ── */
+  .alert {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    border: 1px solid;
+  }
+  .alert-amber { background: var(--amber-bg); border-color: #fbbf2430; }
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-content { flex: 1; }
+  .alert-title { font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: 3px; }
+  .alert-desc { font-size: 12.5px; color: var(--muted); }
+
+  /* ── Overview stats ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .sv-green { color: var(--green); }
+  .sv-amber { color: var(--amber); }
+  .sv-red { color: var(--red); }
+  .sv-purple { color: var(--purple); }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { max-width: 100vw; }
+    .content { padding: 24px; }
+    .hero { padding: 32px 24px; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-tag">ImmoChecker</span>
+      <div class="logo-title">Sprint 4 · Plan</div>
+      <div class="logo-sub">13 Avril 2026</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Vue d'ensemble</div>
+      <a class="sidebar-link active" href="#overview"><span class="dot"></span> Vue globale</a>
+      <a class="sidebar-link" href="#timeline"><span class="dot"></span> Timeline 5 jours</a>
+      <a class="sidebar-link" href="#filetree"><span class="dot"></span> Fichiers</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">EPIC 14 · Dashboard</div>
+      <a class="sidebar-link" href="#dashboard-fix"><span class="dot"></span> Fix Charts Fake Data</a>
+      <a class="sidebar-link" href="#endpoint-activity"><span class="dot"></span> Endpoint /activity</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">EPIC 10 · API REST</div>
+      <a class="sidebar-link" href="#us599"><span class="dot"></span> US-599 · Clés API</a>
+      <a class="sidebar-link" href="#us600"><span class="dot"></span> US-600/601 · Endpoints v1</a>
+      <a class="sidebar-link" href="#us602"><span class="dot"></span> US-602 · Webhooks</a>
+      <a class="sidebar-link" href="#us603"><span class="dot"></span> US-603 · Docs Swagger</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Bonus</div>
+      <a class="sidebar-link" href="#improvements"><span class="dot"></span> Améliorations</a>
+    </div>
+
+    <div class="sidebar-progress">
+      <div class="progress-label">
+        <span>Progression</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">Sprint 4 · Plan d'implémentation détaillé</div>
+      <h1>Finaliser le Dashboard<br>+ Construire l'API Publique</h1>
+      <p class="hero-desc">EPIC 14 (Dashboard Admin) est quasi-terminé mais 3 charts utilisent des données fake. EPIC 10 (API REST & Intégrations) est à 0% et constitue le gros morceau restant.</p>
+      <div class="hero-pills">
+        <span class="pill pill-green">✓ Sprints 1–3 complets</span>
+        <span class="pill pill-amber">⚠ EPIC 14 · Fix charts</span>
+        <span class="pill pill-red">✗ EPIC 10 · 0% commencé</span>
+        <span class="pill pill-purple">5 US · 9 nouveaux fichiers</span>
+        <span class="pill pill-blue">~5 jours de dev</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── Overview ── -->
+      <div id="overview" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-amber">📊</div>
+          <div>
+            <div class="section-title">Vue globale du Sprint 4</div>
+            <div class="section-subtitle">Ce qu'il reste à faire, chiffres et dépendances</div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value sv-green">6/6</div>
+            <div class="stat-label">US EPIC 14 faites</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value sv-red">0/5</div>
+            <div class="stat-label">US EPIC 10 faites</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value sv-purple">9</div>
+            <div class="stat-label">Nouveaux fichiers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value sv-amber">8</div>
+            <div class="stat-label">Fichiers modifiés</div>
+          </div>
+        </div>
+
+        <div class="alert alert-amber">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            <div class="alert-title">Bug silencieux dans le Dashboard</div>
+            <div class="alert-desc">Les 3 charts de <code style="color:var(--amber);font-family:monospace">dashboard-page.tsx</code> (lignes 33–82) utilisent des tableaux de données inventées avec <code style="color:var(--amber);font-family:monospace">Math.random()</code>. En production, ces graphiques afficheraient des chiffres différents à chaque rechargement. Le donut pie filtre sur <code style="color:var(--amber);font-family:monospace">limit: 50</code> missions seulement.</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-us-badge pill pill-amber">EPIC 14</span>
+              <div>
+                <div class="card-title">Dashboard Admin</div>
+              </div>
+            </div>
+            <div class="task-list">
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Stat cards (US-837)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Calendrier semaine (US-838)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Mini-calendrier (US-839)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Bouton "+" création (US-840)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Bloc actions en attente (US-841)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Drawer latéral mission (US-842)</span><span class="task-tag tag-backend">✓ réel</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">🔧 Fix charts fake data → endpoint réel</span><span class="task-tag tag-backend">TODO</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-us-badge pill pill-red">EPIC 10</span>
+              <div>
+                <div class="card-title">API REST & Intégrations</div>
+              </div>
+            </div>
+            <div class="task-list">
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">US-599 — Gestion clés API</span><span class="task-tag tag-backend">TODO</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">US-600 — Créer Mission/EDL via API</span><span class="task-tag tag-backend">TODO</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">US-601 — Récupérer URLs PDF/web EDL</span><span class="task-tag tag-backend">TODO</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">US-602 — Webhooks événements</span><span class="task-tag tag-backend">TODO</span></div>
+              <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">US-603 — Documentation OpenAPI</span><span class="task-tag tag-backend">TODO</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Dashboard Fix ── -->
+      <div id="dashboard-fix" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-amber">🔧</div>
+          <div>
+            <div class="section-title">EPIC 14 · Fix Charts — Données Réelles</div>
+            <div class="section-subtitle">1 endpoint, 3 hooks, supprimer les fake arrays</div>
+          </div>
+          <span class="section-badge pill pill-amber">Jour 1</span>
+        </div>
+
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Au lieu de 3 endpoints séparés, un seul appel SQL retourne tout ce dont les charts ont besoin. Moins de round-trips, plus simple à maintenir.</p>
+
+        <div id="endpoint-activity">
+          <div class="code-label">server/routes/dashboard.ts — Nouvel endpoint</div>
+          <div class="code-block"><pre><span class="cm">// GET /api/dashboard/activity?range=7j|30j|90j</span>
+router.get(<span class="str">'/activity'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> workspaceId = req.user!.workspaceId
+  <span class="kw">const</span> range = <span class="ty">Number</span>(req.query.range) || <span class="str">30</span>  <span class="cm">// jours</span>
+  <span class="kw">const</span> dateFrom = <span class="kw">new</span> <span class="ty">Date</span>(<span class="ty">Date</span>.now() - range * 86400000).toISOString().slice(0,10)
+
+  <span class="cm">// 1. Daily entrées/sorties for area chart</span>
+  <span class="kw">const</span> daily = <span class="kw">await</span> query(<span class="str">`
+    SELECT date_planifiee::date::text as date,
+      count(*) FILTER (WHERE ei.sens = 'entree')::int as entrees,
+      count(*) FILTER (WHERE ei.sens = 'sortie')::int as sorties
+    FROM mission m
+    JOIN edl_inventaire ei ON ei.mission_id = m.id
+    WHERE m.workspace_id = $1 AND m.statut != 'annulee'
+      AND m.date_planifiee >= $2
+    GROUP BY date_planifiee::date ORDER BY 1`</span>, [workspaceId, dateFrom])
+
+  <span class="cm">// 2. Monthly trend (last 6 months) for line chart</span>
+  <span class="kw">const</span> monthly = <span class="kw">await</span> query(<span class="str">`
+    SELECT to_char(date_trunc('month', date_planifiee), 'Mon') as month,
+      count(*)::int as planifiees,
+      count(*) FILTER (WHERE statut = 'terminee')::int as terminees
+    FROM mission WHERE workspace_id = $1 AND statut != 'annulee'
+      AND date_planifiee >= date_trunc('month', now()) - INTERVAL '5 months'
+    GROUP BY 1, date_trunc('month', date_planifiee)
+    ORDER BY date_trunc('month', date_planifiee)`</span>, [workspaceId])
+
+  <span class="cm">// 3. Statut breakdown (all missions) for donut pie</span>
+  <span class="kw">const</span> statuts = <span class="kw">await</span> query(<span class="str">`
+    SELECT statut, count(*)::int as count
+    FROM mission WHERE workspace_id = $1 AND est_archive = false
+    GROUP BY statut`</span>, [workspaceId])
+
+  <span class="kw">const</span> statutMap = Object.fromEntries(statuts.rows.map(r => [r.statut, r.count]))
+  sendSuccess(res, { daily: daily.rows, monthly: monthly.rows, statuts: statutMap })
+})</pre></div>
+        </div>
+
+        <div class="code-label">src/features/dashboard/api.ts — Nouveau hook</div>
+        <div class="code-block"><pre><span class="kw">export function</span> <span class="fn">useDashboardActivity</span>(range: <span class="ty">string</span> = <span class="str">'30j'</span>) {
+  <span class="kw">const</span> days = range === <span class="str">'7j'</span> ? <span class="str">7</span> : range === <span class="str">'90j'</span> ? <span class="str">90</span> : <span class="str">30</span>
+  <span class="kw">return</span> useQuery({
+    queryKey: [<span class="str">'dashboard-activity'</span>, range],
+    queryFn: () => api(<span class="str">`/dashboard/activity?range=${days}`</span>),
+    staleTime: 2 * 60_000,  <span class="cm">// 2 min — données agrégées pas temps-réel</span>
+  })
+}</pre></div>
+
+        <div class="task-list">
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Ajouter endpoint GET /api/dashboard/activity dans dashboard.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Ajouter hook useDashboardActivity dans api.ts</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Supprimer chartData, weeklyBarData, monthlyTrendData (lignes 33–82)</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher area chart sur activity.daily</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher bar chart semaine (dériver depuis activity.daily)</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher line chart mensuel sur activity.monthly</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher donut pie sur activity.statuts (fin des 50 missions)</span><span class="task-tag tag-frontend">frontend</span></div>
+        </div>
+      </div>
+
+      <!-- ── US-599 ── -->
+      <div id="us599" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-purple">🔑</div>
+          <div>
+            <div class="section-title">US-599 · Gestion des Clés API</div>
+            <div class="section-subtitle">Créer, révoquer, afficher les clés par workspace</div>
+          </div>
+          <span class="section-badge pill pill-purple">Jour 2</span>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:16px">
+          <div>
+            <div class="code-label">Schema DB — table api_key</div>
+            <div class="code-block"><pre><span class="kw">CREATE TABLE IF NOT EXISTS</span> <span class="ty">api_key</span> (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id  UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  name          VARCHAR(255) NOT NULL,
+  key_hash      VARCHAR(255) NOT NULL UNIQUE, <span class="cm">-- SHA-256</span>
+  key_prefix    VARCHAR(12)  NOT NULL,        <span class="cm">-- "imk_live_xxxx"</span>
+  scope         VARCHAR(10)  NOT NULL DEFAULT <span class="str">'write'</span>
+                  CHECK (scope IN (<span class="str">'read'</span>, <span class="str">'write'</span>)),
+  created_by    UUID NOT NULL REFERENCES utilisateur(id),
+  last_used_at  TIMESTAMPTZ,
+  expires_at    TIMESTAMPTZ,    <span class="cm">-- NULL = pas d'expiration</span>
+  est_active    BOOLEAN NOT NULL DEFAULT true,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_api_key_hash ON api_key(key_hash);
+CREATE INDEX idx_api_key_ws   ON api_key(workspace_id);</pre></div>
+          </div>
+          <div>
+            <div class="code-label">server/middleware/api-key-auth.ts</div>
+            <div class="code-block"><pre><span class="kw">export async function</span> <span class="fn">verifyApiKey</span>(req, res, next) {
+  <span class="kw">const</span> auth = req.headers.authorization
+  <span class="kw">if</span> (!auth?.startsWith(<span class="str">'Bearer imk_'</span>))
+    <span class="kw">return</span> res.status(401).json({ error: <span class="str">'API key required'</span> })
+
+  <span class="kw">const</span> hash = crypto
+    .createHash(<span class="str">'sha256'</span>)
+    .update(auth.slice(7))
+    .digest(<span class="str">'hex'</span>)
+
+  <span class="kw">const</span> result = <span class="kw">await</span> query(
+    <span class="str">`UPDATE api_key SET last_used_at = now()
+     WHERE key_hash = $1 AND est_active = true
+       AND (expires_at IS NULL OR expires_at > now())
+     RETURNING workspace_id, scope`</span>,
+    [hash]
+  )
+  <span class="kw">if</span> (!result.rows.length)
+    <span class="kw">return</span> res.status(401).json({ error: <span class="str">'Invalid or revoked key'</span> })
+
+  req.workspaceId = result.rows[0].workspace_id
+  req.apiKeyScope = result.rows[0].scope
+  next()
+}</pre></div>
+          </div>
+        </div>
+
+        <div class="code-label">Endpoints — server/routes/api-keys.ts</div>
+        <div class="code-block"><pre>GET    /api/api-keys          <span class="cm">→ liste clés (prefix, nom, scope, last_used_at, expires_at, est_active)</span>
+POST   /api/api-keys          <span class="cm">→ crée → retourne { id, key: "imk_live_...", prefix } UNE SEULE FOIS</span>
+PATCH  /api/api-keys/:id      <span class="cm">→ renommer, changer scope, activer/désactiver</span>
+DELETE /api/api-keys/:id      <span class="cm">→ révoquer (soft: est_active = false)</span></pre></div>
+
+        <p style="color:var(--muted);font-size:13px;margin:12px 0">Format de clé : <code style="color:var(--primary-light);font-family:monospace">imk_live_</code> + 32 chars hex random (crypto.randomBytes(16).toString('hex')). Jamais stocké en clair — SHA-256 en DB. Affiché UNE SEULE FOIS à la création avec un warning UI.</p>
+
+        <div class="code-label">UI — Nouvel onglet dans settings-page.tsx</div>
+        <div class="code-block"><pre><span class="cm">// Ajouter 'api' à type Section</span>
+<span class="kw">type</span> <span class="ty">Section</span> = <span class="str">'general'</span> | <span class="str">'users'</span> | <span class="str">'invitations'</span> | <span class="str">'api'</span>
+
+<span class="cm">// Ajouter dans NAV_ITEMS</span>
+{ key: <span class="str">'api'</span>, label: <span class="str">'API & Intégrations'</span>, icon: Code, description: <span class="str">'Clés et webhooks'</span> }
+
+<span class="cm">// Nouveau composant ApiSection — 2 sous-sections :</span>
+<span class="cm">//  1. Clés API  (tableau + bouton Créer → Dialog)</span>
+<span class="cm">//  2. Webhooks  (configurés plus bas, US-602)</span></pre></div>
+
+        <div class="task-list">
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Ajouter table api_key dans schema.sql</span><span class="task-tag tag-schema">schema</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/middleware/api-key-auth.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/api-keys.ts (GET/POST/PATCH/DELETE)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Enregistrer route dans server/index.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Ajouter section 'api' dans settings-page.tsx (type + NAV_ITEMS)</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer composant ApiKeysSection (liste + dialog création + révocation)</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Dialog "Clé créée" → box copiable + warning "affichée une seule fois"</span><span class="task-tag tag-frontend">frontend</span></div>
+        </div>
+      </div>
+
+      <!-- ── US-600/601 ── -->
+      <div id="us600" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-blue">🌐</div>
+          <div>
+            <div class="section-title">US-600/601 · Endpoints Publics v1</div>
+            <div class="section-subtitle">Namespace /api/v1/* — séparé des routes JWT internes</div>
+          </div>
+          <span class="section-badge pill pill-blue">Jour 3</span>
+        </div>
+
+        <div class="code-label">Architecture des routes</div>
+        <div class="code-block"><pre>External caller
+  Authorization: Bearer imk_live_xxxxxxxxxxxx
+        │
+        ▼
+  /api/v1/*           <span class="cm">← namespace externe (pas de JWT)</span>
+        │
+  verifyApiKey()      <span class="cm">← hash → lookup DB → attach req.workspaceId</span>
+  rateLimit(100/min)  <span class="cm">← express-rate-limit, store mémoire (V1)</span>
+        │
+  ┌─────┴──────────────────┐
+  │                        │
+/v1/missions          /v1/edl-inventaires
+/v1/lots              /v1/batiments</pre></div>
+
+        <div class="grid-2" style="margin-bottom:16px">
+          <div>
+            <div class="code-label">server/routes/v1/missions.ts</div>
+            <div class="code-block"><pre>POST /api/v1/missions
+  <span class="cm">Body: { lot_id, sens, avec_inventaire,
+         date_planifiee, heure_debut?,
+         heure_fin?, commentaire? }</span>
+  <span class="cm">→ Crée mission dans le workspace de la clé</span>
+
+GET  /api/v1/missions
+  <span class="cm">Query: statut?, date_from?, date_to?,
+         cursor?, limit? (max 100)</span>
+  <span class="cm">→ { data: [...], meta: { cursor, has_more, total } }</span>
+
+GET  /api/v1/missions/:id
+  <span class="cm">→ Détail + EDLs + statuts</span></pre></div>
+          </div>
+          <div>
+            <div class="code-label">server/routes/v1/edl.ts</div>
+            <div class="code-block"><pre>GET  /api/v1/edl-inventaires
+  <span class="cm">Query: mission_id?, statut?, cursor?, limit?</span>
+  <span class="cm">→ Liste paginée</span>
+
+GET  /api/v1/edl-inventaires/:id
+  <span class="cm">→ EDL avec TOUTES les URLs :</span>
+  {
+    id, type, sens, statut,
+    <span class="str">pdf_url</span>, <span class="str">web_url</span>,
+    <span class="str">pdf_url_legal</span>, <span class="str">web_url_legal</span>,
+    locataires: [...],
+    cles: [...]
+  }
+
+GET  /api/v1/lots
+GET  /api/v1/batiments
+  <span class="cm">→ Lookup pour résoudre lot_id lors de création mission</span></pre></div>
+          </div>
+        </div>
+
+        <div class="code-label">server/index.ts — Enregistrement + Rate limiting</div>
+        <div class="code-block"><pre><span class="kw">import</span> rateLimit <span class="kw">from</span> <span class="str">'express-rate-limit'</span>
+<span class="kw">import</span> { verifyApiKey } <span class="kw">from</span> <span class="str">'./middleware/api-key-auth.js'</span>
+
+<span class="kw">const</span> apiV1Limit = rateLimit({
+  windowMs: 60_000,
+  max: 100,
+  keyGenerator: (req) => req.headers.authorization || req.ip,
+  standardHeaders: true,
+  message: { error: <span class="str">'Rate limit exceeded'</span>, code: <span class="str">'RATE_LIMIT'</span> }
+})
+
+app.use(<span class="str">'/api/v1'</span>, verifyApiKey, apiV1Limit, v1Router)</pre></div>
+
+        <div class="task-list">
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">npm i express-rate-limit</span><span class="task-tag tag-config">config</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/v1/missions.ts (POST + GET list + GET detail)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/v1/edl.ts (GET list + GET detail avec URLs)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/v1/lots.ts + batiments.ts (lookup)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Enregistrer /api/v1 avec verifyApiKey + rateLimit dans index.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Vérifier isolation workspace_id sur toutes les queries v1</span><span class="task-tag tag-backend">backend</span></div>
+        </div>
+      </div>
+
+      <!-- ── US-602 ── -->
+      <div id="us602" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-green">🔔</div>
+          <div>
+            <div class="section-title">US-602 · Webhooks</div>
+            <div class="section-subtitle">Events : edl.signe · mission.terminee · mission.annulee · cle.deposee</div>
+          </div>
+          <span class="section-badge pill pill-green">Jour 4</span>
+        </div>
+
+        <div class="code-label">Schema DB — 2 nouvelles tables</div>
+        <div class="code-block"><pre><span class="kw">CREATE TABLE IF NOT EXISTS</span> <span class="ty">webhook_config</span> (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  url          VARCHAR(2048) NOT NULL,
+  secret       VARCHAR(255)  NOT NULL,   <span class="cm">-- stocké en clair (utilisé pour signer)</span>
+  events       TEXT[]        NOT NULL DEFAULT <span class="str">'{}'</span>,
+  est_active   BOOLEAN       NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+<span class="kw">CREATE TABLE IF NOT EXISTS</span> <span class="ty">webhook_delivery</span> (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  webhook_id      UUID NOT NULL REFERENCES webhook_config(id) ON DELETE CASCADE,
+  event_type      VARCHAR(50) NOT NULL,
+  payload         JSONB       NOT NULL,
+  statut          VARCHAR(20) NOT NULL DEFAULT <span class="str">'pending'</span>
+                    CHECK (statut IN (<span class="str">'pending'</span>, <span class="str">'success'</span>, <span class="str">'failed'</span>, <span class="str">'retrying'</span>)),
+  attempts        INT         NOT NULL DEFAULT 0,
+  last_attempt_at TIMESTAMPTZ,
+  response_code   INT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_webhook_delivery_status ON webhook_delivery(statut, created_at);</pre></div>
+
+        <div class="code-label">server/services/webhook-service.ts — Dispatch + retry</div>
+        <div class="code-block"><pre><span class="kw">export async function</span> <span class="fn">dispatchWebhook</span>(
+  workspaceId: <span class="ty">string</span>,
+  eventType: <span class="ty">string</span>,
+  payload: <span class="ty">object</span>
+) {
+  <span class="kw">const</span> hooks = <span class="kw">await</span> query(
+    <span class="str">`SELECT id, url, secret FROM webhook_config
+     WHERE workspace_id = $1 AND est_active = true
+       AND $2 = ANY(events)`</span>,
+    [workspaceId, eventType]
+  )
+  <span class="kw">for</span> (<span class="kw">const</span> hook <span class="kw">of</span> hooks.rows) {
+    <span class="kw">const</span> del = <span class="kw">await</span> query(
+      <span class="str">`INSERT INTO webhook_delivery (webhook_id, event_type, payload)
+       VALUES ($1,$2,$3) RETURNING id`</span>,
+      [hook.id, eventType, payload]
+    )
+    <span class="cm">// Fire-and-forget — ne bloque PAS la réponse HTTP principale</span>
+    setImmediate(() =>
+      sendWithRetry(del.rows[0].id, hook.url, hook.secret, eventType, payload)
+    )
+  }
+}
+
+<span class="kw">async function</span> <span class="fn">sendWithRetry</span>(deliveryId, url, secret, eventType, payload, attempt = 1) {
+  <span class="kw">const</span> body = JSON.stringify({ event: eventType,
+    timestamp: <span class="kw">new</span> <span class="ty">Date</span>().toISOString(), data: payload })
+  <span class="kw">const</span> sig = crypto.createHmac(<span class="str">'sha256'</span>, secret)
+    .update(body).digest(<span class="str">'hex'</span>)
+
+  <span class="kw">try</span> {
+    <span class="kw">const</span> resp = <span class="kw">await</span> fetch(url, {
+      method: <span class="str">'POST'</span>,
+      headers: {
+        <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span>,
+        <span class="str">'X-ImmoChecker-Signature'</span>: <span class="str">`sha256=${sig}`</span>,
+        <span class="str">'X-ImmoChecker-Event'</span>: eventType
+      },
+      body,
+      signal: AbortSignal.timeout(5000)
+    })
+    <span class="kw">await</span> query(
+      <span class="str">`UPDATE webhook_delivery SET statut=$1, attempts=$2,
+        last_attempt_at=now(), response_code=$3 WHERE id=$4`</span>,
+      [resp.ok ? <span class="str">'success'</span> : <span class="str">'failed'</span>, attempt, resp.status, deliveryId]
+    )
+    <span class="kw">if</span> (!resp.ok && attempt < 3)
+      setTimeout(() => sendWithRetry(deliveryId, url, secret, eventType, payload, attempt+1),
+        attempt * 30_000)  <span class="cm">// 30s → 60s → 90s</span>
+  } <span class="kw">catch</span> {
+    <span class="kw">if</span> (attempt < 3)
+      setTimeout(() => sendWithRetry(...), attempt * 30_000)
+  }
+}</pre></div>
+
+        <div class="code-label">Points de dispatch dans les routes existantes</div>
+        <div class="code-block"><pre><span class="cm">// server/routes/edl.ts — après PATCH statut = 'signe'</span>
+<span class="kw">await</span> dispatchWebhook(workspaceId, <span class="str">'edl.signe'</span>, { edl_id, mission_id, lot_id })
+
+<span class="cm">// server/routes/edl.ts — après PATCH cle statut = 'deposee'</span>
+<span class="kw">await</span> dispatchWebhook(workspaceId, <span class="str">'cle.deposee'</span>, { cle_id, edl_id })
+
+<span class="cm">// server/routes/missions.ts — auto-termination (tous EDL signés)</span>
+<span class="kw">await</span> dispatchWebhook(workspaceId, <span class="str">'mission.terminee'</span>, { mission_id, reference })
+
+<span class="cm">// server/routes/missions.ts — POST /:id/cancel</span>
+<span class="kw">await</span> dispatchWebhook(workspaceId, <span class="str">'mission.annulee'</span>, { mission_id, motif })</pre></div>
+
+        <div class="task-list">
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Ajouter tables webhook_config + webhook_delivery dans schema.sql</span><span class="task-tag tag-schema">schema</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/services/webhook-service.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/webhooks.ts (CRUD config + historique + test)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher dispatchWebhook dans edl.ts (edl.signe + cle.deposee)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Brancher dispatchWebhook dans missions.ts (terminee + annulee)</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">UI : section Webhooks dans onglet API & Intégrations</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">UI : table historique des 20 derniers deliveries (statut + code HTTP)</span><span class="task-tag tag-frontend">frontend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">UI : bouton "Tester" → POST /webhooks/:id/test → feedback toast</span><span class="task-tag tag-frontend">frontend</span></div>
+        </div>
+      </div>
+
+      <!-- ── US-603 ── -->
+      <div id="us603" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-blue">📖</div>
+          <div>
+            <div class="section-title">US-603 · Documentation OpenAPI / Swagger</div>
+            <div class="section-subtitle">YAML statique + swagger-ui-express à /api/docs</div>
+          </div>
+          <span class="section-badge pill pill-blue">Jour 5</span>
+        </div>
+
+        <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Approche : YAML écrit à la main (pas de génération auto — trop de couplage avec Express en V1). Clair, maintenu, versioned dans git.</p>
+
+        <div class="code-label">server/routes/docs.ts</div>
+        <div class="code-block"><pre><span class="kw">import</span> swaggerUi <span class="kw">from</span> <span class="str">'swagger-ui-express'</span>
+<span class="kw">import</span> yaml <span class="kw">from</span> <span class="str">'js-yaml'</span>
+<span class="kw">import</span> { readFileSync } <span class="kw">from</span> <span class="str">'fs'</span>
+<span class="kw">import</span> { fileURLToPath } <span class="kw">from</span> <span class="str">'url'</span>
+<span class="kw">import</span> path <span class="kw">from</span> <span class="str">'path'</span>
+
+<span class="kw">const</span> __dirname = path.dirname(fileURLToPath(<span class="kw">import</span>.meta.url))
+<span class="kw">const</span> spec = yaml.load(readFileSync(path.join(__dirname, <span class="str">'../openapi.yaml'</span>), <span class="str">'utf8'</span>))
+
+router.use(<span class="str">'/'</span>, swaggerUi.serve)
+router.get(<span class="str">'/'</span>, swaggerUi.setup(spec, {
+  customSiteTitle: <span class="str">'ImmoChecker API'</span>,
+  customCss: <span class="str">'.topbar { display: none }'</span>
+}))</pre></div>
+
+        <div class="code-label">Structure server/openapi.yaml</div>
+        <div class="code-block"><pre>openapi: <span class="str">"3.0.3"</span>
+info:
+  title: ImmoChecker API
+  version: <span class="str">"1.0"</span>
+  description: API publique pour créer des missions et récupérer des EDLs
+servers:
+  - url: https://your-app.railway.app/api/v1
+security:
+  - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: <span class="str">"imk_live_..."</span>
+  schemas:
+    Mission: <span class="cm"># ...</span>
+    EDLInventaire: <span class="cm"># ...</span>
+    Lot: <span class="cm"># ...</span>
+paths:
+  /missions: <span class="cm"># GET + POST</span>
+  /missions/{id}: <span class="cm"># GET</span>
+  /edl-inventaires: <span class="cm"># GET</span>
+  /edl-inventaires/{id}: <span class="cm"># GET avec URLs</span>
+  /lots: <span class="cm"># GET</span>
+  /batiments: <span class="cm"># GET</span></pre></div>
+
+        <div class="task-list">
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">npm i swagger-ui-express js-yaml + types @types/swagger-ui-express</span><span class="task-tag tag-config">config</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/openapi.yaml avec tous les endpoints v1</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Créer server/routes/docs.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Enregistrer app.use('/api/docs', docsRouter) dans index.ts</span><span class="task-tag tag-backend">backend</span></div>
+          <div class="task-item done" onclick="toggleTask(this)"><div class="task-check">✓</div><span class="task-text">Vérifier /api/docs en local — UI Swagger responsive</span><span class="task-tag tag-config">test</span></div>
+        </div>
+      </div>
+
+      <!-- ── Timeline ── -->
+      <div id="timeline" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-purple">📅</div>
+          <div>
+            <div class="section-title">Timeline — 5 Jours</div>
+            <div class="section-subtitle">Ordre optimal en tenant compte des dépendances</div>
+          </div>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-day">
+            <div class="timeline-day-header">
+              <span class="timeline-day-label">Jour 1</span>
+              <span class="timeline-day-title">Fondations + Fix Dashboard</span>
+            </div>
+            <div class="timeline-tasks">
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>schema.sql : ajouter tables api_key, webhook_config, webhook_delivery</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>GET /api/dashboard/activity — endpoint réel (SQL + 3 subqueries)</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Brancher les 3 charts du dashboard sur les vraies données</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Supprimer chartData / weeklyBarData / monthlyTrendData fake</span></div>
+            </div>
+          </div>
+
+          <div class="timeline-day">
+            <div class="timeline-day-header">
+              <span class="timeline-day-label">Jour 2</span>
+              <span class="timeline-day-title">US-599 — Clés API</span>
+            </div>
+            <div class="timeline-tasks">
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/middleware/api-key-auth.ts</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/routes/api-keys.ts (CRUD complet)</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>UI : onglet "API & Intégrations" + composant ApiKeysSection</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Dialog création clé avec copie + warning "jamais réaffiché"</span></div>
+            </div>
+          </div>
+
+          <div class="timeline-day">
+            <div class="timeline-day-header">
+              <span class="timeline-day-label">Jour 3</span>
+              <span class="timeline-day-title">US-600/601 — Endpoints v1</span>
+            </div>
+            <div class="timeline-tasks">
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>npm i express-rate-limit</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/routes/v1/ — missions.ts + edl.ts + lots.ts + batiments.ts</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Enregistrement /api/v1 + verifyApiKey + rateLimit dans index.ts</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Test manuel via curl avec une clé créée au Jour 2</span></div>
+            </div>
+          </div>
+
+          <div class="timeline-day">
+            <div class="timeline-day-header">
+              <span class="timeline-day-label">Jour 4</span>
+              <span class="timeline-day-title">US-602 — Webhooks</span>
+            </div>
+            <div class="timeline-tasks">
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/services/webhook-service.ts (dispatch + retry)</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Brancher 4 events dans edl.ts + missions.ts</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/routes/webhooks.ts (CRUD + test + historique)</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>UI : section Webhooks + table historique deliveries</span></div>
+            </div>
+          </div>
+
+          <div class="timeline-day">
+            <div class="timeline-day-header">
+              <span class="timeline-day-label">Jour 5</span>
+              <span class="timeline-day-title">US-603 — Docs + QA</span>
+            </div>
+            <div class="timeline-tasks">
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>npm i swagger-ui-express js-yaml</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>server/openapi.yaml + server/routes/docs.ts</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Test end-to-end : créer clé → créer mission → vérifier webhook reçu</span></div>
+              <div class="timeline-task done" onclick="toggleTimeline(this)"><div class="timeline-task-check">✓</div><span>Deploy Railway + vérifier /api/docs en prod</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── File Tree ── -->
+      <div id="filetree" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-green">🗂</div>
+          <div>
+            <div class="section-title">Fichiers — Nouveaux &amp; Modifiés</div>
+            <div class="section-subtitle">Vue complète des changements à apporter</div>
+          </div>
+        </div>
+
+        <div class="file-tree">
+          <div class="file-tree-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Nouveau fichier</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Fichier modifié</div>
+          </div>
+<span class="file-dir">server/</span>
+├── <span class="file-dir">routes/</span>
+│   ├── <span class="file-new">+ api-keys.ts</span>            <span style="color:var(--muted2)">← US-599 CRUD clés API</span>
+│   ├── <span class="file-new">+ webhooks.ts</span>           <span style="color:var(--muted2)">← US-602 CRUD config + historique</span>
+│   ├── <span class="file-new">+ docs.ts</span>               <span style="color:var(--muted2)">← US-603 swagger-ui-express</span>
+│   ├── <span class="file-new">+ v1/</span>
+│   │   ├── <span class="file-new">+ missions.ts</span>       <span style="color:var(--muted2)">← US-600 POST/GET missions</span>
+│   │   ├── <span class="file-new">+ edl.ts</span>            <span style="color:var(--muted2)">← US-601 GET EDL + URLs</span>
+│   │   ├── <span class="file-new">+ lots.ts</span>           <span style="color:var(--muted2)">← lookup pour intégrateurs</span>
+│   │   └── <span class="file-new">+ batiments.ts</span>      <span style="color:var(--muted2)">← lookup pour intégrateurs</span>
+│   ├── <span class="file-modified">~ dashboard.ts</span>          <span style="color:var(--muted2)">← ajout GET /activity</span>
+│   ├── <span class="file-modified">~ edl.ts</span>                <span style="color:var(--muted2)">← dispatch edl.signe + cle.deposee</span>
+│   └── <span class="file-modified">~ missions.ts</span>           <span style="color:var(--muted2)">← dispatch mission.terminee + .annulee</span>
+├── <span class="file-dir">middleware/</span>
+│   └── <span class="file-new">+ api-key-auth.ts</span>       <span style="color:var(--muted2)">← verifyApiKey() pour v1</span>
+├── <span class="file-dir">services/</span>
+│   └── <span class="file-new">+ webhook-service.ts</span>    <span style="color:var(--muted2)">← dispatch + HMAC + retry</span>
+├── <span class="file-new">+ openapi.yaml</span>              <span style="color:var(--muted2)">← spec OpenAPI 3.0 statique</span>
+├── <span class="file-modified">~ db/schema.sql</span>             <span style="color:var(--muted2)">← +3 tables : api_key, webhook_*</span>
+└── <span class="file-modified">~ index.ts</span>                  <span style="color:var(--muted2)">← register /api/v1 + /api/docs</span>
+
+<span class="file-dir">src/</span>
+├── <span class="file-dir">features/dashboard/</span>
+│   ├── <span class="file-modified">~ api.ts</span>                <span style="color:var(--muted2)">← ajout useDashboardActivity()</span>
+│   └── <span class="file-modified">~ components/dashboard-page.tsx</span>  <span style="color:var(--muted2)">← suppr fake data, brancher réel</span>
+└── <span class="file-dir">features/admin/</span>
+    └── <span class="file-modified">~ components/settings-page.tsx</span>   <span style="color:var(--muted2)">← +section API & Intégrations</span>
+        </div>
+      </div>
+
+      <!-- ── Improvements ── -->
+      <div id="improvements" class="section">
+        <div class="section-header">
+          <div class="section-icon icon-purple">💡</div>
+          <div>
+            <div class="section-title">Améliorations Recommandées</div>
+            <div class="section-subtitle">Au-delà des US — forte valeur, faible coût</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">🔍</div>
+              <div class="improve-title">GET /api/v1/lots + /batiments</div>
+            </div>
+            <div class="improve-desc">Les intégrateurs doivent résoudre un <code style="color:var(--primary-light);font-family:monospace">lot_id</code> pour créer une mission. Sans lookup, l'API est inutilisable en pratique (ils ne connaissent pas les UUIDs internes).</div>
+            <div class="improve-effort">~30 min · INCLUS dans le plan</div>
+          </div>
+
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">🔐</div>
+              <div class="improve-title">Scopes read / write sur les clés</div>
+            </div>
+            <div class="improve-desc">Champ <code style="color:var(--primary-light);font-family:monospace">scope</code> sur <code style="color:var(--primary-light);font-family:monospace">api_key</code> : <code>read</code> ne peut faire que GET. Évite d'exposer des droits complets pour une intégration lecture seule (monitoring, BI, exports).</div>
+            <div class="improve-effort">~1h · INCLUS dans le plan</div>
+          </div>
+
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">🧪</div>
+              <div class="improve-title">Webhook "Tester" bouton</div>
+            </div>
+            <div class="improve-desc">Endpoint <code style="color:var(--primary-light);font-family:monospace">POST /api/webhooks/:id/test</code> qui envoie un event fictif <code>ping</code>. Critique pour l'adoption — sans ça, les intégrateurs ne peuvent pas vérifier que leur endpoint reçoit bien les events.</div>
+            <div class="improve-effort">~1h · INCLUS dans le plan</div>
+          </div>
+
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">📋</div>
+              <div class="improve-title">Logs livraisons webhook dans l'UI</div>
+            </div>
+            <div class="improve-desc">Table des 20 derniers deliveries : statut (✅ 200 / ❌ 500 / ⏳ retry), event type, timestamp, code HTTP. Permet de debugger une intégration sans contacter le support.</div>
+            <div class="improve-effort">~2h · INCLUS dans le plan</div>
+          </div>
+
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">📈</div>
+              <div class="improve-title">Invalidation queries dashboard</div>
+            </div>
+            <div class="improve-desc">Vérifier que toutes les mutations (créer mission, annuler, signer EDL) invalident bien <code style="color:var(--primary-light);font-family:monospace">dashboard-stats</code> et <code>dashboard-activity</code> dans TanStack Query. Actuellement le refetchInterval est 30s — les stat cards ne se mettent pas à jour après une action.</div>
+            <div class="improve-effort">~30 min · rapide</div>
+          </div>
+
+          <div class="improve-card">
+            <div class="improve-header">
+              <div class="improve-icon">🚦</div>
+              <div class="improve-title">Rate limiting par clé plutôt que par IP</div>
+            </div>
+            <div class="improve-desc">Express-rate-limit utilise l'IP par défaut. En production derrière un load balancer, l'IP est celle du proxy. Le <code>keyGenerator</code> doit utiliser <code>Authorization</code> header (le key prefix) pour un rate limit correct par clé API.</div>
+            <div class="improve-effort">~15 min · INCLUS dans le plan</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="border-top:1px solid var(--border);padding-top:24px;margin-top:8px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:12px;color:var(--muted2)">ImmoChecker · Sprint 4 · Généré le 13 Avril 2026</div>
+        <div style="display:flex;gap:8px">
+          <span class="pill pill-green">EPIC 14 ✓ quasi-terminé</span>
+          <span class="pill pill-red">EPIC 10 → à construire</span>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<script>
+  // ── Task toggle ──
+  function toggleTask(el) {
+    el.classList.toggle('done')
+    if (el.classList.contains('done')) el.querySelector('.task-check').textContent = '✓'
+    else el.querySelector('.task-check').textContent = ''
+    updateProgress()
+  }
+  function toggleTimeline(el) {
+    el.classList.toggle('done')
+    if (el.classList.contains('done')) el.querySelector('.timeline-task-check').textContent = '✓'
+    else el.querySelector('.timeline-task-check').textContent = ''
+    updateProgress()
+  }
+
+  // ── Progress ──
+  function updateProgress() {
+    const all = document.querySelectorAll('.task-item, .timeline-task')
+    const done = document.querySelectorAll('.task-item.done, .timeline-task.done')
+    const pct = all.length ? Math.round((done.length / all.length) * 100) : 0
+    document.getElementById('progress-pct').textContent = pct + '%'
+    document.getElementById('progress-fill').style.width = pct + '%'
+  }
+
+  // ── Active sidebar link on scroll ──
+  const sections = document.querySelectorAll('.section[id]')
+  const links = document.querySelectorAll('.sidebar-link')
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'))
+        const a = document.querySelector(`.sidebar-link[href="#${e.target.id}"]`)
+        if (a) a.classList.add('active')
+      }
+    })
+  }, { rootMargin: '-30% 0px -60% 0px' })
+  sections.forEach(s => observer.observe(s))
+
+  // Init progress
+  updateProgress()
+</script>
+</body>
+</html>

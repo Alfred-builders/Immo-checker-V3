@@ -24,7 +24,7 @@ export const missionStatutLabels: Record<MissionStatut, string> = {
 
 export const statutRdvLabels: Record<StatutRdv, string> = {
   a_confirmer: 'À confirmer',
-  confirme: 'Confirme',
+  confirme: 'Confirmé',
   reporte: 'Reporté',
 }
 

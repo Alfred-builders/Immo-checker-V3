@@ -48,7 +48,7 @@ export function MissionKanban({ missions }: Props) {
   if (missions.length === 0) {
     return (
       <div className="py-20 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
           <ClipboardText className="h-6 w-6 text-muted-foreground/50" />
         </div>
         <p className="text-sm font-medium text-muted-foreground">Aucune mission à afficher</p>

@@ -28,13 +28,13 @@ const LOT_FIELDS = [
   { id: 'etage', label: 'Étage', required: false },
   { id: 'emplacement_palier', label: 'Emplacement palier', required: false },
   { id: 'surface', label: 'Surface (m2)', required: false },
-  { id: 'nb_pieces', label: 'Nombre de pieces', required: false },
-  { id: 'meuble', label: 'Meuble (oui/non)', required: false },
-  { id: 'reference_interne', label: 'Reference interne', required: false },
+  { id: 'nb_pieces', label: 'Nombre de pièces', required: false },
+  { id: 'meuble', label: 'Meublé (oui/non)', required: false },
+  { id: 'reference_interne', label: 'Référence interne', required: false },
   { id: 'dpe_classe', label: 'DPE (A-G)', required: false },
   { id: 'ges_classe', label: 'GES (A-G)', required: false },
-  { id: 'num_cave', label: 'N cave', required: false },
-  { id: 'num_parking', label: 'N parking', required: false },
+  { id: 'num_cave', label: 'N° cave', required: false },
+  { id: 'num_parking', label: 'N° parking', required: false },
   { id: 'commentaire', label: 'Commentaire', required: false },
 ]
 
@@ -420,7 +420,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
               ) : (
                 <WarningCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
               )}
-              <p className="text-lg font-bold text-foreground">{results.success} element{results.success > 1 ? 's' : ''} importe{results.success > 1 ? 's' : ''}</p>
+              <p className="text-lg font-bold text-foreground">{results.success} élément{results.success > 1 ? 's' : ''} importé{results.success > 1 ? 's' : ''}</p>
               {results.errors.length > 0 && (
                 <p className="text-xs text-red-500 mt-1">{results.errors.length} erreur{results.errors.length > 1 ? 's' : ''}</p>
               )}

@@ -75,6 +75,25 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/tiers/stats/counts — Count by role (MUST be before /:id to avoid route shadowing)
+router.get('/stats/counts', async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+    const result = await query(`
+      SELECT
+        count(*) FILTER (WHERE est_archive = false)::int as total,
+        count(*) FILTER (WHERE type_personne = 'physique' AND est_archive = false)::int as physiques,
+        count(*) FILTER (WHERE type_personne = 'morale' AND est_archive = false)::int as morales,
+        (SELECT count(DISTINCT lp.tiers_id) FROM lot_proprietaire lp JOIN tiers t2 ON t2.id = lp.tiers_id WHERE t2.workspace_id = $1 AND t2.est_archive = false)::int as proprietaires,
+        (SELECT count(DISTINCT l.mandataire_id) FROM lot l WHERE l.workspace_id = $1 AND l.mandataire_id IS NOT NULL AND l.est_archive = false)::int as mandataires
+      FROM tiers WHERE workspace_id = $1
+    `, [workspaceId])
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
 // GET /api/tiers/:id — Tiers detail
 router.get('/:id', async (req, res) => {
   try {
@@ -221,25 +240,6 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
   }
 })
 
-// GET /api/tiers/stats — Count by role
-router.get('/stats/counts', async (req, res) => {
-  try {
-    const workspaceId = req.user!.workspaceId
-    const result = await query(`
-      SELECT
-        count(*) FILTER (WHERE est_archive = false)::int as total,
-        count(*) FILTER (WHERE type_personne = 'physique' AND est_archive = false)::int as physiques,
-        count(*) FILTER (WHERE type_personne = 'morale' AND est_archive = false)::int as morales,
-        (SELECT count(DISTINCT lp.tiers_id) FROM lot_proprietaire lp JOIN tiers t2 ON t2.id = lp.tiers_id WHERE t2.workspace_id = $1 AND t2.est_archive = false)::int as proprietaires,
-        (SELECT count(DISTINCT l.mandataire_id) FROM lot l WHERE l.workspace_id = $1 AND l.mandataire_id IS NOT NULL AND l.est_archive = false)::int as mandataires
-      FROM tiers WHERE workspace_id = $1
-    `, [workspaceId])
-    sendSuccess(res, result.rows[0])
-  } catch (error) {
-    sendError(res, error)
-  }
-})
-
 // ── US-589: TiersOrganisation CRUD ──
 
 // POST /api/tiers/:id/organisations — Link PP to PM
@@ -327,13 +327,13 @@ router.get('/:id/missions', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const result = await query(
-      `SELECT DISTINCT m.id, m.reference, m.date_intervention, m.statut, m.statut_rdv,
+      `SELECT DISTINCT m.id, m.reference, m.date_planifiee, m.statut, m.statut_rdv,
         json_build_object('id', l.id, 'designation', l.designation) as lot
        FROM mission m
        JOIN lot l ON l.id = m.lot_id
        WHERE m.workspace_id = $1
          AND (l.mandataire_id = $2 OR EXISTS (SELECT 1 FROM lot_proprietaire lp WHERE lp.lot_id = l.id AND lp.tiers_id = $2))
-       ORDER BY m.date_intervention DESC NULLS LAST
+       ORDER BY m.date_planifiee DESC NULLS LAST
        LIMIT 50`,
       [workspaceId, req.params.id]
     )

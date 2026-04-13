@@ -128,10 +128,10 @@ export function CataloguePage() {
         </div>
         <Select value={filterCat} onValueChange={(v) => setFilterCat(v as CatalogueCategorie | 'all')}>
           <SelectTrigger className="w-52 h-10 rounded-xl bg-card border-border/60 text-sm">
-            <SelectValue placeholder="Toutes les categories" />
+            <SelectValue placeholder="Toutes les catégories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les categories</SelectItem>
+            <SelectItem value="all">Toutes les catégories</SelectItem>
             {ALL_CATEGORIES.map((cat) => (
               <SelectItem key={cat} value={cat} className="text-sm">
                 {catalogueCategorieLabels[cat]}
@@ -142,11 +142,11 @@ export function CataloguePage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+      <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
         {/* Column headers */}
         <div className="flex items-center gap-4 px-5 py-3.5 border-b border-border/60 text-xs font-medium text-muted-foreground select-none">
           <div className="flex-1 min-w-0">Nom</div>
-          <div className="w-36 text-center">Categorie</div>
+          <div className="w-36 text-center">Catégorie</div>
           <div className="w-24 text-center">Source</div>
           <div className="w-24 text-center">Sous-items</div>
           <div className="w-24 text-center">Pieces</div>
@@ -171,11 +171,11 @@ export function CataloguePage() {
         {/* Empty state */}
         {!isLoading && topLevelItems.length === 0 && (
           <div className="py-20 text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
               <Package className="h-6 w-6 text-muted-foreground/50" />
             </div>
             <p className="text-sm font-medium text-muted-foreground">
-              {search ? 'Aucun resultat pour cette recherche' : 'Aucun item dans le catalogue'}
+              {search ? 'Aucun résultat pour cette recherche' : 'Aucun item dans le catalogue'}
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
               {search ? 'Essayez avec d\'autres critères' : 'Commencez par ajouter un item'}
@@ -196,7 +196,7 @@ export function CataloguePage() {
                 {item.nom}
               </p>
               {item.est_archive && (
-                <span className="text-[10px] text-muted-foreground/50">Archive</span>
+                <span className="text-[10px] text-muted-foreground/50">Archivé</span>
               )}
             </div>
 
@@ -280,7 +280,7 @@ function CreateItemDialog({
         contexte,
         aide_contextuelle: aide.trim() || undefined,
       })
-      toast.success(`"${nom.trim()}" cree`)
+      toast.success(`"${nom.trim()}" créé`)
       setNom('')
       setAide('')
       onOpenChange(false)
@@ -307,7 +307,7 @@ function CreateItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Categorie *</Label>
+            <Label className="text-xs text-muted-foreground">Catégorie *</Label>
             <Select value={categorie} onValueChange={(v) => setCategorie(v as CatalogueCategorie)}>
               <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -335,7 +335,7 @@ function CreateItemDialog({
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending && <SpinnerGap className="h-4 w-4 animate-spin mr-1.5" />}
-              Creer
+              Créer
             </Button>
           </DialogFooter>
         </form>
@@ -359,7 +359,7 @@ function ItemDetailDrawer({
   function handleArchive() {
     if (!itemId || !detail) return
     archiveMutation.mutate(itemId, {
-      onSuccess: () => { toast.success(`"${detail.nom}" archive`); onClose() },
+      onSuccess: () => { toast.success(`"${detail.nom}" archivé`); onClose() },
       onError: () => toast.error('Erreur'),
     })
   }
@@ -389,7 +389,7 @@ function ItemDetailDrawer({
               {/* Info section */}
               <div className="bg-muted/30 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Categorie</span>
+                  <span className="text-xs text-muted-foreground">Catégorie</span>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${categorieColors[detail.categorie] || 'bg-muted text-muted-foreground'}`}>
                     {catalogueCategorieLabels[detail.categorie]}
                   </span>
@@ -500,7 +500,7 @@ function TagSection({
     addMutation.mutate(
       { itemId, critere, valeur: newVal.trim() },
       {
-        onSuccess: () => { setNewVal(''); setAdding(false); toast.success('Valeur ajoutee') },
+        onSuccess: () => { setNewVal(''); setAdding(false); toast.success('Valeur ajoutée') },
         onError: () => toast.error('Erreur'),
       }
     )
@@ -510,7 +510,7 @@ function TagSection({
     removeMutation.mutate(
       { itemId, valeurId },
       {
-        onSuccess: () => toast.success('Valeur supprimee'),
+        onSuccess: () => toast.success('Valeur supprimée'),
         onError: () => toast.error('Erreur'),
       }
     )

@@ -52,6 +52,7 @@ export function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (!nom.trim() || !prenom.trim()) { setError('Nom et prénom sont requis'); return }
     if (password !== confirm) { setError('Les mots de passe ne correspondent pas'); return }
     if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       setError('8 caracteres min, 1 majuscule, 1 chiffre'); return
@@ -60,7 +61,7 @@ export function RegisterPage() {
     setSubmitting(true)
     try {
       await api('/auth/register', { method: 'POST', body: JSON.stringify({ token, nom, prenom, password }) })
-      navigate('/app/patrimoine')
+      navigate('/app/dashboard')
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription')
     }
@@ -79,7 +80,7 @@ export function RegisterPage() {
         <p className="text-sm text-muted-foreground mt-1">Role : <span className="capitalize font-medium">{invitation.role}</span></p>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
+      {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -105,7 +106,7 @@ export function RegisterPage() {
           <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="h-10 rounded-xl" />
         </div>
         <Button type="submit" className="w-full h-10 rounded-xl font-semibold" disabled={submitting}>
-          {submitting ? 'Inscription...' : 'Creer mon compte'}
+          {submitting ? 'Inscription...' : 'Créer mon compte'}
         </Button>
       </form>
     </div>

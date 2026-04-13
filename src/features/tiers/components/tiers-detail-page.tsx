@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
@@ -30,8 +30,17 @@ const FONCTION_OPTIONS = [
 export function TiersDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [editing, setEditing] = useState(false)
   const { data: tiers, isLoading } = useTiersDetail(id)
+
+  // Auto-set breadcrumbs when data loads (survives page refresh)
+  useEffect(() => {
+    if (tiers && !(location.state as any)?.breadcrumbs) {
+      const name = tiers.type_personne === 'morale' ? tiers.raison_sociale : `${tiers.prenom || ''} ${tiers.nom || ''}`.trim()
+      navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Tiers', href: '/app/tiers' }, { label: name || 'Fiche tiers' }] } })
+    }
+  }, [tiers?.id])
   const updateMutation = useUpdateTiers()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
@@ -242,10 +251,9 @@ export function TiersDetailPage() {
         </div>
       </CollapsibleSection>
 
-      {/* Lots table — flat, with "Ajouter un lot" */}
+      {/* Lots table — propriétaire only */}
       <LotsTable
         lotsProprietaire={lotsProprietaire}
-        lotsMandataire={lotsMandataire}
         tiersId={tiers.id}
         tiersName={displayName}
         isArchived={tiers.est_archive}
@@ -299,7 +307,7 @@ export function TiersDetailPage() {
 
 function CollapsibleSection({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {open ? <CaretUp className="h-4 w-4 text-muted-foreground" /> : <CaretDown className="h-4 w-4 text-muted-foreground" />}
@@ -340,7 +348,7 @@ function OrganisationsSection({ tiersId, organisations, isArchived, open, onTogg
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+      <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
         <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
           <h2 className="text-sm font-semibold text-foreground">Organisations ({organisations.length})</h2>
           <div className="flex items-center gap-2">
@@ -362,7 +370,7 @@ function OrganisationsSection({ tiersId, organisations, isArchived, open, onTogg
             {organisations.length > 0 ? (
               <div className="divide-y divide-border/50">
                 {organisations.map(org => (
-                  <div key={org.tiers_id} className="flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/tiers/${org.tiers_id}`)}>
+                  <div key={org.tiers_id} className="flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/tiers/${org.tiers_id}`, { state: { breadcrumbs: [{ label: 'Tiers', href: '/app/tiers' }, { label: org.raison_sociale || org.nom || 'Tiers' }] } })}>
                     <div className="flex items-center gap-3">
                       <BuildingOffice className="h-4 w-4 text-emerald-600" />
                       <p className="text-sm font-medium text-foreground">{org.raison_sociale || org.nom}</p>
@@ -425,7 +433,7 @@ function MembresSection({ tiersId, membres, isArchived, open, onToggle }: {
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+      <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
         <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
           <h2 className="text-sm font-semibold text-foreground">Membres ({membres.length})</h2>
           <div className="flex items-center gap-2">
@@ -447,7 +455,7 @@ function MembresSection({ tiersId, membres, isArchived, open, onToggle }: {
             {membres.length > 0 ? (
               <div className="divide-y divide-border/50">
                 {membres.map(m => (
-                  <div key={m.tiers_id} className="flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/tiers/${m.tiers_id}`)}>
+                  <div key={m.tiers_id} className="flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/tiers/${m.tiers_id}`, { state: { breadcrumbs: [{ label: 'Tiers', href: '/app/tiers' }, { label: m.prenom ? `${m.prenom} ${m.nom}` : (m.nom || 'Tiers') }] } })}>
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-primary" />
                       <p className="text-sm font-medium text-foreground">{m.prenom ? `${m.prenom} ${m.nom}` : m.nom}</p>
@@ -669,22 +677,18 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
   )
 }
 
-/* ── Lots Table (flat, with "Ajouter un lot") ── */
-function LotsTable({ lotsProprietaire, lotsMandataire, tiersId, tiersName, isArchived }: {
+/* ── Lots Table (propriétaire uniquement) ── */
+function LotsTable({ lotsProprietaire, tiersId, tiersName, isArchived }: {
   lotsProprietaire: Array<{ id: string; designation: string; type_bien: string; batiment_designation: string; est_principal: boolean }>
-  lotsMandataire: Array<{ id: string; designation: string; type_bien: string; batiment_designation: string }>
   tiersId: string
   tiersName: string
   isArchived: boolean
 }) {
   const navigate = useNavigate()
   const [showCreateLot, setShowCreateLot] = useState(false)
-  const lotCols = useResizableColumns({ designation: 200, batiment: 180, type: 120, role: 120 })
+  const lotCols = useResizableColumns({ designation: 200, batiment: 180, type: 120, principal: 100 })
 
-  const allLots = [
-    ...lotsProprietaire.map(l => ({ ...l, role: 'Propriétaire' as const })),
-    ...lotsMandataire.map(l => ({ ...l, role: 'Mandataire' as const, est_principal: false })),
-  ]
+  const allLots = lotsProprietaire.map(l => ({ ...l }))
 
   function goToLot(lotId: string, lotName: string) {
     navigate(`/app/patrimoine/lots/${lotId}`, {
@@ -702,7 +706,7 @@ function LotsTable({ lotsProprietaire, lotsMandataire, tiersId, tiersName, isArc
     <>
       <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
         <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">Lots ({allLots.length})</h2>
+          <h2 className="text-sm font-semibold text-foreground">Lots en propriété ({allLots.length})</h2>
           {!isArchived && (
             <Button size="sm" onClick={() => setShowCreateLot(true)}>
               <Plus className="h-3.5 w-3.5 mr-1.5" /> Ajouter un lot
@@ -724,8 +728,8 @@ function LotsTable({ lotsProprietaire, lotsMandataire, tiersId, tiersName, isArc
             Type
             <ResizeHandle colId="type" onResizeStart={lotCols.onResizeStart} onResize={lotCols.onResize} />
           </div>
-          <div className="shrink-0" style={{ width: lotCols.colWidths.role, minWidth: 40 }}>
-            Rôle
+          <div className="shrink-0" style={{ width: lotCols.colWidths.principal, minWidth: 40 }}>
+            Principal
           </div>
         </div>
 
@@ -733,7 +737,7 @@ function LotsTable({ lotsProprietaire, lotsMandataire, tiersId, tiersName, isArc
           <div className="divide-y divide-border/30">
             {allLots.map(lot => (
               <div
-                key={lot.id + lot.role}
+                key={lot.id}
                 className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer"
                 onClick={() => goToLot(lot.id, lot.designation)}
               >
@@ -742,17 +746,15 @@ function LotsTable({ lotsProprietaire, lotsMandataire, tiersId, tiersName, isArc
                 <div className="shrink-0" style={{ width: lotCols.colWidths.type }}>
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-xs capitalize">{lot.type_bien.replace('_', ' ')}</Badge>
                 </div>
-                <div className="shrink-0" style={{ width: lotCols.colWidths.role }}>
-                  <Badge className={lot.role === 'Mandataire' ? 'bg-blue-50 text-blue-700 border-blue-200 text-xs' : 'bg-amber-50 text-amber-700 border-amber-200 text-xs'}>
-                    {lot.role}
-                  </Badge>
+                <div className="shrink-0" style={{ width: lotCols.colWidths.principal }}>
+                  {lot.est_principal && <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs">Principal</Badge>}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center text-muted-foreground text-sm">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
               <House className="h-6 w-6 text-muted-foreground" />
             </div>
             <p>Aucun lot lié</p>
@@ -792,7 +794,7 @@ function LotsMandataireSection({ tiersId, tiersName }: { tiersId: string; tiersN
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <button
         onClick={() => setOpen(prev => !prev)}
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200"
@@ -836,6 +838,16 @@ function LotsMandataireSection({ tiersId, tiersName }: { tiersId: string; tiersN
 }
 
 /* ── US-806/807/809: Missions linked to tiers ── */
+const missionStatutColors: Record<string, string> = {
+  planifiee: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  assignee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  terminee: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  annulee: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
+}
+const missionStatutLabels: Record<string, string> = {
+  planifiee: 'Planifiée', assignee: 'Assignée', terminee: 'Terminée', annulee: 'Annulée',
+}
+
 function MissionsSection({ tiersId }: { tiersId: string }) {
   const { data: missions, isLoading } = useTiersMissions(tiersId)
   const navigate = useNavigate()
@@ -843,33 +855,29 @@ function MissionsSection({ tiersId }: { tiersId: string }) {
   if (isLoading || !missions || missions.length === 0) return null
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="px-5 py-4 border-b border-border/60">
         <h2 className="text-sm font-semibold text-foreground">Missions ({missions.length})</h2>
       </div>
       <div className="divide-y divide-border/40">
-        {missions.map((m: any) => {
-          const statusColors: Record<string, string> = {
-            planifiee: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-            assignee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-            terminee: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-            annulee: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
-          }
-          return (
-            <div key={m.id} className="flex items-center gap-4 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer text-sm">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground">{m.reference}</p>
-                <p className="text-xs text-muted-foreground">{m.lot?.designation}</p>
-              </div>
-              <div className="text-muted-foreground text-[13px]">
-                {m.date_intervention ? formatDate(m.date_intervention) : '--'}
-              </div>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statusColors[m.statut] || ''}`}>
-                {m.statut}
-              </span>
+        {missions.map((m: any) => (
+          <div
+            key={m.id}
+            className="flex items-center gap-4 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer text-sm"
+            onClick={() => navigate(`/app/missions/${m.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: m.reference || 'Mission' }] } })}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground">{m.reference}</p>
+              <p className="text-xs text-muted-foreground">{m.lot?.designation}</p>
             </div>
-          )
-        })}
+            <div className="text-muted-foreground text-[13px]">
+              {m.date_planifiee ? formatDate(m.date_planifiee) : '--'}
+            </div>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${missionStatutColors[m.statut] || ''}`}>
+              {missionStatutLabels[m.statut] || m.statut}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -892,7 +900,7 @@ function EdlHistorySection({ tiersId }: { tiersId: string }) {
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="px-5 py-4 border-b border-border/60">
         <h2 className="text-sm font-semibold text-foreground">Historique EDL ({edls?.length ?? 0})</h2>
       </div>
@@ -934,7 +942,7 @@ function EdlHistorySection({ tiersId }: { tiersId: string }) {
         </div>
       ) : (
         <div className="py-8 text-center text-muted-foreground text-sm">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
             <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
           <p>Aucun historique d'état des lieux</p>

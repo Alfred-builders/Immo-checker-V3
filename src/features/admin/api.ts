@@ -38,6 +38,8 @@ export interface WorkspaceDetails {
   ville: string | null
   logo_url: string | null
   couleur_primaire: string | null
+  couleur_fond: string | null
+  fond_style: string | null
   created_at: string
   updated_at: string
 }
@@ -146,5 +148,144 @@ export function useCancelInvitation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] })
     },
+  })
+}
+
+// ── API Keys ──
+
+export interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  scope: 'read' | 'write'
+  est_active: boolean
+  last_used_at: string | null
+  expires_at: string | null
+  created_at: string
+}
+
+export interface CreateApiKeyResult extends ApiKey {
+  key: string // raw key shown ONCE
+}
+
+export function useApiKeys() {
+  return useQuery({
+    queryKey: ['api-keys'],
+    queryFn: () => api<ApiKey[]>('/api-keys'),
+  })
+}
+
+export function useCreateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name: string; scope: 'read' | 'write'; expires_at?: string }) =>
+      api<CreateApiKeyResult>('/api-keys', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    },
+  })
+}
+
+export function useUpdateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; name?: string; scope?: 'read' | 'write'; est_active?: boolean }) =>
+      api<ApiKey>(`/api-keys/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    },
+  })
+}
+
+export function useRevokeApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/api-keys/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] })
+    },
+  })
+}
+
+// ── Webhooks ──
+
+export type WebhookEvent =
+  | 'mission.creee'
+  | 'mission.assignee'
+  | 'mission.terminee'
+  | 'mission.annulee'
+  | 'edl.signe'
+  | 'cle.deposee'
+
+export interface WebhookConfig {
+  id: string
+  url: string
+  events: WebhookEvent[]
+  est_active: boolean
+  created_at: string
+  total_deliveries?: number
+  success_deliveries?: number
+}
+
+export interface WebhookDelivery {
+  id: string
+  event_type: string
+  statut: 'pending' | 'success' | 'failed' | 'retrying'
+  attempts: number
+  response_code: number | null
+  last_attempt_at: string | null
+  created_at: string
+}
+
+export function useWebhooks() {
+  return useQuery({
+    queryKey: ['webhooks'],
+    queryFn: () => api<WebhookConfig[]>('/webhooks'),
+  })
+}
+
+export function useCreateWebhook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { url: string; secret: string; events: WebhookEvent[] }) =>
+      api<WebhookConfig>('/webhooks', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
+    },
+  })
+}
+
+export function useUpdateWebhook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; url?: string; events?: WebhookEvent[]; est_active?: boolean }) =>
+      api<WebhookConfig>(`/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
+    },
+  })
+}
+
+export function useDeleteWebhook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/webhooks/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
+    },
+  })
+}
+
+export function useTestWebhook() {
+  return useMutation({
+    mutationFn: (id: string) => api<{ queued: boolean }>(`/webhooks/${id}/test`, { method: 'POST' }),
+  })
+}
+
+export function useWebhookDeliveries(webhookId: string | null) {
+  return useQuery({
+    queryKey: ['webhook-deliveries', webhookId],
+    queryFn: () => api<WebhookDelivery[]>(`/webhooks/${webhookId}/deliveries`),
+    enabled: !!webhookId,
   })
 }

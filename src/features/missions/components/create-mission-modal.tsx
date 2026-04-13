@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, X, Warning, UsersThree } from '@phosphor-icons/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
@@ -125,6 +125,10 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     setShowLocatairePicker(false)
   }
 
+  // Sync form with latest preselectedDate every time the modal opens
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) reset() }, [open])
+
   function addLocataire(tiers: { id: string; nom: string; prenom?: string }) {
     if (locataires.some(l => l.tiers_id === tiers.id)) return
     setLocataires(prev => [...prev, {
@@ -145,11 +149,19 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     e.preventDefault()
 
     if (!lotId) {
-      toast.error('Veuillez selectionner un lot')
+      toast.error('Veuillez sélectionner un lot')
       return
     }
     if (!datePlanifiée) {
       toast.error('Veuillez saisir une date')
+      return
+    }
+    if (heureDebut && heureFin && heureFin <= heureDebut) {
+      toast.error('L\'heure de fin doit être après l\'heure de début')
+      return
+    }
+    if (locataires.length >= 2 && !typeBail) {
+      toast.error('Veuillez choisir le type de bail (individuel ou collectif)')
       return
     }
 
@@ -169,12 +181,12 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
         })),
         type_bail: locataires.length >= 2 ? typeBail : undefined,
       })
-      toast.success('Mission creee')
+      toast.success('Mission créée')
       reset()
       onOpenChange(false)
       navigate(`/app/missions/${result.id}`)
     } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la creation')
+      toast.error(err.message || 'Erreur lors de la création')
     }
   }
 
@@ -235,7 +247,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                       : 'bg-card border-border/60 text-muted-foreground hover:border-border/80 hover:text-foreground'
                   }`}
                 >
-                  {s === 'entree' ? 'Entree' : s === 'sortie' ? 'Sortie' : 'Entree + Sortie'}
+                  {s === 'entree' ? 'Entrée' : s === 'sortie' ? 'Sortie' : 'Entrée + Sortie'}
                 </button>
               ))}
             </div>
@@ -484,7 +496,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
               Annuler
             </Button>
             <Button type="submit" disabled={createMission.isPending}>
-              {createMission.isPending ? 'Creation...' : 'Creer la mission'}
+              {createMission.isPending ? 'Création...' : 'Créer la mission'}
             </Button>
           </div>
         </form>

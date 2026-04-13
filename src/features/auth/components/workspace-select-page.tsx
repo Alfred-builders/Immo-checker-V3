@@ -31,7 +31,7 @@ export function WorkspaceSelectPage() {
     setLoading(ws.id)
     try {
       await switchWorkspace(ws.id, userId)
-      navigate('/app/patrimoine')
+      navigate('/app/dashboard')
     } catch {
       setLoading(null)
     }
@@ -48,10 +48,14 @@ export function WorkspaceSelectPage() {
           {workspaces.map((ws) => (
             <Card
               key={ws.id}
-              className={`p-4 cursor-pointer rounded-2xl border-border/60 transition-all duration-200 hover:border-primary/40 hover:shadow-elevation-raised-hover hover:bg-accent/50 ${
+              role="button"
+              tabIndex={0}
+              aria-label={`Workspace ${ws.nom}`}
+              className={`p-4 cursor-pointer rounded-2xl border-border/60 transition-all duration-200 hover:border-primary/40 hover:shadow-elevation-raised-hover hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                 loading === ws.id ? 'opacity-50 pointer-events-none' : ''
               }`}
               onClick={() => handleSelect(ws)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(ws) } }}
             >
               <div className="flex items-center gap-4">
                 {ws.logo_url ? (

@@ -15,6 +15,8 @@ interface Workspace {
   type_workspace: string
   logo_url: string | null
   couleur_primaire: string | null
+  couleur_fond: string | null
+  fond_style: string | null
   role: string
 }
 

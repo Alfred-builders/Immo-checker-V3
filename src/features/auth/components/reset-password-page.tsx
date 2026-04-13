@@ -45,7 +45,7 @@ export function ResetPasswordPage() {
     <div>
       <h2 className="text-xl font-semibold text-foreground mb-1">Nouveau mot de passe</h2>
       <p className="text-sm text-muted-foreground mb-6">Min 8 caracteres, 1 majuscule, 1 chiffre.</p>
-      {error && <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
+      {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-muted-foreground">Nouveau mot de passe</Label>

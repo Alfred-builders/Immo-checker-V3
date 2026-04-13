@@ -450,13 +450,13 @@ export function PatrimoineMap({ batiments }: Props) {
   if (!mapboxgl.accessToken) {
     return (
       <div className="border border-border/60 rounded-2xl h-[600px] flex items-center justify-center text-muted-foreground bg-muted/30">
-        <p className="text-sm">Token Mapbox non configure</p>
+        <p className="text-sm">Token Mapbox non configuré</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="relative">
         <div ref={mapContainer} className="h-[600px] w-full" />
         <MapStyleSwitcher currentStyle={mapStyle} onChange={handleStyleChange} />

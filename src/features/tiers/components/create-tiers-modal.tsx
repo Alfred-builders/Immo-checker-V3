@@ -41,13 +41,22 @@ export function CreateTiersModal({ open, onOpenChange, onCreated }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Validation
+    const trimmedNom = nom.trim()
+    const trimmedPrenom = prenom.trim()
+    const trimmedRS = raisonSociale.trim()
+    if (typePersonne === 'physique' && (!trimmedNom || !trimmedPrenom)) { toast.error('Nom et prénom sont requis'); return }
+    if (typePersonne === 'morale' && !trimmedRS) { toast.error('Raison sociale est requise'); return }
+    if (siren && !/^\d{9}$/.test(siren.trim())) { toast.error('SIREN doit contenir exactement 9 chiffres'); return }
+
     try {
       const result = await createMutation.mutateAsync({
         type_personne: typePersonne,
-        nom: typePersonne === 'morale' ? (raisonSociale || nom) : nom,
-        prenom: typePersonne === 'physique' ? prenom || undefined : undefined,
-        raison_sociale: typePersonne === 'morale' ? raisonSociale || undefined : undefined,
-        siren: typePersonne === 'morale' && siren ? siren : undefined,
+        nom: typePersonne === 'morale' ? (trimmedRS || trimmedNom) : trimmedNom,
+        prenom: typePersonne === 'physique' ? trimmedPrenom || undefined : undefined,
+        raison_sociale: typePersonne === 'morale' ? trimmedRS || undefined : undefined,
+        siren: typePersonne === 'morale' && siren ? siren.trim() : undefined,
         representant_nom: typePersonne === 'morale' && representantNom ? representantNom : undefined,
         date_naissance: typePersonne === 'physique' && dateNaissance ? dateNaissance : undefined,
         email: email || undefined,

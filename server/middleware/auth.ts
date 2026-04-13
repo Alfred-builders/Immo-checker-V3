@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
-import { UnauthorizedError } from '../utils/errors.js'
+import { UnauthorizedError, ForbiddenError } from '../utils/errors.js'
 
 export interface JWTPayload {
   userId: string
@@ -17,6 +17,9 @@ declare global {
   }
 }
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required in production')
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 
 export function verifyToken(req: Request, _res: Response, next: NextFunction) {
@@ -41,7 +44,7 @@ export function requireRole(...roles: string[]) {
       throw new UnauthorizedError()
     }
     if (!roles.includes(req.user.role)) {
-      throw new UnauthorizedError('Rôle insuffisant')
+      throw new ForbiddenError('Permissions insuffisantes')
     }
     next()
   }

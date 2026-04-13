@@ -5,6 +5,9 @@ import { query } from '../db/index.js'
 import { AppError, UnauthorizedError, ConflictError } from '../utils/errors.js'
 import type { JWTPayload } from '../middleware/auth.js'
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required in production')
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret'
 const ACCESS_TOKEN_EXPIRY = '30m'
@@ -119,7 +122,7 @@ export async function login(email: string, password: string) {
 
   // Get user's workspaces
   const workspacesResult = await query(
-    `SELECT w.id, w.nom, w.type_workspace, w.logo_url, w.couleur_primaire, wu.role
+    `SELECT w.id, w.nom, w.type_workspace, w.logo_url, w.couleur_primaire, w.couleur_fond, w.fond_style, wu.role
      FROM workspace_user wu
      JOIN workspace w ON w.id = wu.workspace_id
      WHERE wu.user_id = $1 AND w.statut = 'actif'

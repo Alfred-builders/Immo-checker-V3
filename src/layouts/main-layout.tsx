@@ -88,15 +88,15 @@ function useBreadcrumbs() {
   if (topLevelMap[path]) return [{ label: topLevelMap[path] }]
 
   if (path.startsWith('/app/patrimoine/batiments/'))
-    return [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: 'Bâtiment' }]
+    return [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: '...' }]
   if (path.startsWith('/app/patrimoine/lots/'))
-    return [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: 'Lot' }]
+    return [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: '...' }]
   if (path.startsWith('/app/tiers/') && path !== '/app/tiers')
-    return [{ label: 'Tiers', href: '/app/tiers' }, { label: 'Fiche tiers' }]
+    return [{ label: 'Tiers', href: '/app/tiers' }, { label: '...' }]
   if (path.startsWith('/app/missions/') && path !== '/app/missions')
-    return [{ label: 'Missions', href: '/app/missions' }]
+    return [{ label: 'Missions', href: '/app/missions' }, { label: '...' }]
   if (path.startsWith('/app/parametres/templates/') && path !== '/app/parametres/templates')
-    return [{ label: 'Paramètres', href: '/app/parametres' }, { label: 'Templates', href: '/app/parametres/templates' }, { label: 'Template' }]
+    return [{ label: 'Paramètres', href: '/app/parametres' }, { label: 'Templates', href: '/app/parametres/templates' }, { label: '...' }]
   if (path === '/app/parametres/templates')
     return [{ label: 'Paramètres', href: '/app/parametres' }, { label: 'Templates' }]
   if (path === '/app/parametres/catalogue')
@@ -122,11 +122,20 @@ export function MainLayout() {
       document.documentElement.style.setProperty('--primary', workspace.couleur_primaire)
       document.documentElement.style.setProperty('--ring', workspace.couleur_primaire)
     }
+    // Apply background color
+    if (workspace?.couleur_fond) {
+      document.documentElement.style.setProperty('--background', workspace.couleur_fond)
+    }
+    // Apply background style
+    const style = workspace?.fond_style || 'gradient'
+    document.body.setAttribute('data-fond', style)
     return () => {
       document.documentElement.style.removeProperty('--primary')
       document.documentElement.style.removeProperty('--ring')
+      document.documentElement.style.removeProperty('--background')
+      document.body.removeAttribute('data-fond')
     }
-  }, [workspace?.couleur_primaire])
+  }, [workspace?.couleur_primaire, workspace?.couleur_fond, workspace?.fond_style])
 
   const isDetailPage = /\/app\/(patrimoine\/(batiments|lots)\/|tiers\/[^/]|missions\/[^/]|parametres\/templates\/[^/])/.test(location.pathname)
 

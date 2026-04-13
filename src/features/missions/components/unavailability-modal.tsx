@@ -102,8 +102,8 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
       // Reset form for create mode
       setUserId(preselectedUserId || '')
       setJourneeEntiere(true)
-      setDateDebut('')
-      setDateFin('')
+      setDateDebut(preselectedDate || '')
+      setDateFin(preselectedDate || '')
       setHeureDebut('')
       setHeureFin('')
       setEstRecurrent(false)
@@ -143,11 +143,19 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
     e.preventDefault()
 
     if (!userId) {
-      toast.error('Veuillez selectionner un technicien')
+      toast.error('Veuillez sélectionner un technicien')
       return
     }
     if (!dateDebut) {
-      toast.error('Veuillez saisir une date de debut')
+      toast.error('Veuillez saisir une date de début')
+      return
+    }
+    if (!estJourneeEntiere && heureDebut && heureFin && heureFin <= heureDebut) {
+      toast.error('L\'heure de fin doit être après l\'heure de début')
+      return
+    }
+    if (estRecurrent && recurrenceEnd === 'count' && (!recurrenceCount || parseInt(recurrenceCount) < 1)) {
+      toast.error('Le nombre de récurrences doit être au moins 1')
       return
     }
 
@@ -174,10 +182,10 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
     try {
       if (isEdit) {
         await updateMutation.mutateAsync({ id: editId!, ...payload })
-        toast.success('Indisponibilite mise à jour')
+        toast.success('Indisponibilité mise à jour')
       } else {
         await createMutation.mutateAsync(payload)
-        toast.success('Indisponibilite creee')
+        toast.success('Indisponibilité créée')
       }
       onOpenChange(false)
     } catch (err: any) {
@@ -189,7 +197,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
     if (!editId) return
     try {
       await deleteMutation.mutateAsync(editId)
-      toast.success('Indisponibilite supprimee')
+      toast.success('Indisponibilité supprimée')
       setShowDeleteConfirm(false)
       onOpenChange(false)
     } catch (err: any) {
@@ -205,7 +213,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarX className="h-5 w-5 text-muted-foreground" />
-            {isEdit ? 'Modifier l\'indisponibilite' : 'Nouvelle indisponibilite'}
+            {isEdit ? 'Modifier l\'indisponibilité' : 'Nouvelle indisponibilité'}
           </DialogTitle>
         </DialogHeader>
 
@@ -229,7 +237,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
 
           {/* Journee entiere toggle */}
           <div className="flex items-center justify-between py-1">
-            <Label className="text-xs">Journee entiere</Label>
+            <Label className="text-xs">Journée entière</Label>
             <Switch
               checked={journeeEntiere}
               onCheckedChange={setJourneeEntiere}
@@ -239,7 +247,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
           {/* Date debut / fin */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Date debut *</Label>
+              <Label className="text-xs">Date début *</Label>
               <Input
                 type="date"
                 value={dateDebut}
@@ -264,7 +272,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
           {!journeeEntiere && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Heure debut</Label>
+                <Label className="text-xs">Heure début</Label>
                 <Input
                   type="time"
                   value={heureDebut}
@@ -303,7 +311,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
             <div className="space-y-3 p-3 rounded-lg bg-muted/30">
               {/* Frequence */}
               <div className="space-y-1.5">
-                <Label className="text-xs">Frequence</Label>
+                <Label className="text-xs">Fréquence</Label>
                 <Select value={recurrenceFreq} onValueChange={setRecurrenceFreq}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
@@ -362,7 +370,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                       onChange={() => setRecurrenceEnd('count')}
                       className="h-3.5 w-3.5 accent-primary"
                     />
-                    <span className="text-xs text-foreground">Apres</span>
+                    <span className="text-xs text-foreground">Après</span>
                     {recurrenceEnd === 'count' && (
                       <Input
                         type="number"
@@ -407,7 +415,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
             <Textarea
               value={motif}
               onChange={(e) => setMotif(e.target.value)}
-              placeholder="Conge, formation, rendez-vous personnel..."
+              placeholder="Congé, formation, rendez-vous personnel..."
               rows={2}
             />
           </div>
@@ -464,7 +472,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                 Annuler
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? 'Enregistrement...' : isEdit ? 'Mettre a jour' : 'Creer'}
+                {isPending ? 'Enregistrement...' : isEdit ? 'Mettre à jour' : 'Créer'}
               </Button>
             </div>
           </div>
