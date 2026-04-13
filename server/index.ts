@@ -40,6 +40,11 @@ const PORT = parseInt(process.env.PORT || '3001', 10)
 const isRailway = !!process.env.RAILWAY_ENVIRONMENT
 const isDev = !isRailway && process.env.NODE_ENV === 'development'
 
+// Trust Railway's reverse proxy (needed for rate limiting + IP detection)
+if (isRailway) {
+  app.set('trust proxy', 1)
+}
+
 // Middleware
 app.use(cors({
   origin: isDev
@@ -79,10 +84,10 @@ app.use('/api/docs', docsRouter)
 const apiV1Limit = rateLimit({
   windowMs: 60_000,
   max: 100,
-  keyGenerator: (req) => (req.headers.authorization as string) || (req.ip ?? 'unknown'),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes', code: 'RATE_LIMIT' },
+  validate: { trustProxy: false, xForwardedForHeader: false },
 })
 app.use('/api/v1/missions', verifyApiKey, apiV1Limit, v1MissionsRouter)
 app.use('/api/v1/edl-inventaires', verifyApiKey, apiV1Limit, v1EdlRouter)

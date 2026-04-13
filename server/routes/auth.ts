@@ -6,8 +6,8 @@ import * as authService from '../services/auth-service.js'
 import { verifyToken } from '../middleware/auth.js'
 
 // Rate limiters for auth endpoints
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Trop de tentatives de connexion. Reessayez dans 15 minutes.', code: 'RATE_LIMITED' } })
-const forgotLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Trop de demandes de reinitialisation. Reessayez dans 15 minutes.', code: 'RATE_LIMITED' } })
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.', code: 'RATE_LIMITED' }, validate: { trustProxy: false, xForwardedForHeader: false } })
+const forgotLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Trop de demandes de réinitialisation. Réessayez dans 15 minutes.', code: 'RATE_LIMITED' }, validate: { trustProxy: false, xForwardedForHeader: false } })
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError } from '../utils/response.js'
 

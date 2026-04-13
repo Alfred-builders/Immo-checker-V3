@@ -8,10 +8,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 const { Pool } = pg
 
+const dbUrl = process.env.DATABASE_URL || ''
+const isInternalRailway = dbUrl.includes('.railway.internal')
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   max: 20,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: (process.env.NODE_ENV === 'production' && !isInternalRailway) ? { rejectUnauthorized: false } : false,
 })
 
 pool.on('error', (err) => {
