@@ -243,11 +243,11 @@ router.put('/:id/adresses/:adresseId', requireRole('admin', 'gestionnaire'), asy
     const bat = await query(`SELECT id FROM batiment WHERE id = $1 AND workspace_id = $2`, [req.params.id, workspaceId])
     if (bat.rows.length === 0) throw new NotFoundError('Bâtiment')
 
-    const { rue, complement, code_postal, ville, latitude, longitude } = req.body
+    const { type, rue, complement, code_postal, ville, latitude, longitude } = req.body
     const result = await query(
-      `UPDATE adresse_batiment SET rue = $1, complement = $2, code_postal = $3, ville = $4, latitude = $5, longitude = $6, updated_at = now()
-       WHERE id = $7 AND batiment_id = $8 RETURNING *`,
-      [rue, complement ?? null, code_postal, ville, latitude ?? null, longitude ?? null, req.params.adresseId, req.params.id]
+      `UPDATE adresse_batiment SET type = COALESCE($1, type), rue = $2, complement = $3, code_postal = $4, ville = $5, latitude = $6, longitude = $7, updated_at = now()
+       WHERE id = $8 AND batiment_id = $9 RETURNING *`,
+      [type ?? null, rue, complement ?? null, code_postal, ville, latitude ?? null, longitude ?? null, req.params.adresseId, req.params.id]
     )
     if (result.rows.length === 0) throw new NotFoundError('Adresse')
     sendSuccess(res, result.rows[0])

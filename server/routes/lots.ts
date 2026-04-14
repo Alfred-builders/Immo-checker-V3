@@ -154,7 +154,8 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
     const allowedFields = [
       'designation', 'reference_interne', 'type_bien', 'nb_pieces', 'etage',
       'emplacement_palier', 'surface', 'meuble', 'dpe_classe', 'ges_classe',
-      'num_cave', 'num_parking', 'commentaire', 'mandataire_id', 'est_archive'
+      'num_cave', 'num_parking', 'commentaire', 'mandataire_id', 'est_archive',
+      'eau_chaude_type', 'eau_chaude_mode', 'chauffage_type', 'chauffage_mode'
     ]
 
     const fields: string[] = []

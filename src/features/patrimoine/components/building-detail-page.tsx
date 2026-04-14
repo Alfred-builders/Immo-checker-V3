@@ -62,6 +62,8 @@ export function BuildingDetailPage() {
     commentaire: '',
   })
   const [addrForms, setAddrForms] = useState<AddressForm[]>([])
+  const [deletedAddrIds, setDeletedAddrIds] = useState<string[]>([])
+  const [addrDeleteIdx, setAddrDeleteIdx] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [showAddAddress, setShowAddAddress] = useState(false)
@@ -86,6 +88,7 @@ export function BuildingDetailPage() {
         latitude: a.latitude,
         longitude: a.longitude,
       })))
+      setDeletedAddrIds([])
     }
   }, [batiment, editing])
 
@@ -101,7 +104,11 @@ export function BuildingDetailPage() {
         annee_construction: formData.annee_construction ? parseInt(formData.annee_construction) : null,
         commentaire: formData.commentaire || null,
       })
-      // Save each address
+      // Delete removed addresses first
+      for (const adresseId of deletedAddrIds) {
+        await deleteAddr.mutateAsync({ batimentId: batiment!.id, adresseId })
+      }
+      // Save each remaining address
       for (const addr of addrForms) {
         if (addr.isNew) {
           await addAddr.mutateAsync({
@@ -118,6 +125,7 @@ export function BuildingDetailPage() {
           await updateAddr.mutateAsync({
             batimentId: batiment!.id,
             adresseId: addr.id,
+            type: addr.type,
             rue: addr.rue,
             complement: addr.complement || undefined,
             code_postal: addr.code_postal,
@@ -128,9 +136,10 @@ export function BuildingDetailPage() {
         }
       }
       toast.success('Bâtiment mis à jour')
+      setDeletedAddrIds([])
       setTimeout(() => setEditing(false), 300)
-    } catch {
-      toast.error('Erreur')
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur lors de la mise à jour')
     } finally {
       setSaving(false)
     }
@@ -149,6 +158,7 @@ export function BuildingDetailPage() {
         id: a.id, type: a.type, rue: a.rue || '', complement: a.complement || '',
         code_postal: a.code_postal || '', ville: a.ville || '', latitude: a.latitude, longitude: a.longitude,
       })))
+      setDeletedAddrIds([])
     }
     setEditing(false)
   }
@@ -190,16 +200,8 @@ export function BuildingDetailPage() {
                 <h1 className="text-xl font-semibold text-foreground">{batiment.designation}</h1>
               )}
             </div>
-            <div className="mt-1">
-              {editing ? (
-                <Select value={formData.type} onValueChange={(v) => setFormData(prev => ({ ...prev, type: v }))}>
-                  <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
-                </Select>
-              ) : (
-                <Badge className="bg-primary/10 text-primary border-primary/20 capitalize">{typeLabels[batiment.type]}</Badge>
-              )}
-              {batiment.est_archive && <Badge variant="destructive" className="text-[10px] ml-2">Archivé</Badge>}
+            <div className="mt-1 flex items-center gap-2">
+              {batiment.est_archive && <Badge variant="destructive" className="text-[10px]">Archivé</Badge>}
             </div>
           </div>
         </div>
@@ -295,7 +297,7 @@ export function BuildingDetailPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => setAddrForms(prev => prev.filter((_, i) => i !== idx))}
+                          onClick={() => setAddrDeleteIdx(idx)}
                           className="h-7 w-7 rounded-md flex items-center justify-center text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                           title="Supprimer"
                         >
@@ -401,6 +403,21 @@ export function BuildingDetailPage() {
 
       <CreateLotModal open={showCreateLot} onOpenChange={setShowCreateLot} preselectedBatimentId={id} onCreated={(lotId) => navigate(`/app/patrimoine/lots/${lotId}`)} />
       <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={handleCancel} saving={saving} />
+      <ConfirmDialog
+        open={addrDeleteIdx !== null}
+        onOpenChange={(open) => { if (!open) setAddrDeleteIdx(null) }}
+        title="Supprimer cette adresse ?"
+        description="L'adresse sera retirée lors de la prochaine sauvegarde."
+        confirmLabel="Supprimer"
+        variant="destructive"
+        onConfirm={() => {
+          if (addrDeleteIdx === null) return
+          const addr = addrForms[addrDeleteIdx]
+          if (!addr.isNew) setDeletedAddrIds(prev => [...prev, addr.id])
+          setAddrForms(prev => prev.filter((_, i) => i !== addrDeleteIdx))
+          setAddrDeleteIdx(null)
+        }}
+      />
       <ConfirmDialog
         open={showArchiveConfirm}
         onOpenChange={setShowArchiveConfirm}

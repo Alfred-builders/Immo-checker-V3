@@ -5,6 +5,7 @@ import {
   CaretUp, CaretDown, PencilSimple, Warning, Plus, X, MagnifyingGlass,
   UsersThree, IdentificationCard, Ruler, Lightning, ArrowSquareOut,
   ChatText, ClipboardText, FilePdf,
+  BuildingApartment, Storefront, Garage, DoorOpen,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
@@ -18,6 +19,7 @@ import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { useLotDetail, useUpdateLot, useSearchTiers, useLinkProprietaire, useUnlinkProprietaire } from '../api'
 import { useMissions } from '../../missions/api'
 import { missionStatutLabels, missionStatutColors, sensLabels, sensColors } from '../../missions/types'
+import { CreateMissionModal } from '../../missions/components/create-mission-modal'
 import { CreateTiersModal } from '../../tiers/components/create-tiers-modal'
 import { formatDate } from '../../../lib/formatters'
 import { toast } from 'sonner'
@@ -26,9 +28,14 @@ const typeBienLabels: Record<string, string> = {
   appartement: 'Appartement', maison: 'Maison', studio: 'Studio',
   local_commercial: 'Local commercial', parking: 'Parking', cave: 'Cave', autre: 'Autre',
 }
-const typeBienIcons: Record<string, string> = {
-  appartement: 'building-apartment', maison: 'house', studio: 'door',
-  local_commercial: 'storefront', parking: 'garage', cave: 'warehouse', autre: 'cube',
+const typeBienIconMap: Record<string, React.ElementType> = {
+  appartement: BuildingApartment,
+  maison: House,
+  studio: DoorOpen,
+  local_commercial: Storefront,
+  parking: Garage,
+  cave: Archive,
+  autre: BuildingApartment,
 }
 const typeBienOptions = [
   { value: 'appartement', label: 'Appartement' },
@@ -159,7 +166,7 @@ export function LotDetailPage() {
       })
       toast.success('Lot mis à jour')
       setTimeout(() => setEditing(false), 400)
-    } catch { toast.error('Erreur') }
+    } catch (err: any) { toast.error(err.message || 'Erreur lors de la mise à jour') }
     finally { setSaving(false) }
   }
 
@@ -171,21 +178,20 @@ export function LotDetailPage() {
         <div className="px-7 py-6">
           <div className="flex items-start justify-between">
             <div className="flex gap-4 items-center">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <House className="h-6 w-6 text-primary" />
-              </div>
+              {(() => { const LotIcon = typeBienIconMap[lot.type_bien] ?? BuildingApartment; return (
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <LotIcon className="h-6 w-6 text-primary" />
+                </div>
+              )})()}
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{lot.designation}</h1>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">{typeBienLabels[lot.type_bien] || lot.type_bien}</span>
                   {lot.meuble && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700">Meublé</span>}
-                  {lot.etage && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">{lot.etage}</span>}
                   {lot.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
                 </div>
                 <div className="flex items-center gap-5 mt-2 text-xs text-muted-foreground">
                   {lot.batiment && <span className="inline-flex items-center gap-1.5"><BuildingOffice className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{lot.batiment.designation}</span>}
                   {lot.batiment?.adresse && <span className="inline-flex items-center gap-1.5">{lot.batiment.adresse.rue}, {lot.batiment.adresse.ville}</span>}
-                  {lot.surface && <span className="inline-flex items-center gap-1.5"><Ruler className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{lot.surface} m²{lot.nb_pieces ? ` · ${lot.nb_pieces} pièces` : ''}</span>}
                 </div>
               </div>
             </div>
@@ -558,11 +564,14 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
 /* ═══ Missions Table ═══ */
 function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boolean }) {
   const [open, setOpen] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
   const navigate = useNavigate()
   const { data } = useMissions({ lot_id: lotId, limit: 20 })
   const missions = data?.data ?? []
 
   return (
+    <>
+    <CreateMissionModal open={showCreate} onOpenChange={setShowCreate} preselectedLotId={lotId} />
     <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-muted/10 transition-colors cursor-pointer">
         <ClipboardText className="h-4 w-4 text-muted-foreground/50" />
@@ -570,7 +579,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
         {missions.length > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">{missions.length}</span>}
         {!isArchived && (
           <div className="ml-3" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" className="h-7 text-xs text-primary hover:text-primary px-2" onClick={() => navigate('/app/missions?create=true&lot_id=' + lotId)}>
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-primary hover:text-primary px-2" onClick={() => setShowCreate(true)}>
               <Plus className="h-3 w-3 mr-1" /> Créer une mission
             </Button>
           </div>
@@ -585,7 +594,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
               <ClipboardText className="h-8 w-8 text-muted-foreground/20 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground/40 italic">Aucune mission réalisée pour ce lot</p>
               {!isArchived && (
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/app/missions?create=true&lot_id=' + lotId)}>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => setShowCreate(true)}>
                   <Plus className="h-3.5 w-3.5" /> Créer une mission
                 </Button>
               )}
@@ -627,5 +636,6 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
         </div>
       )}
     </div>
+    </>
   )
 }

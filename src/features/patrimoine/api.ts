@@ -112,10 +112,10 @@ export function useUpdateLot() {
 export function useUpdateAddress() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ batimentId, adresseId, ...data }: { batimentId: string; adresseId: string } & Record<string, unknown>) =>
+    mutationFn: ({ batimentId, adresseId, ...data }: { batimentId: string; adresseId: string; type?: string; rue?: string; complement?: string; code_postal?: string; ville?: string; latitude?: number; longitude?: number }) =>
       api(`/batiments/${batimentId}/adresses/${adresseId}`, { method: 'PUT', body: JSON.stringify(data) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batiment'] })
+    onSuccess: (_d, v) => {
+      queryClient.invalidateQueries({ queryKey: ['batiment', v.batimentId] })
       queryClient.invalidateQueries({ queryKey: ['batiments'] })
     },
   })
@@ -140,8 +140,8 @@ export function useDeleteAddress() {
   return useMutation({
     mutationFn: ({ batimentId, adresseId }: { batimentId: string; adresseId: string }) =>
       api(`/batiments/${batimentId}/adresses/${adresseId}`, { method: 'DELETE' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['batiment'] })
+    onSuccess: (_d, v) => {
+      queryClient.invalidateQueries({ queryKey: ['batiment', v.batimentId] })
       queryClient.invalidateQueries({ queryKey: ['batiments'] })
     },
   })

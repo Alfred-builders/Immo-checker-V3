@@ -176,6 +176,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
     setStep('importing')
     let success = 0
     const errors: string[] = []
+    const batimentCache: Record<string, string> = {}
 
     for (let i = 0; i < csvData.rows.length; i++) {
       const row = csvData.rows[i]
@@ -243,8 +244,46 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
           })
           success++
         } else {
-          // Lots need a batiment_id — skip for now, would need batiment matching
-          errors.push(`Ligne ${i + 2}: import lots necessite un bâtiment existant (non supporte en V1)`)
+          // Lot import: each row must have rue+code_postal+ville to find/create the parent batiment
+          if (!data.designation) { errors.push(`Ligne ${i + 2}: désignation lot requise`); continue }
+          if (!data.rue || !data.code_postal || !data.ville) { errors.push(`Ligne ${i + 2}: adresse du bâtiment requise (rue, code postal, ville)`); continue }
+
+          // Find or create batiment by address
+          const batimentKey = `${data.rue}|${data.code_postal}|${data.ville}`
+          if (!batimentCache[batimentKey]) {
+            const batResult = await api<any>('/batiments', {
+              method: 'POST',
+              body: JSON.stringify({
+                designation: data.designation_batiment || `Bâtiment ${data.rue}, ${data.ville}`,
+                type: data.type_batiment || 'immeuble',
+                nb_etages: data.nb_etages,
+                annee_construction: data.annee_construction,
+                adresses: [{ type: 'principale', rue: data.rue, complement: data.complement, code_postal: data.code_postal, ville: data.ville }],
+              }),
+            })
+            batimentCache[batimentKey] = batResult.id
+          }
+
+          await api('/lots', {
+            method: 'POST',
+            body: JSON.stringify({
+              batiment_id: batimentCache[batimentKey],
+              designation: data.designation,
+              type_bien: data.type_bien || 'appartement',
+              reference_interne: data.reference_interne,
+              nb_pieces: data.nb_pieces,
+              etage: data.etage,
+              emplacement_palier: data.emplacement_palier,
+              surface: data.surface,
+              meuble: data.meuble || false,
+              dpe_classe: data.dpe_classe,
+              ges_classe: data.ges_classe,
+              num_cave: data.num_cave,
+              num_parking: data.num_parking,
+              commentaire: data.commentaire,
+            }),
+          })
+          success++
         }
       } catch (err: any) {
         errors.push(`Ligne ${i + 2}: ${err.message || 'Erreur inconnue'}`)
