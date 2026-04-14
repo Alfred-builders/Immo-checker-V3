@@ -12,10 +12,11 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreated?: (id: string) => void
+  defaultTypePersonne?: 'physique' | 'morale'
 }
 
-export function CreateTiersModal({ open, onOpenChange, onCreated }: Props) {
-  const [typePersonne, setTypePersonne] = useState<'physique' | 'morale'>('physique')
+export function CreateTiersModal({ open, onOpenChange, onCreated, defaultTypePersonne = 'physique' }: Props) {
+  const [typePersonne, setTypePersonne] = useState<'physique' | 'morale'>(defaultTypePersonne)
   const [nom, setNom] = useState('')
   const [prenom, setPrenom] = useState('')
   const [raisonSociale, setRaisonSociale] = useState('')
@@ -32,7 +33,7 @@ export function CreateTiersModal({ open, onOpenChange, onCreated }: Props) {
   const createMutation = useCreateTiers()
 
   function reset() {
-    setTypePersonne('physique')
+    setTypePersonne(defaultTypePersonne)
     setNom(''); setPrenom(''); setRaisonSociale(''); setSiren('')
     setRepresentantNom(''); setDateNaissance('')
     setEmail(''); setTel(''); setAdresse(''); setCodePostal(''); setVille(''); setNotes('')

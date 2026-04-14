@@ -671,6 +671,7 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
     <CreateTiersModal
       open={showCreateTiers}
       onOpenChange={setShowCreateTiers}
+      defaultTypePersonne={mode === 'organisation' ? 'morale' : 'physique'}
       onCreated={async (newTiersId) => {
         setShowCreateTiers(false)
         try {

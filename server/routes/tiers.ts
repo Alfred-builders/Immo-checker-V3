@@ -273,7 +273,7 @@ router.post('/:id/organisations', requireRole('admin', 'gestionnaire'), async (r
     const result = await query(
       `INSERT INTO tiers_organisation (tiers_id, organisation_id, fonction, est_principal)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (tiers_id, organisation_id) DO UPDATE SET fonction = $3, est_principal = $4, updated_at = now()
+       ON CONFLICT (tiers_id, organisation_id) DO UPDATE SET fonction = $3, est_principal = $4
        RETURNING *`,
       [req.params.id, organisation_id, fonction ?? 'contact_principal', est_principal ?? false]
     )
