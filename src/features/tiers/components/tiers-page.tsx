@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 's
 import { useTiers, useTiersStats } from '../api'
 import { CreateTiersModal } from './create-tiers-modal'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
-import { ColumnConfig } from '../../../components/shared/column-config'
+import { ColumnConfig, useColumnPreferences } from '../../../components/shared/column-config'
 import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../hooks/use-auth'
@@ -101,8 +101,8 @@ export function TiersPage() {
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<Tab>('proprietaire')
   const [typePersonneFilter, setTypePersonneFilter] = useState<string>('all')
-  const [villeFilter, setVilleFilter] = useState<string>('all')
   const [archivedFilter, setArchivedFilter] = useState<string>('active')
+  const [dynamicFilters, setDynamicFilters] = useState<ActiveFilter[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const navigate = useNavigate()
   const { workspace } = useAuth()
@@ -110,7 +110,8 @@ export function TiersPage() {
   const columns = COLUMNS_BY_TAB[tab]
   const defaultWidths = useMemo(() => buildDefaultWidths(columns), [columns])
   const { colWidths, onResizeStart, onResize } = useResizableColumns(defaultWidths)
-  const [visibleCols, setVisibleCols] = useState<string[]>(columns.filter(c => c.label).map(c => c.id))
+  const colDefs = useMemo(() => columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true })), [columns])
+  const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('tiers_list', colDefs)
 
   const role = tab === 'tous' ? undefined : tab
   const { data, isLoading } = useTiers({
@@ -134,17 +135,27 @@ export function TiersPage() {
   // Extra client-side filters
   const filtered = useMemo(() => {
     let list = tiersRaw
-    if (villeFilter !== 'all') list = list.filter(t => t.ville === villeFilter)
     if (archivedFilter === 'active') list = list.filter(t => !t.est_archive)
     else if (archivedFilter === 'archived') list = list.filter(t => t.est_archive)
+    // Apply dynamic filters
+    for (const f of dynamicFilters) {
+      list = list.filter(t => {
+        const val = String((t as any)[f.field] ?? '')
+        switch (f.operator) {
+          case 'contains': return val.toLowerCase().includes(f.value.toLowerCase())
+          case 'equals': return val.toLowerCase() === f.value.toLowerCase()
+          case 'not_equals': return val.toLowerCase() !== f.value.toLowerCase()
+          case 'starts_with': return val.toLowerCase().startsWith(f.value.toLowerCase())
+          case 'gt': return Number(val) > Number(f.value)
+          case 'lt': return Number(val) < Number(f.value)
+          case 'gte': return Number(val) >= Number(f.value)
+          case 'lte': return Number(val) <= Number(f.value)
+          default: return true
+        }
+      })
+    }
     return list
-  }, [tiersRaw, villeFilter, archivedFilter])
-
-  const uniqueVilles = useMemo(() => {
-    const villes = new Set<string>()
-    tiersRaw.forEach(t => { if (t.ville) villes.add(t.ville) })
-    return [...villes].sort()
-  }, [tiersRaw])
+  }, [tiersRaw, archivedFilter, dynamicFilters])
 
   const tiersList = useMemo(() => {
     if (!sortCol) return filtered
@@ -228,16 +239,6 @@ export function TiersPage() {
           </SelectContent>
         </Select>
 
-        <Select value={villeFilter} onValueChange={setVilleFilter}>
-          <SelectTrigger className="h-10 w-[140px] text-sm">
-            <SelectValue placeholder="Ville" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les villes</SelectItem>
-            {uniqueVilles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
         <Select value={archivedFilter} onValueChange={setArchivedFilter}>
           <SelectTrigger className="h-10 w-[120px] text-sm">
             <SelectValue placeholder="Statut" />
@@ -249,14 +250,15 @@ export function TiersPage() {
           </SelectContent>
         </Select>
 
-        <div className="ml-auto">
-          <ColumnConfig
-            page="tiers_list"
-            columns={columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true }))}
-            visibleColumns={visibleCols}
-            onColumnsChange={setVisibleCols}
-          />
-        </div>
+        <DynamicFilter fields={TIERS_FILTER_FIELDS} filters={dynamicFilters} onChange={setDynamicFilters} />
+
+        <div className="flex-1" />
+        <ColumnConfig
+          page="tiers_list"
+          columns={columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true }))}
+          visibleColumns={visibleCols}
+          onColumnsChange={setVisibleCols}
+        />
       </div>
 
       {/* Table */}
@@ -276,9 +278,9 @@ export function TiersPage() {
                 <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
                   {col.label}
                   {sortable && (
-                    <span className="inline-flex flex-col -space-y-1 opacity-40">
-                      <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
-                      <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
+                    <span className={`inline-flex flex-col -space-y-1 ${isActive ? '' : 'opacity-40'}`}>
+                      <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
+                      <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
                     </span>
                   )}
                 </span>

@@ -448,9 +448,9 @@ function SortableHeader({ colId, label, sortKey, sortDir, onSort, width, onResiz
     >
       <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
         {label}
-        <span className="inline-flex flex-col -space-y-1 opacity-40">
-          <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
-          <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary !opacity-100' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
+        <span className={`inline-flex flex-col -space-y-1 ${isActive ? '' : 'opacity-40'}`}>
+          <CaretUp className={`h-2.5 w-2.5 ${isActive && sortDir === 'asc' ? 'text-primary' : ''}`} weight={isActive && sortDir === 'asc' ? 'bold' : 'regular'} />
+          <CaretDown className={`h-2.5 w-2.5 ${isActive && sortDir === 'desc' ? 'text-primary' : ''}`} weight={isActive && sortDir === 'desc' ? 'bold' : 'regular'} />
         </span>
       </span>
       <ResizeHandle colId={colId} onResizeStart={onResizeStart} onResize={onResize} />

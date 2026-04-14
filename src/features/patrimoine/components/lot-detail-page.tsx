@@ -360,6 +360,7 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
   const [searchQ, setSearchQ] = useState('')
   const [showMandataireSearch, setShowMandataireSearch] = useState(false)
   const [mandataireSearchQ, setMandataireSearchQ] = useState('')
+  const [showCreateMandataire, setShowCreateMandataire] = useState(false)
   const { data: searchResults } = useSearchTiers(searchQ)
   const { data: mandataireResults } = useSearchTiers(mandataireSearchQ)
   const linkMutation = useLinkProprietaire()
@@ -495,6 +496,9 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
                     ))}
                   </div>
                 )}
+                <button onClick={() => setShowCreateMandataire(true)} className="w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold text-violet-600 hover:bg-violet-100/60 rounded-lg transition-colors border-t border-border/30 mt-1 pt-2 dark:text-violet-400 dark:hover:bg-violet-950/40">
+                  <Plus className="h-3.5 w-3.5" /> Créer un nouveau tiers
+                </button>
                 <div className="flex justify-between">
                   <button onClick={() => { setShowMandataireSearch(false); setMandataireSearchQ('') }} className="text-[11px] text-muted-foreground hover:text-foreground">Annuler</button>
                   {mandataire && <button onClick={() => handleSetMandataire(null)} className="text-[11px] text-red-500 hover:text-red-600">Retirer le mandataire</button>}
@@ -534,6 +538,10 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
       )}
 
       <CreateTiersModal open={showCreateTiers} onOpenChange={setShowCreateTiers} onCreated={handleCreatedTiers} />
+      <CreateTiersModal open={showCreateMandataire} onOpenChange={setShowCreateMandataire} onCreated={async (tiersId) => {
+        await handleSetMandataire(tiersId)
+        setShowCreateMandataire(false)
+      }} />
       <ConfirmDialog
         open={!!unlinkTarget}
         onOpenChange={(v) => { if (!v) setUnlinkTarget(null) }}

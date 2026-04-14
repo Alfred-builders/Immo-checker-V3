@@ -9,6 +9,90 @@ import { NotFoundError, AppError } from '../utils/errors.js'
 const router = Router()
 router.use(verifyToken)
 
+/* ── Recurring indispo expansion (US-823) ── */
+
+const DAY_MAP: Record<string, number> = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }
+
+interface RecurrenceConfig {
+  freq: 'daily' | 'weekly' | 'biweekly' | 'monthly'
+  byday?: string[]
+  bymonthday?: number[]
+  count?: number
+  until?: string
+  exdates?: string[]
+}
+
+function expandRecurringIndispo(row: any, rangeFrom: Date, rangeTo: Date): any[] {
+  const config: RecurrenceConfig = row.recurrence_config || {}
+  const occurrences: any[] = []
+
+  const seriesStart = new Date(row.date_debut)
+  const firstEnd = new Date(row.date_fin)
+  const durationMs = firstEnd.getTime() - seriesStart.getTime()
+  const exdates = new Set<string>((config.exdates || []))
+
+  const untilMs = config.until
+    ? Math.min(new Date(config.until + 'T23:59:59Z').getTime(), rangeTo.getTime())
+    : rangeTo.getTime()
+  const maxCount = config.count || 500
+  let generated = 0
+
+  if (config.byday && config.byday.length > 0 && (config.freq === 'weekly' || config.freq === 'biweekly')) {
+    const periodDays = config.freq === 'biweekly' ? 14 : 7
+
+    // Find the Monday of the week containing seriesStart
+    const startDow = seriesStart.getDay()
+    const mondayOffset = startDow === 0 ? -6 : 1 - startDow
+    const anchor = new Date(seriesStart)
+    anchor.setDate(anchor.getDate() + mondayOffset)
+    anchor.setHours(seriesStart.getHours(), seriesStart.getMinutes(), seriesStart.getSeconds(), 0)
+
+    while (anchor.getTime() <= untilMs && generated < maxCount) {
+      for (const day of config.byday) {
+        const dayNum = DAY_MAP[day] ?? 1
+        const dayOffset = dayNum === 0 ? 6 : dayNum - 1 // Mon=0..Sun=6
+        const occStart = new Date(anchor)
+        occStart.setDate(anchor.getDate() + dayOffset)
+        if (occStart < seriesStart) continue
+        if (occStart.getTime() > untilMs) break
+
+        const occEnd = new Date(occStart.getTime() + durationMs)
+        const dateKey = occStart.toISOString().slice(0, 10)
+
+        if (!exdates.has(dateKey) && occEnd >= rangeFrom && occStart <= rangeTo) {
+          occurrences.push({ ...row, id: `${row.id}__${dateKey}`, date_debut: occStart.toISOString(), date_fin: occEnd.toISOString(), parent_id: row.id, is_occurrence: true })
+          generated++
+        }
+        if (generated >= maxCount) break
+      }
+      anchor.setDate(anchor.getDate() + periodDays)
+    }
+  } else {
+    let current = new Date(seriesStart)
+
+    while (current.getTime() <= untilMs && generated < maxCount) {
+      const occEnd = new Date(current.getTime() + durationMs)
+      const dateKey = current.toISOString().slice(0, 10)
+
+      if (!exdates.has(dateKey) && occEnd >= rangeFrom && current <= rangeTo) {
+        occurrences.push({ ...row, id: `${row.id}__${dateKey}`, date_debut: current.toISOString(), date_fin: occEnd.toISOString(), parent_id: row.id, is_occurrence: true })
+        generated++
+      }
+
+      // Advance
+      const next = new Date(current)
+      if (config.freq === 'daily') next.setDate(next.getDate() + 1)
+      else if (config.freq === 'weekly') next.setDate(next.getDate() + 7)
+      else if (config.freq === 'biweekly') next.setDate(next.getDate() + 14)
+      else if (config.freq === 'monthly') next.setMonth(next.getMonth() + 1)
+      else break
+      current = next
+    }
+  }
+
+  return occurrences
+}
+
 // GET /api/indisponibilites — List unavailabilities
 router.get('/', async (req, res) => {
   try {
@@ -26,13 +110,20 @@ router.get('/', async (req, res) => {
       paramIndex++
     }
 
-    if (date_from) {
+    if (date_from && date_to) {
+      // Non-recurring: normal overlap. Recurring: series starts before range ends (expand in JS).
+      where += ` AND (
+        (it.est_recurrent = false AND it.date_fin >= $${paramIndex} AND it.date_debut <= $${paramIndex + 1})
+        OR
+        (it.est_recurrent = true AND it.date_debut <= $${paramIndex + 1})
+      )`
+      params.push(date_from, date_to)
+      paramIndex += 2
+    } else if (date_from) {
       where += ` AND it.date_fin >= $${paramIndex}`
       params.push(date_from)
       paramIndex++
-    }
-
-    if (date_to) {
+    } else if (date_to) {
       where += ` AND it.date_debut <= $${paramIndex}`
       params.push(date_to)
       paramIndex++
@@ -56,9 +147,27 @@ router.get('/', async (req, res) => {
     params.push(limit + 1)
 
     const result = await query(sql, params)
-    const hasMore = result.rows.length > limit
-    const data = hasMore ? result.rows.slice(0, limit) : result.rows
-    const nextCursor = hasMore ? data[data.length - 1].id : undefined
+
+    // Expand recurring entries into virtual occurrences within the requested range
+    const rangeFrom = date_from ? new Date(date_from as string) : new Date(0)
+    const rangeTo = date_to ? new Date((date_to as string) + 'T23:59:59Z') : new Date(8640000000000000)
+
+    const expanded: any[] = []
+    for (const row of result.rows) {
+      if (row.est_recurrent && row.recurrence_config) {
+        expanded.push(...expandRecurringIndispo(row, rangeFrom, rangeTo))
+      } else {
+        expanded.push(row)
+      }
+    }
+
+    expanded.sort((a, b) => new Date(a.date_debut).getTime() - new Date(b.date_debut).getTime())
+
+    const hasMore = expanded.length > limit
+    const data = hasMore ? expanded.slice(0, limit) : expanded
+    // Cursor only meaningful for non-virtual rows
+    const lastRow = hasMore ? data[data.length - 1] : undefined
+    const nextCursor = lastRow && !lastRow.is_occurrence ? lastRow.id : undefined
 
     sendList(res, data, { cursor: nextCursor, has_more: hasMore })
   } catch (error) {
@@ -79,6 +188,7 @@ const createIndispoSchema = z.object({
     bymonthday: z.array(z.number().int()).optional(),
     count: z.number().int().positive().optional(),
     until: z.string().optional(),
+    exdates: z.array(z.string()).optional(),
   }).optional(),
   motif: z.string().max(255).optional(),
 })
@@ -127,6 +237,7 @@ const updateIndispoSchema = z.object({
     bymonthday: z.array(z.number().int()).optional(),
     count: z.number().int().positive().optional(),
     until: z.string().optional(),
+    exdates: z.array(z.string()).optional(),
   }).nullable().optional(),
   motif: z.string().max(255).optional(),
 })

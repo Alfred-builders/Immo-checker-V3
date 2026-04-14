@@ -15,6 +15,8 @@ import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
 import { CreateLotModal } from '../../patrimoine/components/create-lot-modal'
 import { useTiersDetail, useUpdateTiers, useTiersMissions, useTiersEdlHistory, useLinkOrganisation, useUnlinkOrganisation, useSearchTiers, useTiersLots } from '../api'
+import { CreateTiersModal } from './create-tiers-modal'
+import { api } from 'src/lib/api-client'
 import { toast } from 'sonner'
 import { formatDate } from '../../../lib/formatters'
 
@@ -491,6 +493,7 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
   const [estPrincipal, setEstPrincipal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const [showCreateTiers, setShowCreateTiers] = useState(false)
 
   const { data: searchResults } = useSearchTiers(searchQuery)
   const linkMutation = useLinkOrganisation()
@@ -554,6 +557,7 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
   }) ?? []
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -619,6 +623,12 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
                         Aucun résultat
                       </div>
                     )}
+                    <button
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-[12px] font-semibold text-primary hover:bg-primary/5 transition-colors border-t border-border/30"
+                      onClick={() => { setShowResults(false); setShowCreateTiers(true) }}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Créer {mode === 'organisation' ? 'une organisation' : 'un membre'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -657,6 +667,26 @@ function AddOrganisationDialog({ open, onOpenChange, tiersId, mode }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <CreateTiersModal
+      open={showCreateTiers}
+      onOpenChange={setShowCreateTiers}
+      onCreated={async (newTiersId) => {
+        setShowCreateTiers(false)
+        try {
+          const t = await api<any>(`/tiers/${newTiersId}`)
+          const name = t.type_personne === 'morale'
+            ? t.raison_sociale || t.nom
+            : `${t.prenom || ''} ${t.nom}`.trim()
+          setSelectedTiersId(newTiersId)
+          setSelectedTiersName(name || 'Nouveau tiers')
+        } catch {
+          setSelectedTiersId(newTiersId)
+          setSelectedTiersName('Nouveau tiers')
+        }
+      }}
+    />
+    </>
   )
 }
 

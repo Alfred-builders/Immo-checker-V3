@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popov
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
-import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite } from '../api'
+import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
 import type { Mission, MissionStatut, IndisponibiliteTechnicien } from '../types'
 import {
   missionStatutLabels,
@@ -458,7 +458,43 @@ function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void
 /* ── Indisponibilite Block (with popup) ── */
 function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) {
   const deleteMutation = useDeleteIndisponibilite()
+  const updateMutation = useUpdateIndisponibilite()
+  const [showRecurringConfirm, setShowRecurringConfirm] = useState(false)
   const techName = `${ind.user_prenom || ''} ${ind.user_nom || 'Technicien'}`.trim()
+
+  // Virtual occurrence: id = "parentId__YYYY-MM-DD"
+  const isVirtual = ind.id.includes('__')
+  const parentId = isVirtual ? ind.id.split('__')[0] : ind.id
+  const occurrenceDate = isVirtual ? ind.id.split('__')[1] : ind.date_debut.slice(0, 10)
+
+  function handleDeleteClick() {
+    if (ind.est_recurrent) {
+      setShowRecurringConfirm(true)
+    } else {
+      if (confirm('Supprimer cette indisponibilité ?')) deleteMutation.mutate(parentId)
+    }
+  }
+
+  async function deleteOccurrenceOnly() {
+    const config = { ...(ind.recurrence_config || { freq: 'weekly' as const }) } as any
+    const exdates = [...(config.exdates || []), occurrenceDate]
+    await updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, exdates } })
+    setShowRecurringConfirm(false)
+  }
+
+  async function deleteFromHere() {
+    const prevDay = new Date(occurrenceDate)
+    prevDay.setDate(prevDay.getDate() - 1)
+    const until = prevDay.toISOString().slice(0, 10)
+    const config = { ...(ind.recurrence_config || { freq: 'weekly' as const }) } as any
+    await updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, until } })
+    setShowRecurringConfirm(false)
+  }
+
+  async function deleteAll() {
+    await deleteMutation.mutateAsync(parentId)
+    setShowRecurringConfirm(false)
+  }
 
   return (
     <Popover>
@@ -479,21 +515,42 @@ function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) 
         </div>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-3" side="right">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-foreground">{techName}</p>
-          <div className="text-[11px] text-muted-foreground space-y-0.5">
-            <p>{formatDate(ind.date_debut)}{ind.date_debut !== ind.date_fin ? ` → ${formatDate(ind.date_fin)}` : ''}</p>
-            {!ind.est_journee_entiere && <p>{new Date(ind.date_debut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {new Date(ind.date_fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
-            {ind.est_journee_entiere && <p>Journée entière</p>}
-            {ind.motif && <p className="italic">{ind.motif}</p>}
-            {ind.est_recurrent && <p className="flex items-center gap-1"><ArrowsClockwise className="h-3 w-3" /> Récurrent</p>}
-          </div>
-          <div className="flex gap-2 pt-1">
-            <Button variant="ghost" size="xs" className="text-destructive hover:text-destructive" onClick={() => { if (confirm('Supprimer cette indisponibilité ?')) deleteMutation.mutate(ind.id) }}>
-              <Trash className="h-3 w-3" /> Supprimer
+        {showRecurringConfirm ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">Supprimer l'indisponibilité</p>
+            <p className="text-[11px] text-muted-foreground">Cette indisponibilité est récurrente. Que souhaitez-vous supprimer ?</p>
+            <div className="space-y-1.5 pt-1">
+              <Button variant="outline" size="xs" className="w-full justify-start text-[11px] h-7" onClick={deleteOccurrenceOnly} disabled={updateMutation.isPending}>
+                Cette occurrence uniquement
+              </Button>
+              <Button variant="outline" size="xs" className="w-full justify-start text-[11px] h-7" onClick={deleteFromHere} disabled={updateMutation.isPending}>
+                Cette occurrence et les suivantes
+              </Button>
+              <Button variant="outline" size="xs" className="w-full justify-start text-[11px] h-7 text-destructive hover:text-destructive" onClick={deleteAll} disabled={deleteMutation.isPending}>
+                Toutes les occurrences
+              </Button>
+            </div>
+            <Button variant="ghost" size="xs" className="w-full text-[11px] h-7 mt-1" onClick={() => setShowRecurringConfirm(false)}>
+              Annuler
             </Button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-foreground">{techName}</p>
+            <div className="text-[11px] text-muted-foreground space-y-0.5">
+              <p>{formatDate(ind.date_debut)}{ind.date_debut !== ind.date_fin ? ` → ${formatDate(ind.date_fin)}` : ''}</p>
+              {!ind.est_journee_entiere && <p>{new Date(ind.date_debut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - {new Date(ind.date_fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>}
+              {ind.est_journee_entiere && <p>Journée entière</p>}
+              {ind.motif && <p className="italic">{ind.motif}</p>}
+              {ind.est_recurrent && <p className="flex items-center gap-1"><ArrowsClockwise className="h-3 w-3" /> Récurrent</p>}
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="ghost" size="xs" className="text-destructive hover:text-destructive" onClick={handleDeleteClick} disabled={deleteMutation.isPending || updateMutation.isPending}>
+                <Trash className="h-3 w-3" /> Supprimer
+              </Button>
+            </div>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   )

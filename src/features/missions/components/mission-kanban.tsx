@@ -111,7 +111,9 @@ function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: Mi
   const hasPending = pendingActions.length > 0
   const techName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
-  const accent = cardAccent[statut]
+  const accent = hasPending && statut === 'planifiee'
+    ? 'hover:border-orange-200 dark:hover:border-orange-800'
+    : cardAccent[statut]
 
   return (
     <div

@@ -141,6 +141,14 @@ const createTiersSchema = z.object({
   representant_nom: z.string().max(255).optional(),
   procuration: z.boolean().optional(),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // US-588: PM must have raison_sociale, PP must have nom
+  if (data.type_personne === 'morale' && !data.raison_sociale?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'raison_sociale est requise pour une personne morale', path: ['raison_sociale'] })
+  }
+  if (data.type_personne === 'physique' && !data.nom?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'nom est requis pour une personne physique', path: ['nom'] })
+  }
 })
 
 router.post('/', requireRole('admin', 'gestionnaire'), validate(createTiersSchema), async (req, res) => {
@@ -347,10 +355,25 @@ router.get('/:id/missions', async (req, res) => {
 router.get('/:id/edl-history', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const tiersId = req.params.id
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut, ei.date_signature, ei.created_at,
         json_build_object('id', l.id, 'designation', l.designation) as lot,
-        json_build_object('id', b.id, 'designation', b.designation) as batiment
+        json_build_object('id', b.id, 'designation', b.designation) as batiment,
+        -- US-807: propriétaire principal du lot
+        (SELECT COALESCE(tp.prenom || ' ' || tp.nom, tp.raison_sociale, tp.nom)
+         FROM lot_proprietaire lp JOIN tiers tp ON tp.id = lp.tiers_id
+         WHERE lp.lot_id = l.id AND lp.est_principal = true LIMIT 1) as proprietaire_nom,
+        -- US-807: statut occupation dérivé (en_cours / termine)
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM edl_locataire el2
+            JOIN edl_inventaire ei2 ON ei2.id = el2.edl_id
+            WHERE el2.tiers_id = $1 AND ei2.lot_id = l.id
+              AND ei2.sens = 'sortie' AND ei2.statut = 'signe'
+          ) THEN 'termine'
+          ELSE 'en_cours'
+        END as statut_occupation
        FROM edl_locataire el
        JOIN edl_inventaire ei ON ei.id = el.edl_id
        JOIN lot l ON l.id = ei.lot_id
@@ -358,7 +381,7 @@ router.get('/:id/edl-history', async (req, res) => {
        WHERE el.tiers_id = $1 AND ei.workspace_id = $2
        ORDER BY ei.created_at DESC
        LIMIT 50`,
-      [req.params.id, workspaceId]
+      [tiersId, workspaceId]
     )
     sendSuccess(res, result.rows)
   } catch (error) {

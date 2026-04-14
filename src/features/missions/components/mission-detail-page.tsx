@@ -210,6 +210,16 @@ export function MissionDetailPage() {
       {showCancel && <CancelMissionModal open={showCancel} onOpenChange={setShowCancel} missionId={mission.id} missionStatut={mission.statut} edlBrouillonCount={edlBrouillonCount} />}
       <RevalidationDialog open={showRevalidation} onOpenChange={setShowRevalidation} onRevalidate={() => doSave(true)} onConfirmDirectly={() => doSave(false)} saving={saving} />
 
+      {/* Terminated mission banner (US-811) */}
+      {isTerminated && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+          <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300 font-medium">
+            Mission terminée — Édition limitée au commentaire et statut des clés
+          </p>
+        </div>
+      )}
+
       {/* ═══ HERO HEADER ═══ */}
       <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
         <div className="px-7 py-6">

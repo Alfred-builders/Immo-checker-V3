@@ -206,6 +206,9 @@ export interface IndisponibiliteTechnicien {
   recurrence_config: RecurrenceConfig | null
   motif: string | null
   created_at: string
+  // Virtual occurrence fields (expanded by server, not persisted)
+  parent_id?: string
+  is_occurrence?: boolean
 }
 
 export interface RecurrenceConfig {
@@ -214,6 +217,7 @@ export interface RecurrenceConfig {
   bymonthday?: number[]
   count?: number
   until?: string // ISO date
+  exdates?: string[] // excluded dates (YYYY-MM-DD)
 }
 
 export interface TechnicianConflicts {

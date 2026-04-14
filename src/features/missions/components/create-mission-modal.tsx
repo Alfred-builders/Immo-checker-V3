@@ -9,6 +9,8 @@ import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Switch } from 'src/components/ui/switch'
 import { RecordPicker } from 'src/components/shared/record-picker'
+import { CreateLotModal } from 'src/features/patrimoine/components/create-lot-modal'
+import { CreateTiersModal } from 'src/features/tiers/components/create-tiers-modal'
 import { useCreateMission, useWorkspaceTechnicians, useTechnicianConflicts } from '../api'
 import { toast } from 'sonner'
 import type { SensEDL, TechnicianConflicts } from '../types'
@@ -28,8 +30,8 @@ function useLotSearch(search: string) {
 
 function useTiersSearch(search: string) {
   return useQuery({
-    queryKey: ['tiers-search', search],
-    queryFn: () => api<{ data: Array<{ id: string; nom: string; prenom?: string; raison_sociale?: string; type: string; email?: string }> }>(`/tiers?search=${encodeURIComponent(search)}&limit=20`),
+    queryKey: ['tiers-search', search, 'locataire'],
+    queryFn: () => api<{ data: Array<{ id: string; nom: string; prenom?: string; raison_sociale?: string; type: string; email?: string }> }>(`/tiers?search=${encodeURIComponent(search)}&role=locataire&limit=20`),
     enabled: search.length > 0,
   })
 }
@@ -92,6 +94,9 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   const [tiersSearch, setTiersSearch] = useState('')
   const [showLocatairePicker, setShowLocatairePicker] = useState(false)
   const [locataireRole, setLocataireRole] = useState<'entrant' | 'sortant'>('entrant')
+  const [showCreateLot, setShowCreateLot] = useState(false)
+  const [createdLotLabel, setCreatedLotLabel] = useState('')
+  const [showCreateLocataire, setShowCreateLocataire] = useState(false)
 
   const { data: lotData } = useLotSearch(lotSearch)
   const lots = lotData?.data ?? []
@@ -123,6 +128,8 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     setCommentaire('')
     setTiersSearch('')
     setShowLocatairePicker(false)
+    setCreatedLotLabel('')
+    setShowCreateLocataire(false)
   }
 
   // Sync form with latest preselectedDate every time the modal opens
@@ -190,12 +197,16 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     }
   }
 
-  const lotOptions = lots.map(l => ({
-    id: l.id,
-    label: l.designation,
-    sublabel: l.adresse ? `${l.batiment_designation} - ${l.adresse}` : l.batiment_designation,
-    meta: l.type_bien,
-  }))
+  const lotOptions = [
+    // Include the just-created lot so the picker can display it
+    ...(lotId && createdLotLabel && !lots.some(l => l.id === lotId) ? [{ id: lotId, label: createdLotLabel, sublabel: 'Lot créé', meta: '' }] : []),
+    ...lots.map(l => ({
+      id: l.id,
+      label: l.designation,
+      sublabel: l.adresse ? `${l.batiment_designation} - ${l.adresse}` : l.batiment_designation,
+      meta: l.type_bien,
+    })),
+  ]
 
   /** Compute conflict label for a technician */
   function getTechConflictInfo(techId: string): { label: string; color: string } | null {
@@ -212,6 +223,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -229,6 +241,8 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
               searchPlaceholder="Désignation, adresse..."
               onSearch={setLotSearch}
               isLoading={lotSearch.length > 0 && !lotData}
+              onCreateClick={() => setShowCreateLot(true)}
+              createLabel="Créer un lot"
             />
           </div>
 
@@ -383,6 +397,8 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                   searchPlaceholder="Nom, email..."
                   onSearch={setTiersSearch}
                   isLoading={tiersSearch.length > 0 && !tiersData}
+                  onCreateClick={() => setShowCreateLocataire(true)}
+                  createLabel="Créer un locataire"
                 />
               </div>
             )}
@@ -502,5 +518,32 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
         </form>
       </DialogContent>
     </Dialog>
+
+    <CreateTiersModal
+      open={showCreateLocataire}
+      onOpenChange={setShowCreateLocataire}
+      onCreated={async (tiersId) => {
+        setShowCreateLocataire(false)
+        try {
+          const t = await api<any>(`/tiers/${tiersId}`)
+          addLocataire({ id: t.id, nom: t.nom, prenom: t.prenom })
+        } catch { /* locataire added without name display */ }
+      }}
+    />
+
+    <CreateLotModal
+      open={showCreateLot}
+      onOpenChange={setShowCreateLot}
+      onCreated={async (newLotId) => {
+        setLotId(newLotId)
+        setShowCreateLot(false)
+        // Fetch lot name to display in picker
+        try {
+          const lot = await api<any>(`/lots/${newLotId}`)
+          setCreatedLotLabel(lot.designation || 'Nouveau lot')
+        } catch { setCreatedLotLabel('Nouveau lot') }
+      }}
+    />
+    </>
   )
 }

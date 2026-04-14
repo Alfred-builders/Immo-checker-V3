@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendList, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
 import { dispatchWebhook } from '../services/webhook-service.js'
+import { sendEmailTechnicienAssigne } from '../services/email-service.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -118,7 +119,7 @@ router.get('/', async (req, res) => {
 
     const sql = `
       SELECT
-        m.id, m.reference, m.date_planifiee, m.heure_debut, m.heure_fin,
+        m.id, m.reference, m.date_planifiee::date::text as date_planifiee, m.heure_debut, m.heure_fin,
         m.statut, m.statut_rdv, m.avec_inventaire, m.type_bail,
         m.commentaire, m.motif_annulation, m.created_at,
         json_build_object(
@@ -206,7 +207,7 @@ router.get('/:id', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const result = await query(
-      `SELECT m.*,
+      `SELECT m.*, m.date_planifiee::date::text as date_planifiee,
         -- Lot
         json_build_object(
           'id', l.id, 'designation', l.designation, 'type_bien', l.type_bien,
@@ -512,6 +513,18 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
     )
 
     if (result.rows.length === 0) throw new NotFoundError('Mission')
+
+    // US-595: if scheduling fields changed, reset accepted technicien invitation to en_attente
+    const schedulingFields = ['date_planifiee', 'heure_debut', 'heure_fin']
+    const schedulingChanged = schedulingFields.some(f => req.body[f] !== undefined)
+    if (schedulingChanged) {
+      await query(
+        `UPDATE mission_technicien SET statut_invitation = 'en_attente', updated_at = now()
+         WHERE mission_id = $1 AND statut_invitation = 'accepte'`,
+        [req.params.id]
+      )
+    }
+
     sendSuccess(res, result.rows[0])
   } catch (error) {
     sendError(res, error)
@@ -632,6 +645,34 @@ router.post('/:id/technician', requireRole('admin', 'gestionnaire'), async (req,
        RETURNING *`,
       [req.params.id, user_id]
     )
+
+    // US-595: send email notification to technicien (fire-and-forget)
+    setImmediate(async () => {
+      try {
+        const techInfo = await query(
+          `SELECT u.email, u.prenom, u.nom,
+             m.reference, m.date_planifiee, m.heure_debut,
+             l.designation as lot_designation,
+             ab.rue as adresse
+           FROM utilisateur u
+           JOIN mission m ON m.id = $1
+           JOIN lot l ON l.id = m.lot_id
+           LEFT JOIN adresse_batiment ab ON ab.batiment_id = l.batiment_id AND ab.type = 'principale'
+           WHERE u.id = $2`,
+          [req.params.id, user_id]
+        )
+        if (techInfo.rows.length > 0) {
+          const r = techInfo.rows[0]
+          await sendEmailTechnicienAssigne(r.email, r.prenom, {
+            reference: r.reference,
+            date_planifiee: r.date_planifiee,
+            heure_debut: r.heure_debut,
+            lot_designation: r.lot_designation,
+            adresse: r.adresse,
+          })
+        }
+      } catch (e) { console.error('[email] sendEmailTechnicienAssigne failed:', e) }
+    })
 
     sendSuccess(res, result.rows[0], 201)
   } catch (error) {
