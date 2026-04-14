@@ -62,8 +62,8 @@ export function BuildingDetailPage() {
     commentaire: '',
   })
   const [addrForms, setAddrForms] = useState<AddressForm[]>([])
-  const [deletedAddrIds, setDeletedAddrIds] = useState<string[]>([])
   const [addrDeleteIdx, setAddrDeleteIdx] = useState<number | null>(null)
+  const [addrDeleting, setAddrDeleting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [showAddAddress, setShowAddAddress] = useState(false)
@@ -88,7 +88,6 @@ export function BuildingDetailPage() {
         latitude: a.latitude,
         longitude: a.longitude,
       })))
-      setDeletedAddrIds([])
     }
   }, [batiment, editing])
 
@@ -104,10 +103,6 @@ export function BuildingDetailPage() {
         annee_construction: formData.annee_construction ? parseInt(formData.annee_construction) : null,
         commentaire: formData.commentaire || null,
       })
-      // Delete removed addresses first
-      for (const adresseId of deletedAddrIds) {
-        await deleteAddr.mutateAsync({ batimentId: batiment!.id, adresseId })
-      }
       // Save each remaining address
       for (const addr of addrForms) {
         if (addr.isNew) {
@@ -136,7 +131,6 @@ export function BuildingDetailPage() {
         }
       }
       toast.success('Bâtiment mis à jour')
-      setDeletedAddrIds([])
       setTimeout(() => setEditing(false), 300)
     } catch (err: any) {
       toast.error(err.message || 'Erreur lors de la mise à jour')
@@ -158,7 +152,6 @@ export function BuildingDetailPage() {
         id: a.id, type: a.type, rue: a.rue || '', complement: a.complement || '',
         code_postal: a.code_postal || '', ville: a.ville || '', latitude: a.latitude, longitude: a.longitude,
       })))
-      setDeletedAddrIds([])
     }
     setEditing(false)
   }
@@ -336,6 +329,16 @@ export function BuildingDetailPage() {
                           </svg>
                         </a>
                       ) : null}
+                      {!batiment.est_archive && (
+                        <button
+                          type="button"
+                          onClick={() => setAddrDeleteIdx(idx)}
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                          title="Supprimer cette adresse"
+                        >
+                          <Trash size={14} />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -405,17 +408,27 @@ export function BuildingDetailPage() {
       <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={handleCancel} saving={saving} />
       <ConfirmDialog
         open={addrDeleteIdx !== null}
-        onOpenChange={(open) => { if (!open) setAddrDeleteIdx(null) }}
+        onOpenChange={(open) => { if (!open && !addrDeleting) setAddrDeleteIdx(null) }}
         title="Supprimer cette adresse ?"
-        description="L'adresse sera retirée lors de la prochaine sauvegarde."
-        confirmLabel="Supprimer"
+        description="Cette action est irréversible."
+        confirmLabel={addrDeleting ? 'Suppression...' : 'Supprimer'}
         variant="destructive"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (addrDeleteIdx === null) return
           const addr = addrForms[addrDeleteIdx]
-          if (!addr.isNew) setDeletedAddrIds(prev => [...prev, addr.id])
-          setAddrForms(prev => prev.filter((_, i) => i !== addrDeleteIdx))
-          setAddrDeleteIdx(null)
+          setAddrDeleting(true)
+          try {
+            if (!addr.isNew) {
+              await deleteAddr.mutateAsync({ batimentId: batiment!.id, adresseId: addr.id })
+            }
+            setAddrForms(prev => prev.filter((_, i) => i !== addrDeleteIdx))
+            setAddrDeleteIdx(null)
+            toast.success('Adresse supprimée')
+          } catch (err: any) {
+            toast.error(err.message || 'Erreur lors de la suppression')
+          } finally {
+            setAddrDeleting(false)
+          }
         }}
       />
       <ConfirmDialog
