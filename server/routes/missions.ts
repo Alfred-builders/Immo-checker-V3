@@ -675,6 +675,53 @@ router.patch('/:id/technician', validate(updateInvitationSchema), async (req, re
   }
 })
 
+// ── POST /api/missions/:id/edl — Add EDL to existing mission ──
+router.post('/:id/edl', async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+    const { type, sens, locataires } = req.body
+
+    if (!sens || !['entree', 'sortie'].includes(sens)) {
+      throw new AppError('Le champ sens est obligatoire (entree | sortie)', 'VALIDATION_ERROR', 400)
+    }
+
+    const missionCheck = await query(
+      `SELECT id, statut, lot_id FROM mission WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+    if (missionCheck.rows.length === 0) throw new NotFoundError('Mission')
+    const mission = missionCheck.rows[0]
+
+    if (mission.statut === 'terminee') {
+      throw new AppError('Mission verrouillée — impossible d\'ajouter un EDL', 'MISSION_LOCKED', 409)
+    }
+    if (mission.statut === 'annulee') {
+      throw new AppError('Mission annulée — impossible d\'ajouter un EDL', 'MISSION_CANCELLED', 409)
+    }
+
+    const edlResult = await query(
+      `INSERT INTO edl_inventaire (workspace_id, mission_id, lot_id, type, sens, statut)
+       VALUES ($1, $2, $3, $4, $5, 'brouillon')
+       RETURNING *`,
+      [workspaceId, req.params.id, mission.lot_id, type || 'edl', sens]
+    )
+    const edl = edlResult.rows[0]
+
+    if (Array.isArray(locataires) && locataires.length > 0) {
+      for (const loc of locataires) {
+        await query(
+          `INSERT INTO edl_locataire (edl_id, tiers_id, role_locataire) VALUES ($1, $2, $3)`,
+          [edl.id, loc.tiers_id, loc.role_locataire || 'entrant']
+        )
+      }
+    }
+
+    sendSuccess(res, edl, 201)
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
 // ── GET /api/missions/:id/cles — List keys for mission ──
 router.get('/:id/cles', async (req, res) => {
   try {

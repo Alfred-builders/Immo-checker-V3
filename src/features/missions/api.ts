@@ -203,6 +203,15 @@ export function useUpdateCle() {
   })
 }
 
+export function useDeleteCle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ edlId, cleId }: { edlId: string; cleId: string }) =>
+      api(`/edl/${edlId}/cles/${cleId}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['missions'] }),
+  })
+}
+
 // ── Indisponibilites (US-823) ──
 
 export function useIndisponibilites(params?: { user_id?: string; date_from?: string; date_to?: string }) {

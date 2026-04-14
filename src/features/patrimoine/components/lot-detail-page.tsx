@@ -358,9 +358,21 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
   const [showCreateTiers, setShowCreateTiers] = useState(false)
   const [unlinkTarget, setUnlinkTarget] = useState<{ id: string; name: string } | null>(null)
   const [searchQ, setSearchQ] = useState('')
+  const [showMandataireSearch, setShowMandataireSearch] = useState(false)
+  const [mandataireSearchQ, setMandataireSearchQ] = useState('')
   const { data: searchResults } = useSearchTiers(searchQ)
+  const { data: mandataireResults } = useSearchTiers(mandataireSearchQ)
   const linkMutation = useLinkProprietaire()
   const unlinkMutation = useUnlinkProprietaire()
+  const updateLot = useUpdateLot()
+
+  async function handleSetMandataire(tiersId: string | null) {
+    try {
+      await updateLot.mutateAsync({ id: lotId, mandataire_id: tiersId })
+      toast.success(tiersId ? 'Mandataire assigné' : 'Mandataire retiré')
+      setShowMandataireSearch(false); setMandataireSearchQ('')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
+  }
 
   async function handleLink(tiersId: string) {
     try {
@@ -458,16 +470,47 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
           )}
 
           {/* Mandataire */}
-          {mandataire && (
-            <div className="mb-3 border-t border-border/30 pt-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Mandataire</p>
+          <div className="mb-3 border-t border-border/30 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40">Mandataire</p>
+              {!isArchived && !showMandataireSearch && (
+                <button onClick={() => setShowMandataireSearch(true)} className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors">
+                  {mandataire ? 'Modifier' : '+ Assigner'}
+                </button>
+              )}
+            </div>
+            {showMandataireSearch && (
+              <div className="mb-3 p-3 bg-violet-50/50 border border-violet-200/40 rounded-xl space-y-2 dark:bg-violet-950/20 dark:border-violet-800/30">
+                <div className="relative">
+                  <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input value={mandataireSearchQ} onChange={(e) => setMandataireSearchQ(e.target.value)} placeholder="Rechercher un mandataire..." className="pl-8 h-9 text-sm" autoFocus />
+                </div>
+                {mandataireResults && mandataireResults.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {mandataireResults.map(t => (
+                      <button key={t.id} onClick={() => handleSetMandataire(t.id)} className="w-full flex items-center gap-2 px-2 py-2 text-sm hover:bg-violet-100/60 rounded-lg transition-colors text-left dark:hover:bg-violet-950/40">
+                        <BuildingOffice className="h-3.5 w-3.5 text-violet-600 shrink-0" />
+                        <span className="font-medium text-foreground">{t.raison_sociale || (t.prenom ? `${t.prenom} ${t.nom}` : t.nom)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <button onClick={() => { setShowMandataireSearch(false); setMandataireSearchQ('') }} className="text-[11px] text-muted-foreground hover:text-foreground">Annuler</button>
+                  {mandataire && <button onClick={() => handleSetMandataire(null)} className="text-[11px] text-red-500 hover:text-red-600">Retirer le mandataire</button>}
+                </div>
+              </div>
+            )}
+            {mandataire ? (
               <div className="flex items-center gap-3 py-2">
                 <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center text-[12px] font-bold shrink-0 ${avatarColors.violet}`}>{(mandataire.raison_sociale?.[0] || mandataire.nom[0]).toUpperCase()}</div>
                 <Link to={`/app/tiers/${mandataire.id}`} className="text-[14px] text-primary hover:underline font-medium flex-1 truncate">{mandataire.raison_sociale || (mandataire.prenom ? `${mandataire.prenom} ${mandataire.nom}` : mandataire.nom)}</Link>
                 <ArrowSquareOut className="h-3.5 w-3.5 text-muted-foreground/30" />
               </div>
-            </div>
-          )}
+            ) : !showMandataireSearch && (
+              <p className="text-sm text-muted-foreground/40 italic py-2">Aucun mandataire</p>
+            )}
+          </div>
 
           {/* Dernier locataire (read-only) */}
           {dernierLocataire && (

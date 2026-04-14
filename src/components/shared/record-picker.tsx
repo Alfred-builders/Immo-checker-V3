@@ -38,8 +38,16 @@ export function RecordPicker({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const [selectedCache, setSelectedCache] = useState<RecordPickerOption | null>(null)
 
-  const selected = options.find((o) => o.id === value)
+  // Cache the selected option when found in options list
+  const fromOptions = options.find((o) => o.id === value)
+  const selected = fromOptions || (selectedCache?.id === value ? selectedCache : null)
+
+  useEffect(() => {
+    if (fromOptions) setSelectedCache(fromOptions)
+    if (!value) setSelectedCache(null)
+  }, [fromOptions, value])
 
   const filtered = search
     ? options.filter((o) =>

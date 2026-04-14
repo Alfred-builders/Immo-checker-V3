@@ -80,6 +80,7 @@ export function MissionsPage() {
   const [period, setPeriod] = useState<PeriodFilter>('all')
   const [techFilter, setTechFilter] = useState<string>('all')
   const [statutFilter, setStatutFilter] = useState<string>('all')
+  const [rdvFilter, setRdvFilter] = useState<string>('all')
   const [pendingFilter, setPendingFilter] = useState(false)
   const [view, setViewState] = useState<ViewMode>(() => {
     const saved = sessionStorage.getItem('missions_view')
@@ -105,6 +106,7 @@ export function MissionsPage() {
   const { data: missionsData, isLoading } = useMissions({
     search: search || undefined,
     statut: statutFilter !== 'all' ? (statutFilter as MissionStatut) : undefined,
+    statut_rdv: rdvFilter !== 'all' ? (rdvFilter as any) : undefined,
     technicien_id: techFilter !== 'all' ? techFilter : undefined,
     pending_actions: pendingFilter || undefined,
     ...periodDates,
@@ -264,6 +266,18 @@ export function MissionsPage() {
             <SelectItem value="assignee">Assignée</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={rdvFilter} onValueChange={setRdvFilter}>
+          <SelectTrigger className="h-10 w-[150px] text-sm">
+            <SelectValue placeholder="Statut RDV" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les RDV</SelectItem>
+            <SelectItem value="a_confirmer">À confirmer</SelectItem>
+            <SelectItem value="confirme">Confirmé</SelectItem>
+            <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
 

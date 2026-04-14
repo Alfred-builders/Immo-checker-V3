@@ -4,7 +4,7 @@ import {
   PencilSimple, Prohibit, CaretDown, CaretUp,
   BuildingOffice, UsersThree, Calendar, User, FileText, Key,
   ChatText, Warning, ArrowSquareOut, Lock, MapPin, Clock, House,
-  FlowArrow, FilePdf, Globe, Scales, UserPlus, CheckCircle,
+  FlowArrow, FilePdf, Globe, Scales, UserPlus, CheckCircle, Plus, Trash,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -13,12 +13,12 @@ import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
-import { useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateCle, useUpdateInvitation, useWorkspaceTechnicians } from '../api'
+import { useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateCle, useDeleteCle, useAddCle, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission } from '../api'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { CancelMissionModal } from './cancel-mission-modal'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { toast } from 'sonner'
-import type { MissionDetail, CleMission, StatutRdv, StatutCle } from '../types'
+import type { MissionDetail, CleMission, StatutRdv, StatutCle, SensEDL, TypeEDL } from '../types'
 import {
   missionStatutLabels, missionStatutColors,
   statutRdvLabels, statutInvitationLabels,
@@ -72,14 +72,28 @@ export function MissionDetailPage() {
   const updateMission = useUpdateMission()
   const assignTech = useAssignTechnician()
   const updateCle = useUpdateCle()
+  const deleteCle = useDeleteCle()
+  const addCle = useAddCle()
   const updateInvitation = useUpdateInvitation()
   const { data: techData } = useWorkspaceTechnicians()
   const technicians = techData ?? []
 
+  const addEdl = useAddEDLToMission()
   const [showCancel, setShowCancel] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showRevalidation, setShowRevalidation] = useState(false)
+  const [showAddEdl, setShowAddEdl] = useState(false)
+  const [addEdlSens, setAddEdlSens] = useState<SensEDL>('entree')
+  const [addEdlType, setAddEdlType] = useState<TypeEDL>('edl')
+  const [addEdlSaving, setAddEdlSaving] = useState(false)
+  const [showAddCle, setShowAddCle] = useState(false)
+  const [addCleEdlId, setAddCleEdlId] = useState('')
+  const [addCleType, setAddCleType] = useState<string>('cle_principale')
+  const [addCleQty, setAddCleQty] = useState('1')
+  const [addCleStatut, setAddCleStatut] = useState<string>('remise')
+  const [addCleLieu, setAddCleLieu] = useState('')
+  const [addCleSaving, setAddCleSaving] = useState(false)
 
   const [formData, setFormData] = useState({ date_planifiee: '', heure_debut: '', heure_fin: '', statut_rdv: '' as string, commentaire: '' })
 
@@ -127,6 +141,40 @@ export function MissionDetailPage() {
     try { await updateCle.mutateAsync({ edlId: cle.edl_id, cleId: cle.id, lieu_depot: lieu }) } catch {}
   }
 
+  async function handleAddEdl() {
+    if (!mission) return
+    setAddEdlSaving(true)
+    try {
+      await addEdl.mutateAsync({ missionId: mission.id, type: addEdlType, sens: addEdlSens })
+      toast.success('EDL ajouté')
+      setShowAddEdl(false)
+      setAddEdlSens('entree')
+      setAddEdlType('edl')
+    } catch (err: any) { toast.error(err.message || 'Erreur lors de l\'ajout') }
+    finally { setAddEdlSaving(false) }
+  }
+
+  async function handleAddCle() {
+    if (!addCleEdlId) return
+    setAddCleSaving(true)
+    try {
+      await addCle.mutateAsync({ edlId: addCleEdlId, type_cle: addCleType as any, quantite: parseInt(addCleQty) || 1, statut: addCleStatut as any, lieu_depot: addCleLieu || undefined })
+      toast.success('Clé ajoutée')
+      setShowAddCle(false)
+      setAddCleType('cle_principale'); setAddCleQty('1'); setAddCleStatut('remise'); setAddCleLieu('')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    finally { setAddCleSaving(false) }
+  }
+
+  async function handleDeleteCle(cle: CleMission) {
+    try {
+      await deleteCle.mutateAsync({ edlId: cle.edl_id, cleId: cle.id })
+      toast.success('Clé supprimée')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
+  }
+
+  const edlBrouillonCount = mission?.edls.filter(e => e.statut === 'brouillon').length ?? 0
+
   const hasEdits = mission && (formData.date_planifiee !== (mission.date_planifiee || '') || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || '') || formData.commentaire !== (mission.commentaire || ''))
 
   useEffect(() => {
@@ -159,7 +207,7 @@ export function MissionDetailPage() {
 
   return (
     <div className="px-8 py-6 max-w-[1180px] mx-auto space-y-4">
-      {showCancel && <CancelMissionModal open={showCancel} onOpenChange={setShowCancel} missionId={mission.id} missionStatut={mission.statut} />}
+      {showCancel && <CancelMissionModal open={showCancel} onOpenChange={setShowCancel} missionId={mission.id} missionStatut={mission.statut} edlBrouillonCount={edlBrouillonCount} />}
       <RevalidationDialog open={showRevalidation} onOpenChange={setShowRevalidation} onRevalidate={() => doSave(true)} onConfirmDirectly={() => doSave(false)} saving={saving} />
 
       {/* ═══ HERO HEADER ═══ */}
@@ -186,7 +234,7 @@ export function MissionDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {!isCancelled && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>}
+              {!isCancelled && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> {isTerminated ? 'Modifier le commentaire' : 'Modifier'}</Button>}
               {!isLocked && !editing && <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setShowCancel(true)}><Prohibit className="h-3.5 w-3.5" /> Annuler</Button>}
             </div>
           </div>
@@ -244,9 +292,32 @@ export function MissionDetailPage() {
             <div className="relative pl-7">
               <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border/60 rounded-full" />
               <TimelineEvent color="bg-primary" ring="ring-primary/20" title="Mission créée" desc={`${formatDate(mission.created_at)} · par ${mission.created_by_nom || 'Admin'}`} />
-              {mission.edls.map((edl) => (
-                <TimelineEvent key={edl.id} color={edl.sens === 'entree' ? 'bg-blue-500' : 'bg-orange-400'} ring={edl.sens === 'entree' ? 'ring-blue-500/20' : 'ring-orange-400/20'} title={`EDL ${sensLabels[edl.sens]} ajouté`} desc={edl.locataires.length > 0 ? `Locataire : ${edl.locataires.map(l => l.prenom ? `${l.prenom} ${l.nom}` : l.nom).join(', ')}` : `Type : ${edl.type}`} />
-              ))}
+              {/* Group EDLs by locataire+sens to avoid visual duplicates (edl + inventaire for same person) */}
+              {(() => {
+                const groups = new Map<string, { sens: string; types: string[]; locNames: string[] }>()
+                for (const edl of mission.edls) {
+                  const locKey = edl.locataires.length > 0
+                    ? edl.locataires.map(l => l.tiers_id).sort().join(',')
+                    : '_none_'
+                  const key = `${edl.sens}-${locKey}`
+                  const existing = groups.get(key)
+                  if (existing) {
+                    if (!existing.types.includes(edl.type)) existing.types.push(edl.type)
+                  } else {
+                    groups.set(key, {
+                      sens: edl.sens,
+                      types: [edl.type],
+                      locNames: edl.locataires.map(l => l.prenom ? `${l.prenom} ${l.nom}` : l.nom),
+                    })
+                  }
+                }
+                return Array.from(groups.entries()).map(([key, g]) => {
+                  const typeLabel = g.types.map(t => t === 'inventaire' ? 'Inventaire' : 'EDL').join(' + ')
+                  return (
+                    <TimelineEvent key={key} color={g.sens === 'entree' ? 'bg-blue-500' : 'bg-orange-400'} ring={g.sens === 'entree' ? 'ring-blue-500/20' : 'ring-orange-400/20'} title={`${typeLabel} ${sensLabels[g.sens as 'entree' | 'sortie']} ajouté`} desc={g.locNames.length > 0 ? `Locataire : ${g.locNames.join(', ')}` : ''} />
+                  )
+                })
+              })()}
               {mission.technicien ? (
                 <TimelineEvent color={mission.technicien.statut_invitation === 'accepte' ? 'bg-green-500' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-400' : 'bg-amber-400'} ring={mission.technicien.statut_invitation === 'accepte' ? 'ring-green-500/20' : mission.technicien.statut_invitation === 'refuse' ? 'ring-red-400/20' : 'ring-amber-400/20'} title={`Technicien : ${techName}`} desc={`Invitation ${statutInvitationLabels[mission.technicien.statut_invitation].toLowerCase()}`} />
               ) : (
@@ -254,7 +325,7 @@ export function MissionDetailPage() {
               )}
               <TimelineEvent color={mission.statut_rdv === 'confirme' ? 'bg-green-500' : mission.statut_rdv === 'reporte' ? 'bg-red-400' : 'bg-muted-foreground/20'} ring={mission.statut_rdv === 'confirme' ? 'ring-green-500/20' : mission.statut_rdv === 'reporte' ? 'ring-red-400/20' : 'ring-muted/40'} title={`RDV ${statutRdvLabels[mission.statut_rdv].toLowerCase()}`} desc={`Date : ${formatDate(mission.date_planifiee)}`} muted={mission.statut_rdv === 'a_confirmer'} />
               {mission.edls.filter(e => e.statut === 'signe').map((edl) => (
-                <TimelineEvent key={`signed-${edl.id}`} color="bg-green-500" ring="ring-green-500/20" title={`EDL ${sensLabels[edl.sens]} signé`} desc="Document légal finalisé" />
+                <TimelineEvent key={`signed-${edl.id}`} color="bg-green-500" ring="ring-green-500/20" title={`${edl.type === 'inventaire' ? 'Inventaire' : 'EDL'} ${sensLabels[edl.sens]} signé`} desc="Document légal finalisé" />
               ))}
               {isTerminated && <TimelineEvent color="bg-green-500" ring="ring-green-500/20" title="Mission terminée" desc="Tous les EDL signés — auto-terminaison" last />}
               {isCancelled && <TimelineEvent color="bg-red-500" ring="ring-red-500/20" title="Mission annulée" desc={mission.motif_annulation || 'Motif non renseigné'} last />}
@@ -298,9 +369,18 @@ export function MissionDetailPage() {
             {mission.proprietaires.map((p) => (
               <PersonRow key={p.id} id={p.id} nom={p.nom} prenom={p.prenom} color="sky" role="Propriétaire" />
             ))}
-            {mission.edls.flatMap(edl => edl.locataires.map((loc) => (
-              <PersonRow key={`${edl.id}-${loc.tiers_id}`} id={loc.tiers_id} nom={loc.nom} prenom={loc.prenom} color={loc.role_locataire === 'entrant' ? 'green' : 'orange'} role={loc.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} />
-            )))}
+            {(() => {
+              // Deduplicate locataires across EDLs (same person may be linked to edl + inventaire)
+              const seen = new Set<string>()
+              return mission.edls.flatMap(edl => edl.locataires.filter(loc => {
+                const key = `${loc.tiers_id}-${loc.role_locataire}`
+                if (seen.has(key)) return false
+                seen.add(key)
+                return true
+              }).map(loc => (
+                <PersonRow key={`${loc.tiers_id}-${loc.role_locataire}`} id={loc.tiers_id} nom={loc.nom} prenom={loc.prenom} color={loc.role_locataire === 'entrant' ? 'green' : 'orange'} role={loc.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} />
+              )))
+            })()}
             {mission.mandataire && <PersonRow id={mission.mandataire.id} nom={mission.mandataire.raison_sociale || mission.mandataire.nom} color="violet" role="Mandataire" />}
             {mission.proprietaires.length === 0 && !mission.mandataire && mission.edls.every(e => e.locataires.length === 0) && (
               <p className="text-sm text-muted-foreground/40 italic py-2">Aucun tiers lié</p>
@@ -347,6 +427,13 @@ export function MissionDetailPage() {
         <div className="space-y-4">
           {/* Documents EDL */}
           <CardBlock title="Documents EDL" icon={FileText}>
+            {!isLocked && (
+              <div className="mb-3">
+                <Button variant="outline" size="sm" className="w-full gap-1.5 text-xs" onClick={() => setShowAddEdl(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Ajouter un EDL
+                </Button>
+              </div>
+            )}
             {mission.edls.length === 0 ? (
               <div className="text-center py-6">
                 <FileText className="h-8 w-8 text-muted-foreground/20 mx-auto mb-3" />
@@ -408,9 +495,19 @@ export function MissionDetailPage() {
 
           {/* Clés */}
           <CardBlock title="Clés" icon={Key} subtitle={isTerminated ? '(modifiable après terminaison)' : undefined}>
-            {mission.cles.length === 0 ? (
-              <p className="text-sm text-muted-foreground/40 italic text-center py-4">Aucune clé enregistrée</p>
-            ) : (
+            {/* Add key button */}
+            {!isCancelled && mission.edls.length > 0 && (
+              <button
+                onClick={() => { setAddCleEdlId(mission.edls[0].id); setShowAddCle(true) }}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 mb-3 rounded-xl border border-dashed border-border/50 text-[12px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" /> Ajouter une clé
+              </button>
+            )}
+            {mission.cles.length === 0 && (
+              <p className="text-sm text-muted-foreground/40 italic text-center py-2">Aucune clé enregistrée</p>
+            )}
+            {mission.cles.length > 0 && (
               <div className="space-y-3">
                 {mission.edls.map((edl) => {
                   const edlCles = mission.cles.filter(c => c.edl_id === edl.id)
@@ -423,7 +520,7 @@ export function MissionDetailPage() {
                       </p>
                       <div className="space-y-2">
                         {edlCles.map((cle) => (
-                          <CleRow key={cle.id} cle={cle} isExit={edl.sens === 'sortie'} onStatutChange={(s) => handleUpdateCleStatut(cle, s)} onLieuChange={(l) => handleUpdateCleLieuDepot(cle, l)} isReadOnly={isCancelled} />
+                          <CleRow key={cle.id} cle={cle} isExit={edl.sens === 'sortie'} onStatutChange={(s) => handleUpdateCleStatut(cle, s)} onLieuChange={(l) => handleUpdateCleLieuDepot(cle, l)} onDelete={() => handleDeleteCle(cle)} isReadOnly={isCancelled} />
                         ))}
                       </div>
                     </div>
@@ -434,6 +531,113 @@ export function MissionDetailPage() {
           </CardBlock>
         </div>
       </div>
+
+      {/* Add EDL Dialog */}
+      <Dialog open={showAddEdl} onOpenChange={setShowAddEdl}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              Ajouter un EDL
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Sens</Label>
+              <Select value={addEdlSens} onValueChange={(v) => setAddEdlSens(v as SensEDL)}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="entree">Entrée</SelectItem>
+                  <SelectItem value="sortie">Sortie</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Type</Label>
+              <Select value={addEdlType} onValueChange={(v) => setAddEdlType(v as TypeEDL)}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="edl">État des lieux</SelectItem>
+                  <SelectItem value="inventaire">Inventaire</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setShowAddEdl(false)} disabled={addEdlSaving}>Annuler</Button>
+              <Button onClick={handleAddEdl} disabled={addEdlSaving}>{addEdlSaving ? 'Ajout...' : 'Ajouter'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Clé Dialog */}
+      <Dialog open={showAddCle} onOpenChange={setShowAddCle}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-primary" />
+              Ajouter une clé
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mission && mission.edls.length > 1 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">EDL associé</Label>
+                <Select value={addCleEdlId} onValueChange={setAddCleEdlId}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {mission.edls.map(edl => (
+                      <SelectItem key={edl.id} value={edl.id}>
+                        {sensLabels[edl.sens]} — {edl.type === 'inventaire' ? 'Inventaire' : 'EDL'} {edl.locataires.map(l => l.prenom ? `${l.prenom} ${l.nom}` : l.nom).join(', ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Type de clé *</Label>
+              <Select value={addCleType} onValueChange={setAddCleType}>
+                <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cle_principale">Clé principale</SelectItem>
+                  <SelectItem value="badge">Badge</SelectItem>
+                  <SelectItem value="boite_aux_lettres">Boîte aux lettres</SelectItem>
+                  <SelectItem value="parking">Parking</SelectItem>
+                  <SelectItem value="cave">Cave</SelectItem>
+                  <SelectItem value="digicode">Digicode</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Quantité</Label>
+                <Input type="number" min="1" value={addCleQty} onChange={(e) => setAddCleQty(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground">Statut</Label>
+                <Select value={addCleStatut} onValueChange={setAddCleStatut}>
+                  <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="remise">Remise</SelectItem>
+                    <SelectItem value="a_deposer">À déposer</SelectItem>
+                    <SelectItem value="deposee">Déposée</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Lieu de dépôt</Label>
+              <Input value={addCleLieu} onChange={(e) => setAddCleLieu(e.target.value)} placeholder="Agence, gardien, loge..." className="h-10" />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setShowAddCle(false)} disabled={addCleSaving}>Annuler</Button>
+              <Button onClick={handleAddCle} disabled={addCleSaving || !addCleEdlId}>{addCleSaving ? 'Ajout...' : 'Ajouter'}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' }) }} saving={saving} />
     </div>
@@ -503,7 +707,7 @@ function PersonRow({ id, nom, prenom, color, role }: { id: string; nom: string; 
 }
 
 /* ═══ Clé Row ═══ */
-function CleRow({ cle, isExit, onStatutChange, onLieuChange, isReadOnly = false }: { cle: CleMission; isExit: boolean; onStatutChange: (s: StatutCle) => void; onLieuChange: (l: string) => void; isReadOnly?: boolean }) {
+function CleRow({ cle, isExit, onStatutChange, onLieuChange, onDelete, isReadOnly = false }: { cle: CleMission; isExit: boolean; onStatutChange: (s: StatutCle) => void; onLieuChange: (l: string) => void; onDelete?: () => void; isReadOnly?: boolean }) {
   const [lieuLocal, setLieuLocal] = useState(cle.lieu_depot || '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -534,6 +738,11 @@ function CleRow({ cle, isExit, onStatutChange, onLieuChange, isReadOnly = false 
             <SelectItem value="deposee">Déposée</SelectItem>
           </SelectContent>
         </Select>
+        {onDelete && !isReadOnly && (
+          <button onClick={() => { if (confirm('Supprimer cette clé ?')) onDelete() }} className="p-1.5 rounded-lg text-muted-foreground/40 hover:text-red-500 hover:bg-red-50 transition-colors" title="Supprimer">
+            <Trash className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   )

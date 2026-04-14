@@ -13,9 +13,10 @@ interface Props {
   onOpenChange: (open: boolean) => void
   missionId: string
   missionStatut: MissionStatut
+  edlBrouillonCount?: number
 }
 
-export function CancelMissionModal({ open, onOpenChange, missionId, missionStatut }: Props) {
+export function CancelMissionModal({ open, onOpenChange, missionId, missionStatut, edlBrouillonCount = 0 }: Props) {
   const [motif, setMotif] = useState('')
   const cancelMission = useCancelMission()
 
@@ -57,7 +58,7 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
                   Impossible d'annuler cette mission
                 </p>
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                  Les EDL signes sont des documents legaux immuables. Une mission terminee ne peut pas etre annulee.
+                  Les EDL signés sont des documents légaux immuables. Une mission terminée ne peut pas être annulée.
                 </p>
               </div>
             </div>
@@ -72,14 +73,18 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
             {/* Warning */}
             <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800">
               <Warning className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div>
+              <div className="space-y-1">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  Cette action est irreversible
+                  Cette action est irréversible
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  La mission sera annulee et les EDL en cours seront marques comme infructueux.
-                  Le technicien assigne sera notifie.
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  La mission sera annulée et le technicien assigné sera notifié.
                 </p>
+                {edlBrouillonCount > 0 && (
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mt-1">
+                    {edlBrouillonCount} EDL en brouillon {edlBrouillonCount > 1 ? 'seront marqués' : 'sera marqué'} comme infructueux.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -94,7 +99,7 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
                 autoFocus
               />
               <p className="text-[10px] text-muted-foreground/60">
-                Le motif est obligatoire et sera conserve dans l'historique.
+                Le motif est obligatoire et sera conservé dans l'historique.
               </p>
             </div>
 

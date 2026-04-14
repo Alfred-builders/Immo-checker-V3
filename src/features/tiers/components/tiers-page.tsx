@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 's
 import { useTiers, useTiersStats } from '../api'
 import { CreateTiersModal } from './create-tiers-modal'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
+import { ColumnConfig } from '../../../components/shared/column-config'
+import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../../hooks/use-auth'
 import { formatDate } from '../../../lib/formatters'
@@ -75,6 +77,20 @@ const COLUMNS_BY_TAB: Record<Tab, ColumnDef[]> = {
   tous: COLUMNS_TOUS,
 }
 
+const TIERS_FILTER_FIELDS: FilterField[] = [
+  { id: 'type_personne', label: 'Type', type: 'select', options: [
+    { value: 'physique', label: 'Personne physique' },
+    { value: 'morale', label: 'Personne morale' },
+  ]},
+  { id: 'nom', label: 'Nom', type: 'text' },
+  { id: 'email', label: 'Email', type: 'text' },
+  { id: 'tel', label: 'Téléphone', type: 'text' },
+  { id: 'ville', label: 'Ville', type: 'text' },
+  { id: 'est_archive', label: 'Archivé', type: 'boolean' },
+  { id: 'nb_lots', label: 'Nb lots', type: 'number' },
+  { id: 'created_at', label: 'Créé le', type: 'text' },
+]
+
 function buildDefaultWidths(columns: ColumnDef[]): Record<string, number> {
   const widths: Record<string, number> = {}
   for (const col of columns) widths[col.id] = col.width
@@ -85,6 +101,8 @@ export function TiersPage() {
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<Tab>('proprietaire')
   const [typePersonneFilter, setTypePersonneFilter] = useState<string>('all')
+  const [villeFilter, setVilleFilter] = useState<string>('all')
+  const [archivedFilter, setArchivedFilter] = useState<string>('active')
   const [showCreate, setShowCreate] = useState(false)
   const navigate = useNavigate()
   const { workspace } = useAuth()
@@ -92,6 +110,7 @@ export function TiersPage() {
   const columns = COLUMNS_BY_TAB[tab]
   const defaultWidths = useMemo(() => buildDefaultWidths(columns), [columns])
   const { colWidths, onResizeStart, onResize } = useResizableColumns(defaultWidths)
+  const [visibleCols, setVisibleCols] = useState<string[]>(columns.filter(c => c.label).map(c => c.id))
 
   const role = tab === 'tous' ? undefined : tab
   const { data, isLoading } = useTiers({
@@ -112,13 +131,27 @@ export function TiersPage() {
     else { setSortCol(col); setSortDir('asc') }
   }
 
+  // Extra client-side filters
+  const filtered = useMemo(() => {
+    let list = tiersRaw
+    if (villeFilter !== 'all') list = list.filter(t => t.ville === villeFilter)
+    if (archivedFilter === 'active') list = list.filter(t => !t.est_archive)
+    else if (archivedFilter === 'archived') list = list.filter(t => t.est_archive)
+    return list
+  }, [tiersRaw, villeFilter, archivedFilter])
+
+  const uniqueVilles = useMemo(() => {
+    const villes = new Set<string>()
+    tiersRaw.forEach(t => { if (t.ville) villes.add(t.ville) })
+    return [...villes].sort()
+  }, [tiersRaw])
+
   const tiersList = useMemo(() => {
-    if (!sortCol) return tiersRaw
-    return [...tiersRaw].sort((a, b) => {
+    if (!sortCol) return filtered
+    return [...filtered].sort((a, b) => {
       const key = sortCol as keyof typeof a
       let aVal: any = a[key]
       let bVal: any = b[key]
-      // Aggregated name sort
       if (sortCol === 'nom') {
         aVal = a.type_personne === 'morale' ? (a.raison_sociale || a.nom) : `${a.prenom || ''} ${a.nom}`
         bVal = b.type_personne === 'morale' ? (b.raison_sociale || b.nom) : `${b.prenom || ''} ${b.nom}`
@@ -128,7 +161,7 @@ export function TiersPage() {
       const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal))
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [tiersRaw, sortCol, sortDir])
+  }, [filtered, sortCol, sortDir])
 
   // Hide Mandataire tab for agence workspaces
   const showMandataire = workspace?.type_workspace !== 'agence'
@@ -177,14 +210,13 @@ export function TiersPage() {
         ))}
       </div>
 
-      {/* Search + type_personne filter */}
-      <div className="flex items-center gap-3">
+      {/* Filters bar */}
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
           <Input placeholder="Rechercher un tiers..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 h-10" />
         </div>
 
-        {/* Type personne quick filter */}
         <Select value={typePersonneFilter} onValueChange={setTypePersonneFilter}>
           <SelectTrigger className="h-10 w-[160px] text-sm">
             <SelectValue placeholder="Type" />
@@ -195,13 +227,43 @@ export function TiersPage() {
             <SelectItem value="morale">Personne morale</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={villeFilter} onValueChange={setVilleFilter}>
+          <SelectTrigger className="h-10 w-[140px] text-sm">
+            <SelectValue placeholder="Ville" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les villes</SelectItem>
+            {uniqueVilles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={archivedFilter} onValueChange={setArchivedFilter}>
+          <SelectTrigger className="h-10 w-[120px] text-sm">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Actifs</SelectItem>
+            <SelectItem value="archived">Archivés</SelectItem>
+            <SelectItem value="all">Tous</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="ml-auto">
+          <ColumnConfig
+            page="tiers_list"
+            columns={columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true }))}
+            visibleColumns={visibleCols}
+            onColumnsChange={setVisibleCols}
+          />
+        </div>
       </div>
 
       {/* Table */}
       <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
         {/* Dynamic header */}
         <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
-          {columns.map((col) => {
+          {columns.filter(col => !col.label || visibleCols.includes(col.id)).map((col) => {
             const sortable = col.id !== 'avatar' && !!col.label
             const isActive = sortCol === col.id && sortable
             return (
@@ -256,7 +318,7 @@ export function TiersPage() {
           <TiersRow
             key={tiers.id}
             tiers={tiers}
-            columns={columns}
+            columns={columns.filter(col => !col.label || visibleCols.includes(col.id))}
             colWidths={colWidths}
             index={idx}
             onClick={() => {

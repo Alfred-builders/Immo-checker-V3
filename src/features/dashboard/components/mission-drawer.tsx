@@ -474,9 +474,17 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   {mission.proprietaires.map((p) => (
                     <PersonChip key={p.id} name={p.prenom ? `${p.prenom} ${p.nom}` : p.nom} role="Propriétaire" color="sky" to={`/app/tiers/${p.id}`} />
                   ))}
-                  {mission.edls.flatMap(edl => edl.locataires.map((l) => (
-                    <PersonChip key={`${edl.id}-${l.tiers_id}`} name={l.prenom ? `${l.prenom} ${l.nom}` : l.nom} role={l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} color={l.role_locataire === 'entrant' ? 'green' : 'orange'} to={`/app/tiers/${l.tiers_id}`} />
-                  )))}
+                  {(() => {
+                    const seen = new Set<string>()
+                    return mission.edls.flatMap(edl => edl.locataires.filter(l => {
+                      const key = `${l.tiers_id}-${l.role_locataire}`
+                      if (seen.has(key)) return false
+                      seen.add(key)
+                      return true
+                    }).map(l => (
+                      <PersonChip key={`${l.tiers_id}-${l.role_locataire}`} name={l.prenom ? `${l.prenom} ${l.nom}` : l.nom} role={l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} color={l.role_locataire === 'entrant' ? 'green' : 'orange'} to={`/app/tiers/${l.tiers_id}`} />
+                    )))
+                  })()}
                   {mission.mandataire && (
                     <PersonChip name={mission.mandataire.raison_sociale || mission.mandataire.nom} role="Mandataire" color="violet" to={`/app/tiers/${mission.mandataire.id}`} />
                   )}
