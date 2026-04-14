@@ -63,4 +63,38 @@ router.get('/:id', async (req, res) => {
   }
 })
 
+// GET /api/v1/lots/:id/edl-inventaires — historical EDLs for a lot
+router.get('/:id/edl-inventaires', async (req, res) => {
+  try {
+    const workspaceId = req.workspaceId!
+    const { statut, cursor, limit: rawLimit } = req.query as Record<string, string>
+    const limit = Math.min(parseInt(rawLimit) || 25, 100)
+
+    const params: unknown[] = [req.params.id, workspaceId]
+    let where = 'WHERE ei.lot_id = $1 AND ei.workspace_id = $2'
+    let idx = 3
+
+    if (statut) { where += ` AND ei.statut = $${idx++}`; params.push(statut) }
+    if (cursor) { where += ` AND ei.id > $${idx++}`; params.push(cursor) }
+
+    params.push(limit + 1)
+    const result = await query(
+      `SELECT ei.id, ei.type, ei.sens, ei.statut, ei.mission_id,
+              ei.date_realisation, ei.date_signature, ei.created_at,
+              ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
+       FROM edl_inventaire ei
+       ${where}
+       ORDER BY ei.created_at DESC
+       LIMIT $${idx}`,
+      params
+    )
+
+    const has_more = result.rows.length > limit
+    const rows = has_more ? result.rows.slice(0, limit) : result.rows
+    sendSuccess(res, { data: rows, meta: { cursor: has_more ? rows[rows.length - 1].id : undefined, has_more } })
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
 export default router

@@ -150,7 +150,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
       toast.error('Veuillez saisir une date de début')
       return
     }
-    if (!estJourneeEntiere && heureDebut && heureFin && heureFin <= heureDebut) {
+    if (!journeeEntiere && heureDebut && heureFin && heureFin <= heureDebut) {
       toast.error('L\'heure de fin doit être après l\'heure de début')
       return
     }

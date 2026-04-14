@@ -1,7 +1,15 @@
 import crypto from 'crypto'
 import { query } from '../db/index.js'
 
-export type WebhookEvent = 'edl.signe' | 'mission.terminee' | 'mission.annulee' | 'cle.deposee' | 'ping'
+export type WebhookEvent =
+  | 'edl.signe'
+  | 'edl.infructueux'
+  | 'mission.creee'
+  | 'mission.assignee'
+  | 'mission.terminee'
+  | 'mission.annulee'
+  | 'cle.deposee'
+  | 'ping'
 
 /**
  * Dispatch a webhook event to all active configured endpoints for a workspace.
@@ -75,14 +83,20 @@ async function sendWithRetry(
       [resp.ok ? 'success' : 'failed', attempt, resp.status, responseBody?.slice(0, 500) ?? null, deliveryId]
     )
 
-    // Retry on non-2xx, up to 3 attempts
+    // Retry on non-2xx, up to 3 attempts (exponential: 60s, 300s, 1800s)
     if (!resp.ok && attempt < 3) {
-      const delay = attempt * 30_000 // 30s, 60s, 90s
+      const delays = [0, 60_000, 300_000, 1_800_000]
+      const delay = delays[attempt] ?? 60_000
       await query(
         `UPDATE webhook_delivery SET statut = 'retrying', attempts = $1, last_attempt_at = now() WHERE id = $2`,
         [attempt, deliveryId]
       )
       setTimeout(() => sendWithRetry(deliveryId, url, secret, eventType, payload, attempt + 1), delay)
+    }
+
+    // Auto-disable webhook after 10 consecutive failures
+    if (!resp.ok && attempt >= 3) {
+      await autoDisableIfConsecutiveFailed(deliveryId, url)
     }
   } catch (err) {
     console.error(`[webhook] delivery ${deliveryId} attempt ${attempt} failed:`, err)
@@ -94,8 +108,38 @@ async function sendWithRetry(
     } catch {}
 
     if (attempt < 3) {
-      const delay = attempt * 30_000
+      const delays = [0, 60_000, 300_000, 1_800_000]
+      const delay = delays[attempt] ?? 60_000
       setTimeout(() => sendWithRetry(deliveryId, url, secret, eventType, payload, attempt + 1), delay)
+    } else {
+      await autoDisableIfConsecutiveFailed(deliveryId, url)
     }
+  }
+}
+
+async function autoDisableIfConsecutiveFailed(deliveryId: string, _url: string): Promise<void> {
+  try {
+    // Find the webhook_id from this delivery
+    const d = await query(`SELECT webhook_id FROM webhook_delivery WHERE id = $1`, [deliveryId])
+    if (d.rows.length === 0) return
+    const webhookId = d.rows[0].webhook_id
+
+    // Count how many of the last 10 deliveries are failed
+    const check = await query(
+      `SELECT count(*) AS cnt FROM (
+         SELECT statut FROM webhook_delivery
+         WHERE webhook_id = $1
+         ORDER BY created_at DESC
+         LIMIT 10
+       ) sub
+       WHERE statut = 'failed'`,
+      [webhookId]
+    )
+    if (parseInt(check.rows[0].cnt) >= 10) {
+      await query(`UPDATE webhook_config SET est_active = false WHERE id = $1`, [webhookId])
+      console.warn(`[webhook] auto-disabled ${webhookId} after 10 consecutive failures`)
+    }
+  } catch (err) {
+    console.error('[webhook] autoDisable check error:', err)
   }
 }

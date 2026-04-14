@@ -304,9 +304,10 @@ export function MissionCalendar(props: Props) {
               return (
                 <div
                   key={key}
-                  className={`p-1.5 space-y-1.5 ${isToday ? 'bg-primary/[0.02]' : isWeekend ? 'bg-muted/10' : ''} ${i < 6 ? 'border-r border-border/20' : ''} ${isEmpty && !isLoading ? 'cursor-pointer hover:bg-primary/[0.03] transition-colors' : ''}`}
-                  onClick={() => {
-                    if (isEmpty && props.onEmptyDayClick) props.onEmptyDayClick(key)
+                  className={`p-1.5 space-y-1.5 ${isToday ? 'bg-primary/[0.02]' : isWeekend ? 'bg-muted/10' : ''} ${i < 6 ? 'border-r border-border/20' : ''} ${props.onEmptyDayClick && !isLoading ? 'cursor-pointer hover:bg-primary/[0.03] transition-colors' : ''}`}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('[data-mission-card]')) return
+                    if (props.onEmptyDayClick) props.onEmptyDayClick(key)
                   }}
                 >
                   {isLoading && <div className="space-y-1.5"><div className="h-16 rounded-xl bg-muted/20 animate-pulse" /><div className="h-12 rounded-xl bg-muted/15 animate-pulse" /></div>}
@@ -394,7 +395,7 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
 
   return (
-    <div onClick={onClick} className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-all duration-150 hover:shadow-elevation-raised-hover overflow-hidden ${cardColor}`}>
+    <div data-mission-card onClick={onClick} className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-all duration-150 hover:shadow-elevation-raised-hover overflow-hidden ${cardColor}`}>
       {compact ? (
         <div className="flex items-center gap-1.5">
           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
@@ -446,7 +447,7 @@ function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void
   const dotColor = statutDotColors[statutDerive] || statutDotColors.planifiee
 
   return (
-    <div onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
+    <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
       <span className="text-[9px] font-semibold text-foreground/80 truncate group-hover:text-primary transition-colors">{mission.lot_designation}</span>
       {mission.heure_debut && <span className="text-[8px] text-muted-foreground/40 shrink-0 ml-auto">{formatTime(mission.heure_debut)}</span>}

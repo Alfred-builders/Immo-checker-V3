@@ -85,7 +85,7 @@ export function MissionDetailPage() {
 
   const missionId = mission?.id
   useEffect(() => {
-    if (mission && !editing) setFormData({ date_planifiee: mission.date_planifiee || '', heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' })
+    if (mission && !editing) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' })
   }, [missionId, editing])
 
   const isTerminated = mission?.statut === 'terminee'
@@ -309,8 +309,8 @@ export function MissionDetailPage() {
         </CardBlock>
       </div>
 
-      {/* ═══ ROW 3: Bien+Commentaire (small left) | EDL+Clés (larger right) ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-4">
+      {/* ═══ ROW 3: Bien+Commentaire | EDL+Clés ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="space-y-4">
           <CardBlock title="Bien & Bâtiment" icon={House}>
             <div className="space-y-2.5">
@@ -376,14 +376,30 @@ export function MissionDetailPage() {
                         ))}
                       </div>
                     )}
-                    {edl.statut === 'signe' && (edl.url_pdf || edl.url_web || edl.url_pdf_legal || edl.url_web_legal) && (
-                      <div className="flex gap-2 border-t border-border/30 pt-3 mt-2">
-                        {edl.url_pdf && <a href={edl.url_pdf} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors"><FilePdf className="h-4 w-4 text-red-500" />PDF</a>}
-                        {edl.url_web && <a href={edl.url_web} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors"><Globe className="h-4 w-4 text-blue-500" />Web</a>}
-                        {edl.url_pdf_legal && <a href={edl.url_pdf_legal} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors"><Scales className="h-4 w-4 text-violet-500" />PDF légal</a>}
-                        {edl.url_web_legal && <a href={edl.url_web_legal} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors"><Globe className="h-4 w-4 text-violet-500" />Web légal</a>}
-                      </div>
-                    )}
+                    {(() => {
+                      const isSigned = edl.statut === 'signe'
+                      const activeClass = "inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors cursor-pointer"
+                      const disabledClass = "inline-flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-muted/30 border border-border/20 text-muted-foreground/40 cursor-not-allowed"
+                      const links = [
+                        { url: edl.url_pdf, icon: <FilePdf className={`h-4 w-4 ${isSigned ? 'text-red-500' : ''}`} />, label: 'PDF' },
+                        { url: edl.url_web, icon: <Globe className={`h-4 w-4 ${isSigned ? 'text-blue-500' : ''}`} />, label: 'Web' },
+                        { url: edl.url_pdf_legal, icon: <Scales className={`h-4 w-4 ${isSigned ? 'text-violet-500' : ''}`} />, label: 'PDF légal' },
+                        { url: edl.url_web_legal, icon: <Globe className={`h-4 w-4 ${isSigned ? 'text-violet-500' : ''}`} />, label: 'Web légal' },
+                      ]
+                      return (
+                        <div className="border-t border-border/30 pt-3 mt-2 space-y-2">
+                          <div className="flex flex-wrap gap-2">
+                            {links.map((l) => l.url ? (
+                              <a key={l.label} href={l.url} target="_blank" rel="noopener noreferrer" className={activeClass}>{l.icon}{l.label}</a>
+                            ) : (
+                              <span key={l.label} className={isSigned ? activeClass.replace('cursor-pointer', 'cursor-not-allowed opacity-50') : disabledClass} title={isSigned ? 'Document en cours de génération' : 'Disponible après signature'}>{l.icon}{l.label}</span>
+                            ))}
+                          </div>
+                          {!isSigned && <p className="text-[11px] text-muted-foreground/40 italic">Disponible après signature de l'EDL</p>}
+                          {isSigned && !edl.url_pdf && <p className="text-[11px] text-muted-foreground/50 italic">Documents en attente de génération (app tablette)</p>}
+                        </div>
+                      )
+                    })()}
                   </div>
                 ))}
               </div>
@@ -419,7 +435,7 @@ export function MissionDetailPage() {
         </div>
       </div>
 
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: mission.date_planifiee || '', heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' }) }} saving={saving} />
+      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' }) }} saving={saving} />
     </div>
   )
 }

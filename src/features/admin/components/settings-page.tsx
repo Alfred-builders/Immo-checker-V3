@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple } from '@phosphor-icons/react'
+import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple, ArrowSquareOut } from '@phosphor-icons/react'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -666,6 +666,7 @@ const WEBHOOK_EVENTS: { value: WebhookEvent; label: string; description: string 
   { value: 'mission.terminee', label: 'Mission terminée', description: 'Tous les EDL sont signés' },
   { value: 'mission.annulee', label: 'Mission annulée', description: 'Mission annulée par un admin' },
   { value: 'edl.signe', label: 'EDL signé', description: 'Document légal signé' },
+  { value: 'edl.infructueux', label: 'EDL infructueux', description: 'EDL marqué infructueux' },
   { value: 'cle.deposee', label: 'Clé déposée', description: 'Clé déposée au lieu convenu' },
 ]
 
@@ -681,9 +682,37 @@ function ApiSection() {
         <h2 className="text-lg font-semibold text-foreground">API & Intégrations</h2>
         <p className="text-sm text-muted-foreground mt-0.5">Gérez vos clés API et configurez les webhooks</p>
       </div>
+      <ApiDocsBlock />
       <ApiKeysBlock />
       <WebhooksBlock />
     </div>
+  )
+}
+
+function ApiDocsBlock() {
+  return (
+    <SettingsBlock title="Documentation interactive" icon={Code}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1.5">
+          <p className="text-sm text-foreground">
+            Explorez tous les endpoints disponibles, testez des requêtes en direct et consultez les schémas de données.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Authentification par clé API (<code className="font-mono bg-muted/60 px-1 py-0.5 rounded">Bearer imk_live_...</code>).
+            Rate limit : 100 req/min.
+          </p>
+        </div>
+        <a
+          href="/api/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+        >
+          <ArrowSquareOut className="h-4 w-4" />
+          Ouvrir Swagger UI
+        </a>
+      </div>
+    </SettingsBlock>
   )
 }
 

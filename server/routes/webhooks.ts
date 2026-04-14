@@ -11,7 +11,15 @@ const router = Router()
 router.use(verifyToken)
 router.use(requireRole('admin'))
 
-const VALID_EVENTS = ['edl.signe', 'mission.terminee', 'mission.annulee', 'cle.deposee'] as const
+const VALID_EVENTS = [
+  'edl.signe',
+  'edl.infructueux',
+  'mission.creee',
+  'mission.assignee',
+  'mission.terminee',
+  'mission.annulee',
+  'cle.deposee',
+] as const
 
 const createSchema = z.object({
   url: z.url(),

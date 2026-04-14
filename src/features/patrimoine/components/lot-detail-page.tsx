@@ -356,14 +356,34 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
   const [open, setOpen] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [showCreateTiers, setShowCreateTiers] = useState(false)
+  const [unlinkTarget, setUnlinkTarget] = useState<{ id: string; name: string } | null>(null)
   const [searchQ, setSearchQ] = useState('')
   const { data: searchResults } = useSearchTiers(searchQ)
   const linkMutation = useLinkProprietaire()
   const unlinkMutation = useUnlinkProprietaire()
 
   async function handleLink(tiersId: string) {
-    await linkMutation.mutateAsync({ lotId, tiersId, estPrincipal: proprietaires.length === 0 })
+    try {
+      await linkMutation.mutateAsync({ lotId, tiersId, estPrincipal: proprietaires.length === 0 })
+      toast.success('Propriétaire lié au lot')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
     setShowAdd(false); setSearchQ('')
+  }
+
+  async function handleCreatedTiers(tiersId: string) {
+    try {
+      await linkMutation.mutateAsync({ lotId, tiersId, estPrincipal: proprietaires.length === 0 })
+      toast.success('Tiers créé et lié au lot')
+    } catch (err: any) { toast.error(err.message || 'Erreur lors du lien') }
+  }
+
+  async function confirmUnlink() {
+    if (!unlinkTarget) return
+    try {
+      await unlinkMutation.mutateAsync({ lotId, tiersId: unlinkTarget.id })
+      toast.success('Propriétaire retiré')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    setUnlinkTarget(null)
   }
 
   const avatarColors: Record<string, string> = {
@@ -377,12 +397,9 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
         <UsersThree className="h-4 w-4 text-muted-foreground/50" />
         <span className="text-[13px] font-bold text-foreground">Tiers liés</span>
         {!isArchived && (
-          <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
+          <div className="ml-3" onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" size="sm" className="h-7 text-xs text-primary hover:text-primary px-2" onClick={() => { setShowAdd(!showAdd); setOpen(true) }}>
               <Plus className="h-3 w-3 mr-1" /> Ajouter
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setShowCreateTiers(true); setOpen(true) }}>
-              <Plus className="h-3 w-3 mr-1" /> Nouveau tiers
             </Button>
           </div>
         )}
@@ -407,6 +424,12 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
                   ))}
                 </div>
               )}
+              <button
+                onClick={() => { setShowCreateTiers(true); setShowAdd(false) }}
+                className="w-full flex items-center justify-center gap-1.5 px-2 py-2 text-[12px] font-semibold text-primary hover:bg-primary/10 rounded-lg transition-colors border-t border-border/30 mt-1 pt-2.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Créer un nouveau tiers
+              </button>
             </div>
           )}
 
@@ -425,7 +448,7 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
                       {p.est_principal && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700">Principal</span>}
                       {p.tel && <span className="text-[12px] text-muted-foreground">{p.tel}</span>}
                       {!isArchived && (
-                        <button onClick={() => unlinkMutation.mutate({ lotId, tiersId: p.id })} className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-500 transition-all"><X className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setUnlinkTarget({ id: p.id, name: displayName })} className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-500 transition-all"><X className="h-3.5 w-3.5" /></button>
                       )}
                     </div>
                   )
@@ -467,7 +490,16 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
         </div>
       )}
 
-      <CreateTiersModal open={showCreateTiers} onOpenChange={setShowCreateTiers} onCreated={() => toast.success('Tiers créé — vous pouvez maintenant le lier au lot')} />
+      <CreateTiersModal open={showCreateTiers} onOpenChange={setShowCreateTiers} onCreated={handleCreatedTiers} />
+      <ConfirmDialog
+        open={!!unlinkTarget}
+        onOpenChange={(v) => { if (!v) setUnlinkTarget(null) }}
+        title="Retirer ce propriétaire ?"
+        description={`${unlinkTarget?.name} ne sera plus lié à ce lot. Cette action est réversible.`}
+        confirmLabel="Retirer"
+        variant="destructive"
+        onConfirm={confirmUnlink}
+      />
     </div>
   )
 }

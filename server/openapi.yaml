@@ -45,16 +45,20 @@ components:
           type: string
           nullable: true
           description: Curseur pour la page suivante
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         has_more:
           type: boolean
+          example: true
 
     Error:
       type: object
       properties:
         error:
           type: string
+          example: "Ressource introuvable"
         code:
           type: string
+          example: "NOT_FOUND"
 
     Lot:
       type: object
@@ -62,30 +66,39 @@ components:
         id:
           type: string
           format: uuid
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
         designation:
           type: string
+          example: "Appartement T3 — Lot 302"
         type_bien:
           type: string
           enum: [appartement, maison, local_commercial, bureau, parking, cave, autre]
+          example: "appartement"
         etage:
           type: string
           nullable: true
+          example: "3ème"
         surface:
           type: number
           nullable: true
+          example: 67
         reference_interne:
           type: string
           nullable: true
+          example: "BAIL-2025-0302"
         batiment:
           type: object
           properties:
             id:
               type: string
               format: uuid
+              example: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
             designation:
               type: string
+              example: "Résidence Victor Hugo"
             adresse:
               type: string
+              example: "12 rue Victor Hugo, 75016 Paris"
 
     Batiment:
       type: object
@@ -93,30 +106,41 @@ components:
         id:
           type: string
           format: uuid
+          example: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
         designation:
           type: string
+          example: "Résidence Victor Hugo"
         type:
           type: string
+          example: "immeuble"
         nb_etages:
           type: integer
           nullable: true
+          example: 5
         annee_construction:
           type: integer
           nullable: true
+          example: 1985
         rue:
           type: string
+          example: "12 rue Victor Hugo"
         code_postal:
           type: string
+          example: "75016"
         ville:
           type: string
+          example: "Paris"
         latitude:
           type: number
           nullable: true
+          example: 48.8566
         longitude:
           type: number
           nullable: true
+          example: 2.3522
         nb_lots:
           type: integer
+          example: 20
 
     Mission:
       type: object
@@ -124,12 +148,14 @@ components:
         id:
           type: string
           format: uuid
+          example: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
         reference:
           type: string
-          example: "M-2026-0001"
+          example: "M-2026-0042"
         date_planifiee:
           type: string
           format: date
+          example: "2026-04-18"
         heure_debut:
           type: string
           nullable: true
@@ -137,18 +163,22 @@ components:
         heure_fin:
           type: string
           nullable: true
-          example: "11:00"
+          example: "11:30"
         statut:
           type: string
           enum: [planifiee, assignee, terminee, annulee]
+          example: "planifiee"
         statut_rdv:
           type: string
           enum: [a_confirmer, confirme, reporte]
+          example: "a_confirmer"
         avec_inventaire:
           type: boolean
+          example: false
         commentaire:
           type: string
           nullable: true
+          example: "RDV confirmé par le locataire"
         lot:
           $ref: '#/components/schemas/Lot'
         edls:
@@ -162,42 +192,58 @@ components:
         id:
           type: string
           format: uuid
+          example: "d4e5f6a7-b1c2-4d5e-9f0a-1b2c3d4e5f6a"
         type:
           type: string
           enum: [etat_des_lieux, inventaire]
+          example: "etat_des_lieux"
         sens:
           type: string
           enum: [entree, sortie]
+          example: "entree"
         statut:
           type: string
           enum: [brouillon, signe, infructueux]
+          example: "brouillon"
         mission_id:
           type: string
           format: uuid
+          example: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
         date_realisation:
           type: string
           format: date-time
           nullable: true
+          example: "2026-04-18T09:30:00Z"
         date_signature:
           type: string
           format: date-time
           nullable: true
+          example: "2026-04-18T11:00:00Z"
         pdf_url:
           type: string
           nullable: true
           description: URL du PDF EDL standard
+          example: "https://example.com/edl-abc123.pdf"
         web_url:
           type: string
           nullable: true
           description: URL de consultation web
+          example: "https://example.com/edl-abc123"
         pdf_url_legal:
           type: string
           nullable: true
           description: URL du PDF version légale
+          example: null
         web_url_legal:
           type: string
           nullable: true
           description: URL de consultation légale
+          example: null
+        url_verification:
+          type: string
+          nullable: true
+          description: Page publique de vérification (QR code, scellé électronique)
+          example: null
         locataires:
           type: array
           nullable: true
@@ -207,14 +253,18 @@ components:
               tiers_id:
                 type: string
                 format: uuid
+                example: "e5f6a7b8-c1d2-4e5f-0a1b-2c3d4e5f6a7b"
               nom:
                 type: string
+                example: "Leroy"
               prenom:
                 type: string
                 nullable: true
+                example: "Pierre"
               role_locataire:
                 type: string
                 enum: [entrant, sortant]
+                example: "entrant"
         cles:
           type: array
           nullable: true
@@ -224,16 +274,21 @@ components:
               id:
                 type: string
                 format: uuid
+                example: "f6a7b8c9-d1e2-4f5a-1b2c-3d4e5f6a7b8c"
               type_cle:
                 type: string
+                example: "cle_principale"
               quantite:
                 type: integer
+                example: 2
               statut:
                 type: string
                 enum: [remise, a_deposer, deposee]
+                example: "remise"
               lieu_depot:
                 type: string
                 nullable: true
+                example: "Agence principale"
 
   responses:
     Unauthorized:
@@ -338,6 +393,21 @@ paths:
                   example: "11:00"
                 commentaire:
                   type: string
+                technicien_id:
+                  type: string
+                  format: uuid
+                  description: Assigner un technicien immédiatement (optionnel)
+                locataires:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Liste de tiers_id locataires (colocation)
+                type_bail:
+                  type: string
+                  enum: [individuel, collectif]
+                  default: individuel
+                  description: individuel = N EDL, collectif = 1 EDL partagé
       responses:
         '201':
           description: Mission créée
@@ -371,6 +441,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mission'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      summary: Modifier une mission
+      operationId: patchMission
+      tags: [Missions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date_planifiee:
+                  type: string
+                  format: date
+                heure_debut:
+                  type: string
+                  nullable: true
+                heure_fin:
+                  type: string
+                  nullable: true
+                commentaire:
+                  type: string
+                  nullable: true
+                statut_rdv:
+                  type: string
+                  enum: [a_confirmer, confirme, reporte]
+      responses:
+        '200':
+          description: Mission mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '400':
+          description: Données invalides
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Mission verrouillée (terminée ou annulée)
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Annuler une mission
+      operationId: cancelMission
+      tags: [Missions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif:
+                  type: string
+                  description: Motif d'annulation obligatoire
+      responses:
+        '200':
+          description: Mission annulée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cancelled:
+                    type: boolean
+        '400':
+          description: Motif manquant ou mission déjà annulée
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Impossible d'annuler une mission avec des EDL signés
+
+  /missions/{id}/edl-inventaires:
+    get:
+      summary: EDL d'une mission
+      operationId: getMissionEdls
+      tags: [Missions]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Liste des EDL de la mission
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EDL'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -443,6 +627,26 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /edl-inventaires/{id}/pdf:
+    get:
+      summary: Télécharger le PDF d'un EDL signé
+      operationId: downloadEDLPdf
+      tags: [EDL]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '302':
+          description: Redirection vers l'URL PDF pré-signée (expire après 24h)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: EDL introuvable ou non signé
+
   /lots:
     get:
       summary: Lister les lots
@@ -502,6 +706,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Lot'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /lots/{id}/edl-inventaires:
+    get:
+      summary: Historique des EDL d'un lot
+      operationId: getLotEdls
+      tags: [Référentiel]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: statut
+          schema:
+            type: string
+            enum: [brouillon, signe, infructueux]
+        - in: query
+          name: cursor
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+      responses:
+        '200':
+          description: Liste paginée des EDL du lot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EDL'
+                  meta:
+                    $ref: '#/components/schemas/Meta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 

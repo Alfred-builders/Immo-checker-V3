@@ -161,6 +161,15 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
       })
     }
 
+    // Dispatch edl.infructueux webhook
+    if (req.body.statut === 'infructueux') {
+      dispatchWebhook(req.user!.workspaceId, 'edl.infructueux', {
+        edl_id: req.params.id,
+        mission_id: edl.mission_id,
+        lot_id: edl.lot_id,
+      })
+    }
+
     sendSuccess(res, edl)
   } catch (error) {
     sendError(res, error)

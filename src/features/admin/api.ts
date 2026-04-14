@@ -210,11 +210,12 @@ export function useRevokeApiKey() {
 // ── Webhooks ──
 
 export type WebhookEvent =
+  | 'edl.signe'
+  | 'edl.infructueux'
   | 'mission.creee'
   | 'mission.assignee'
   | 'mission.terminee'
   | 'mission.annulee'
-  | 'edl.signe'
   | 'cle.deposee'
 
 export interface WebhookConfig {

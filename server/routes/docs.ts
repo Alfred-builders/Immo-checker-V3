@@ -22,6 +22,12 @@ router.get(
   swaggerUi.setup(spec, {
     customSiteTitle: 'ImmoChecker API Docs',
     customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 5,
+      defaultModelRendering: 'model',
+      docExpansion: 'list',
+    },
   })
 )
 

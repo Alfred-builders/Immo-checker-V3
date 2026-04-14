@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3a6d8e"/>
+      <stop offset="1" stop-color="#1a3344"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <!-- Modern minimal building silhouette -->
+  <rect x="7" y="13" width="7.5" height="13" rx="1.2" fill="white" fill-opacity="0.92"/>
+  <rect x="17.5" y="6" width="7.5" height="20" rx="1.2" fill="white"/>
+  <!-- Windows - left building -->
+  <rect x="9" y="15.5" width="1.8" height="1.5" rx="0.4" fill="#3a6d8e"/>
+  <rect x="11.7" y="15.5" width="1.8" height="1.5" rx="0.4" fill="#3a6d8e"/>
+  <rect x="9" y="18.5" width="1.8" height="1.5" rx="0.4" fill="#3a6d8e"/>
+  <rect x="11.7" y="18.5" width="1.8" height="1.5" rx="0.4" fill="#3a6d8e"/>
+  <!-- Door - left -->
+  <rect x="9.8" y="22.5" width="2.2" height="3.5" rx="0.6" fill="#3a6d8e" fill-opacity="0.7"/>
+  <!-- Windows - right building -->
+  <rect x="19.5" y="8.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.4"/>
+  <rect x="22.2" y="8.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.4"/>
+  <rect x="19.5" y="11.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <rect x="22.2" y="11.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <rect x="19.5" y="14.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <rect x="22.2" y="14.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <rect x="19.5" y="17.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <rect x="22.2" y="17.5" width="1.8" height="1.5" rx="0.4" fill="#1a3344" fill-opacity="0.5"/>
+  <!-- Door - right -->
+  <rect x="20.4" y="22.5" width="2.2" height="3.5" rx="0.6" fill="#1a3344" fill-opacity="0.5"/>
+  <!-- Accent line on top of right building -->
+  <rect x="17.5" y="6" width="7.5" height="1.2" rx="0.6" fill="white" fill-opacity="0.3"/>
+</svg>

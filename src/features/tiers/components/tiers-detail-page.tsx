@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText } from '@phosphor-icons/react'
+import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText, IdentificationCard } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -43,18 +43,6 @@ export function TiersDetailPage() {
   }, [tiers?.id])
   const updateMutation = useUpdateTiers()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    general: true,
-    contact: false,
-    lots: false,
-    organisations: false,
-    lotsMandataire: false,
-  })
-
-  function toggleSection(key: string) {
-    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }))
-  }
 
   const [formData, setFormData] = useState({
     nom: '', prenom: '', raison_sociale: '', type_personne: 'physique' as string,
@@ -146,110 +134,114 @@ export function TiersDetailPage() {
   if (roles.length === 0) roles.push(tiers.type_personne === 'morale' ? 'Organisation' : 'Personne')
 
   return (
-    <div className="px-8 py-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${tiers.type_personne === 'morale' ? 'bg-emerald-100' : 'bg-primary/10'}`}>
-            {tiers.type_personne === 'morale'
-              ? <BuildingOffice className="h-6 w-6 text-emerald-700" />
-              : <User className="h-6 w-6 text-primary" />
-            }
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">{displayName}</h1>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge className={tiers.type_personne === 'morale' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-primary/10 text-primary border-primary/20'}>
-                {tiers.type_personne === 'morale' ? 'Personne morale' : 'Personne physique'}
-              </Badge>
-              {roles.map(r => (
-                <Badge key={r} variant="outline" className="text-xs">{r}</Badge>
-              ))}
-              {tiers.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
+    <div className="px-8 py-6 max-w-[1180px] mx-auto space-y-4">
+
+      {/* ═══ HERO HEADER ═══ */}
+      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+        <div className="px-7 py-6">
+          <div className="flex items-start justify-between">
+            <div className="flex gap-4 items-center">
+              <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${tiers.type_personne === 'morale' ? 'bg-emerald-100 dark:bg-emerald-950' : 'bg-primary/10'}`}>
+                {tiers.type_personne === 'morale'
+                  ? <BuildingOffice className="h-6 w-6 text-emerald-700 dark:text-emerald-400" />
+                  : <User className="h-6 w-6 text-primary" />
+                }
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{displayName}</h1>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${tiers.type_personne === 'morale' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-primary/10 text-primary'}`}>
+                    {tiers.type_personne === 'morale' ? 'Personne morale' : 'Personne physique'}
+                  </span>
+                  {roles.map(r => (
+                    <span key={r} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{r}</span>
+                  ))}
+                  {tiers.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
+                </div>
+                <div className="flex items-center gap-5 mt-2 text-xs text-muted-foreground">
+                  {tiers.email && <span className="inline-flex items-center gap-1.5">📧 {tiers.email}</span>}
+                  {tiers.tel && <span className="inline-flex items-center gap-1.5">📱 {tiers.tel}</span>}
+                  {tiers.ville && <span className="inline-flex items-center gap-1.5">📍 {tiers.ville}</span>}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {!tiers.est_archive && !editing && (
+                <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>
+              )}
+              <Button variant="outline" size="sm" className={tiers.est_archive ? '' : 'text-destructive hover:text-destructive'} onClick={() => setShowArchiveConfirm(true)}>
+                {tiers.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+              </Button>
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {!tiers.est_archive && !editing && (
-            <Button variant="outline" size="sm" className="gap-1.5 border-border/60 hover:border-foreground/20 hover:bg-accent" onClick={() => setEditing(true)}>
-              <PencilSimple className="h-3.5 w-3.5" /> Modifier
-            </Button>
-          )}
-          <Button variant="outline" size="sm"
-            className={tiers.est_archive ? 'gap-1.5' : 'gap-1.5 border-destructive/30 text-destructive/80 hover:text-destructive hover:bg-destructive/5 hover:border-destructive/50'}
-            onClick={() => setShowArchiveConfirm(true)}
-          >
-            {tiers.est_archive ? <ArrowCounterClockwise className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-            {tiers.est_archive ? 'Restaurer' : 'Archiver'}
-          </Button>
-        </div>
+        {tiers.est_archive && (
+          <div className="border-t border-red-200 bg-red-50/60 px-7 py-3 flex items-center gap-3 dark:bg-red-950/30 dark:border-red-800">
+            <Warning className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+            <p className="text-xs text-red-800 dark:text-red-300">Ce tiers est archivé. Les modifications sont désactivées.</p>
+          </div>
+        )}
       </div>
 
-      {tiers.est_archive && (
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-xs">
-          <Warning className="h-3.5 w-3.5 shrink-0" />
-          Ce tiers est archivé.
-        </div>
-      )}
-
-      {/* Section: Informations générales */}
-      <CollapsibleSection title="Informations générales" open={openSections.general} onToggle={() => toggleSection('general')}>
-        <div className="divide-y divide-border/50">
+      {/* ═══ ROW 1: 2-col — Informations | Contact & Adresse ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Informations générales */}
+        <CardBlock title="Informations générales" icon={User}>
           {tiers.type_personne === 'physique' ? (
             <>
-              <InfoRow label="Nom" editing={editing} value={tiers.nom}>
-                <Input value={formData.nom} onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
-              <InfoRow label="Prénom" editing={editing} value={tiers.prenom || '--'}>
-                <Input value={formData.prenom} onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
-              <InfoRow label="Date de naissance" editing={editing} value={tiers.date_naissance || '--'}>
-                <Input type="date" value={formData.date_naissance} onChange={(e) => setFormData(prev => ({ ...prev, date_naissance: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
+              <FieldRow label="Nom" editing={editing} value={tiers.nom}>
+                <Input value={formData.nom} onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Prénom" editing={editing} value={tiers.prenom || '—'}>
+                <Input value={formData.prenom} onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Date de naissance" editing={editing} value={tiers.date_naissance || '—'}>
+                <Input type="date" value={formData.date_naissance} onChange={(e) => setFormData(prev => ({ ...prev, date_naissance: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Notes" editing={editing} value={tiers.notes || '—'} last>
+                <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} className="text-sm" />
+              </FieldRow>
             </>
           ) : (
             <>
-              <InfoRow label="Raison sociale" editing={editing} value={tiers.raison_sociale || '--'}>
-                <Input value={formData.raison_sociale} onChange={(e) => setFormData(prev => ({ ...prev, raison_sociale: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
-              <InfoRow label="Nom (contact)" editing={editing} value={tiers.nom}>
-                <Input value={formData.nom} onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
-              <InfoRow label="SIREN" editing={editing} value={tiers.siren || '--'}>
-                <Input value={formData.siren} onChange={(e) => setFormData(prev => ({ ...prev, siren: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
-              <InfoRow label="Représentant" editing={editing} value={tiers.representant_nom || '--'}>
-                <Input value={formData.representant_nom} onChange={(e) => setFormData(prev => ({ ...prev, representant_nom: e.target.value }))} className="h-8 w-48 text-sm" />
-              </InfoRow>
+              <FieldRow label="Raison sociale" editing={editing} value={tiers.raison_sociale || '—'}>
+                <Input value={formData.raison_sociale} onChange={(e) => setFormData(prev => ({ ...prev, raison_sociale: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Nom (contact)" editing={editing} value={tiers.nom}>
+                <Input value={formData.nom} onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="SIREN" editing={editing} value={tiers.siren || '—'} mono>
+                <Input value={formData.siren} onChange={(e) => setFormData(prev => ({ ...prev, siren: e.target.value }))} className="h-9 text-sm font-mono" />
+              </FieldRow>
+              <FieldRow label="Représentant" editing={editing} value={tiers.representant_nom || '—'}>
+                <Input value={formData.representant_nom} onChange={(e) => setFormData(prev => ({ ...prev, representant_nom: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Notes" editing={editing} value={tiers.notes || '—'} last>
+                <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} className="text-sm" />
+              </FieldRow>
             </>
           )}
-          <InfoRow label="Notes" editing={editing} value={tiers.notes || '--'}>
-            <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} className="text-sm w-72" />
-          </InfoRow>
-        </div>
-      </CollapsibleSection>
+        </CardBlock>
 
-      {/* Section: Contact & Adresse */}
-      <CollapsibleSection title="Contact & Adresse" open={openSections.contact} onToggle={() => toggleSection('contact')}>
-        <div className="divide-y divide-border/50">
-          <InfoRow label="Email" editing={editing} value={tiers.email || '--'}>
-            <Input type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} className="h-8 w-48 text-sm" />
-          </InfoRow>
-          <InfoRow label="Téléphone" editing={editing} value={tiers.tel || '--'}>
-            <Input value={formData.tel} onChange={(e) => setFormData(prev => ({ ...prev, tel: e.target.value }))} className="h-8 w-48 text-sm" />
-          </InfoRow>
-          <InfoRow label="Adresse" editing={editing} value={tiers.adresse || '--'}>
-            <Input value={formData.adresse} onChange={(e) => setFormData(prev => ({ ...prev, adresse: e.target.value }))} className="h-8 w-60 text-sm" />
-          </InfoRow>
-          <InfoRow label="Code postal" editing={editing} value={tiers.code_postal || '--'}>
-            <Input value={formData.code_postal} onChange={(e) => setFormData(prev => ({ ...prev, code_postal: e.target.value }))} className="h-8 w-48 text-sm" />
-          </InfoRow>
-          <InfoRow label="Ville" editing={editing} value={tiers.ville || '--'}>
-            <Input value={formData.ville} onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))} className="h-8 w-48 text-sm" />
-          </InfoRow>
-        </div>
-      </CollapsibleSection>
+        {/* Contact & Adresse */}
+        <CardBlock title="Contact & Adresse" icon={IdentificationCard}>
+          <FieldRow label="Email" editing={editing} value={tiers.email || '—'}>
+            <Input type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+          <FieldRow label="Téléphone" editing={editing} value={tiers.tel || '—'}>
+            <Input value={formData.tel} onChange={(e) => setFormData(prev => ({ ...prev, tel: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+          <FieldRow label="Adresse" editing={editing} value={tiers.adresse || '—'}>
+            <Input value={formData.adresse} onChange={(e) => setFormData(prev => ({ ...prev, adresse: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+          <FieldRow label="Code postal" editing={editing} value={tiers.code_postal || '—'}>
+            <Input value={formData.code_postal} onChange={(e) => setFormData(prev => ({ ...prev, code_postal: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+          <FieldRow label="Ville" editing={editing} value={tiers.ville || '—'} last>
+            <Input value={formData.ville} onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+        </CardBlock>
+      </div>
 
       {/* Lots table — propriétaire only */}
       <LotsTable
@@ -262,25 +254,12 @@ export function TiersDetailPage() {
       {/* Fix 2: US-809 — Lots en gestion (mandataire) */}
       <LotsMandataireSection tiersId={tiers.id} tiersName={displayName} />
 
-      {/* Fix 1: US-589 — Organisations liées (for physique) / Membres (for morale) */}
+      {/* Organisations liées (physique) / Membres (morale) */}
       {tiers.type_personne === 'physique' && (
-        <OrganisationsSection
-          tiersId={tiers.id}
-          organisations={organisations}
-          isArchived={tiers.est_archive}
-          open={openSections.organisations}
-          onToggle={() => toggleSection('organisations')}
-        />
+        <OrganisationsSection tiersId={tiers.id} organisations={organisations} isArchived={tiers.est_archive} />
       )}
-
       {tiers.type_personne === 'morale' && (
-        <MembresSection
-          tiersId={tiers.id}
-          membres={membres}
-          isArchived={tiers.est_archive}
-          open={openSections.organisations}
-          onToggle={() => toggleSection('organisations')}
-        />
+        <MembresSection tiersId={tiers.id} membres={membres} isArchived={tiers.est_archive} />
       )}
 
       {/* US-806/807/809: Missions section */}
@@ -305,36 +284,39 @@ export function TiersDetailPage() {
   )
 }
 
-function CollapsibleSection({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+/* ═══ CardBlock (same as lot detail) ═══ */
+function CardBlock({ title, icon: Icon, children, defaultOpen = true }: { title: string; icon: React.ElementType; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
-        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {open ? <CaretUp className="h-4 w-4 text-muted-foreground" /> : <CaretDown className="h-4 w-4 text-muted-foreground" />}
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-muted/10 transition-colors cursor-pointer">
+        <Icon className="h-4 w-4 text-muted-foreground/50" />
+        <span className="text-[13px] font-bold text-foreground">{title}</span>
+        <div className="ml-auto">{open ? <CaretUp className="h-3.5 w-3.5 text-muted-foreground/30" /> : <CaretDown className="h-3.5 w-3.5 text-muted-foreground/30" />}</div>
       </button>
-      {open && <div className="border-t border-border/50">{children}</div>}
+      {open && <div className="px-6 pb-5">{children}</div>}
     </div>
   )
 }
 
-function InfoRow({ label, value, editing, children }: { label: string; value: React.ReactNode; editing: boolean; children: React.ReactNode }) {
+/* ═══ FieldRow (same as lot detail) ═══ */
+function FieldRow({ label, value, editing, children, last, mono }: { label: string; value: React.ReactNode; editing: boolean; children: React.ReactNode; last?: boolean; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-5 py-4">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      {editing ? <div>{children}</div> : <span className="text-sm font-medium text-foreground">{value}</span>}
+    <div className={`flex items-center justify-between py-3 ${last ? '' : 'border-b border-border/30'}`}>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      {editing ? <div className="w-56">{children}</div> : <span className={`text-[13px] font-medium text-foreground ${mono ? 'font-mono' : ''}`}>{value}</span>}
     </div>
   )
 }
 
 /* ── Fix 1: US-589 — Organisations section (for physique tiers) ── */
-function OrganisationsSection({ tiersId, organisations, isArchived, open, onToggle }: {
+function OrganisationsSection({ tiersId, organisations, isArchived }: {
   tiersId: string
   organisations: Array<{ tiers_id: string; nom: string; raison_sociale?: string; fonction?: string; est_principal: boolean }>
   isArchived: boolean
-  open: boolean
-  onToggle: () => void
 }) {
   const navigate = useNavigate()
+  const [open, setOpen] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const unlinkMutation = useUnlinkOrganisation()
 
@@ -348,9 +330,10 @@ function OrganisationsSection({ tiersId, organisations, isArchived, open, onTogg
 
   return (
     <>
-      <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
-        <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
-          <h2 className="text-sm font-semibold text-foreground">Organisations ({organisations.length})</h2>
+      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+        <button onClick={() => setOpen(v => !v)} className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-muted/10 transition-colors cursor-pointer">
+          <BuildingOffice className="h-4 w-4 text-muted-foreground/50" />
+          <span className="text-[13px] font-bold text-foreground">Organisations ({organisations.length})</span>
           <div className="flex items-center gap-2">
             {!isArchived && (
               <Button
@@ -410,14 +393,13 @@ function OrganisationsSection({ tiersId, organisations, isArchived, open, onTogg
 }
 
 /* ── Fix 1: US-589 — Membres section (for morale tiers) ── */
-function MembresSection({ tiersId, membres, isArchived, open, onToggle }: {
+function MembresSection({ tiersId, membres, isArchived }: {
   tiersId: string
   membres: Array<{ tiers_id: string; nom: string; prenom?: string; fonction?: string; est_principal: boolean }>
   isArchived: boolean
-  open: boolean
-  onToggle: () => void
 }) {
   const navigate = useNavigate()
+  const [open, setOpen] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const unlinkMutation = useUnlinkOrganisation()
 
@@ -433,9 +415,10 @@ function MembresSection({ tiersId, membres, isArchived, open, onToggle }: {
 
   return (
     <>
-      <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
-        <button onClick={onToggle} className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200">
-          <h2 className="text-sm font-semibold text-foreground">Membres ({membres.length})</h2>
+      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+        <button onClick={() => setOpen(v => !v)} className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-muted/10 transition-colors cursor-pointer">
+          <User className="h-4 w-4 text-muted-foreground/50" />
+          <span className="text-[13px] font-bold text-foreground">Membres ({membres.length})</span>
           <div className="flex items-center gap-2">
             {!isArchived && (
               <Button
@@ -704,7 +687,7 @@ function LotsTable({ lotsProprietaire, tiersId, tiersName, isArchived }: {
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
+      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised">
         <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Lots en propriété ({allLots.length})</h2>
           {!isArchived && (
@@ -794,7 +777,7 @@ function LotsMandataireSection({ tiersId, tiersName }: { tiersId: string; tiersN
   }
 
   return (
-    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
       <button
         onClick={() => setOpen(prev => !prev)}
         className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-accent/50 transition-colors duration-200"
@@ -855,7 +838,7 @@ function MissionsSection({ tiersId }: { tiersId: string }) {
   if (isLoading || !missions || missions.length === 0) return null
 
   return (
-    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
       <div className="px-5 py-4 border-b border-border/60">
         <h2 className="text-sm font-semibold text-foreground">Missions ({missions.length})</h2>
       </div>
@@ -900,7 +883,7 @@ function EdlHistorySection({ tiersId }: { tiersId: string }) {
   }
 
   return (
-    <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
       <div className="px-5 py-4 border-b border-border/60">
         <h2 className="text-sm font-semibold text-foreground">Historique EDL ({edls?.length ?? 0})</h2>
       </div>

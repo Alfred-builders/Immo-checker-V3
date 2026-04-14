@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut, ei.mission_id,
               ei.date_realisation, ei.date_signature, ei.created_at,
-              ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal
+              ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        ${where}
        ORDER BY ei.created_at DESC
@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
         ei.mission_id, ei.lot_id,
         ei.date_realisation, ei.date_signature,
         ei.code_acces, ei.commentaire_general, ei.created_at,
-        ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal,
+        ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification,
         (SELECT json_agg(json_build_object(
           'tiers_id', el.tiers_id,
           'nom', t.nom,
@@ -76,6 +76,26 @@ router.get('/:id', async (req, res) => {
     )
     if (result.rows.length === 0) throw new NotFoundError('EDL')
     sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// GET /api/v1/edl-inventaires/:id/pdf — redirect to pdf_url (signed EDLs only)
+router.get('/:id/pdf', async (req, res) => {
+  try {
+    const workspaceId = req.workspaceId!
+    const result = await query(
+      `SELECT statut, pdf_url FROM edl_inventaire WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+    if (result.rows.length === 0) throw new NotFoundError('EDL')
+    const { statut, pdf_url } = result.rows[0]
+    if (statut !== 'signe' || !pdf_url) {
+      sendError(res, new (await import('../../utils/errors.js')).AppError('PDF disponible uniquement pour les EDL signés', 'EDL_NOT_SIGNED', 404))
+      return
+    }
+    res.redirect(302, pdf_url)
   } catch (error) {
     sendError(res, error)
   }

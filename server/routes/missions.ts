@@ -446,6 +446,14 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createMissionSch
       )
     }
 
+    // Dispatch mission.creee webhook
+    setImmediate(() => dispatchWebhook(workspaceId, 'mission.creee', {
+      mission_id: mission.id,
+      reference: mission.reference,
+      lot_id: mission.lot_id,
+      statut: mission.statut,
+    }))
+
     sendSuccess(res, mission, 201)
   } catch (error) {
     sendError(res, error)
