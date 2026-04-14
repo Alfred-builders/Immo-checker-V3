@@ -24,10 +24,16 @@ const BATIMENT_FIELDS = [
 
 const LOT_FIELDS = [
   { id: 'designation', label: 'Désignation lot', required: true },
-  { id: 'type_bien', label: 'Type de bien', required: true },
+  { id: 'type_bien', label: 'Type de bien', required: false },
+  { id: 'rue', label: 'Rue (bâtiment)', required: true },
+  { id: 'code_postal', label: 'Code postal (bâtiment)', required: true },
+  { id: 'ville', label: 'Ville (bâtiment)', required: true },
+  { id: 'complement', label: 'Complément adresse', required: false },
+  { id: 'designation_batiment', label: 'Nom bâtiment', required: false },
+  { id: 'type_batiment', label: 'Type bâtiment', required: false },
   { id: 'etage', label: 'Étage', required: false },
   { id: 'emplacement_palier', label: 'Emplacement palier', required: false },
-  { id: 'surface', label: 'Surface (m2)', required: false },
+  { id: 'surface', label: 'Surface (m²)', required: false },
   { id: 'nb_pieces', label: 'Nombre de pièces', required: false },
   { id: 'meuble', label: 'Meublé (oui/non)', required: false },
   { id: 'reference_interne', label: 'Référence interne', required: false },
@@ -35,6 +41,8 @@ const LOT_FIELDS = [
   { id: 'ges_classe', label: 'GES (A-G)', required: false },
   { id: 'num_cave', label: 'N° cave', required: false },
   { id: 'num_parking', label: 'N° parking', required: false },
+  { id: 'nb_etages', label: 'Nb étages (bâtiment)', required: false },
+  { id: 'annee_construction', label: 'Année construction', required: false },
   { id: 'commentaire', label: 'Commentaire', required: false },
 ]
 
@@ -100,6 +108,8 @@ function autoMatch(csvHeader: string, targetFields: { id: string; label: string 
     num_parking: ['parking', 'numparking', 'numeroparking'],
     emplacement_palier: ['emplacement', 'palier', 'porte', 'emplacementpalier'],
     commentaire: ['commentaire', 'comment', 'note', 'notes', 'observation'],
+    designation_batiment: ['nombatiment', 'designationbatiment', 'batiment', 'residence'],
+    type_batiment: ['typebatiment'],
   }
 
   for (const field of targetFields) {

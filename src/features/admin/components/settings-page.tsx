@@ -79,15 +79,14 @@ export function SettingsPage() {
             <div className="pt-4 mt-4 border-t border-border/60">
               <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
               {NAV_LINKS.map(({ label, icon: Icon, href }) => (
-                <div
+                <a
                   key={href}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none"
-                  title="À venir"
+                  href={href}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1">{label}</span>
-                  <span className="text-[10px] font-medium text-muted-foreground/50 bg-muted/60 px-1.5 py-0.5 rounded">À venir</span>
-                </div>
+                </a>
               ))}
             </div>
           </div>

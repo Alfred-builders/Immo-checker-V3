@@ -15,6 +15,7 @@ import {
 } from 'src/components/ui/tooltip'
 import { useMissions, useMissionStats, useWorkspaceTechnicians } from '../api'
 import { ColumnConfig, useColumnPreferences, type ColumnDef } from 'src/components/shared/column-config'
+import { DynamicFilter, type FilterField, type ActiveFilter } from 'src/components/shared/dynamic-filter'
 import { ResizeHandle, useResizableColumns } from 'src/components/shared/resizable-columns'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { CreateMissionModal } from './create-mission-modal'
@@ -41,6 +42,25 @@ const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'statut_rdv', label: 'Statut RDV', defaultVisible: true },
   { id: 'invitation', label: 'Invitation', defaultVisible: false },
   { id: 'created_at', label: 'Créée le', defaultVisible: false },
+]
+
+const MISSION_FILTER_FIELDS: FilterField[] = [
+  { id: 'reference', label: 'Référence', type: 'text' },
+  { id: 'lot_designation', label: 'Lot', type: 'text' },
+  { id: 'technicien_nom', label: 'Technicien', type: 'text' },
+  { id: 'statut', label: 'Statut', type: 'select', options: [
+    { value: 'planifiee', label: 'Planifiée' },
+    { value: 'assignee', label: 'Assignée' },
+    { value: 'terminee', label: 'Terminée' },
+    { value: 'annulee', label: 'Annulée' },
+  ]},
+  { id: 'statut_rdv', label: 'Statut RDV', type: 'select', options: [
+    { value: 'a_confirmer', label: 'À confirmer' },
+    { value: 'confirme', label: 'Confirmé' },
+    { value: 'reporte', label: 'Reporté' },
+  ]},
+  { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean' },
+  { id: 'commentaire', label: 'Commentaire', type: 'text' },
 ]
 
 type ViewMode = 'table' | 'kanban' | 'calendrier' | 'carte'
@@ -81,6 +101,7 @@ export function MissionsPage() {
   const [techFilter, setTechFilter] = useState<string>('all')
   const [statutFilter, setStatutFilter] = useState<string>('all')
   const [rdvFilter, setRdvFilter] = useState<string>('all')
+  const [dynamicFilters, setDynamicFilters] = useState<ActiveFilter[]>([])
   const [pendingFilter, setPendingFilter] = useState(false)
   const [view, setViewState] = useState<ViewMode>(() => {
     const saved = sessionStorage.getItem('missions_view')
@@ -112,7 +133,25 @@ export function MissionsPage() {
     ...periodDates,
   })
 
-  const missions = missionsData?.data ?? []
+  const missionsRaw = missionsData?.data ?? []
+
+  // Apply dynamic filters client-side
+  const missions = useMemo(() => {
+    if (dynamicFilters.length === 0) return missionsRaw
+    return missionsRaw.filter(m => {
+      for (const f of dynamicFilters) {
+        const val = String((m as any)[f.field] ?? '')
+        switch (f.operator) {
+          case 'contains': if (!val.toLowerCase().includes(f.value.toLowerCase())) return false; break
+          case 'equals': if (val.toLowerCase() !== f.value.toLowerCase()) return false; break
+          case 'not_equals': if (val.toLowerCase() === f.value.toLowerCase()) return false; break
+          case 'starts_with': if (!val.toLowerCase().startsWith(f.value.toLowerCase())) return false; break
+          default: break
+        }
+      }
+      return true
+    })
+  }, [missionsRaw, dynamicFilters])
   const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('missions_list', MISSION_COLUMNS)
   const { colWidths, onResizeStart, onResize } = useResizableColumns({
     reference: 120, lot: 220, date: 110, types: 130, technicien: 140, statut: 110, statut_rdv: 90, invitation: 90, created_at: 90,
@@ -280,6 +319,8 @@ export function MissionsPage() {
             <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
+
+        <DynamicFilter fields={MISSION_FILTER_FIELDS} filters={dynamicFilters} onChange={setDynamicFilters} />
 
         <div className="flex-1" />
 
