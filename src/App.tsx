@@ -2,8 +2,17 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Component, useEffect, type ReactNode, type ErrorInfo } from 'react'
 import { AuthProvider, useAuth } from './hooks/use-auth'
 import { RequireRole } from './components/shared/require-role'
+import { RequireSuperAdmin } from './components/shared/require-super-admin'
 import { AuthLayout } from './layouts/auth-layout'
 import { MainLayout } from './layouts/main-layout'
+import { SuperAdminLayout } from './features/super-admin/components/super-admin-layout'
+import { SuperAdminDashboardPage } from './features/super-admin/components/dashboard-page'
+import { SuperAdminWorkspacesListPage } from './features/super-admin/components/workspaces-list-page'
+import { SuperAdminWorkspaceDetailPage } from './features/super-admin/components/workspace-detail-page'
+import { SuperAdminUsersListPage } from './features/super-admin/components/users-list-page'
+import { SuperAdminUserDetailPage } from './features/super-admin/components/user-detail-page'
+import { SuperAdminAuditLogPage } from './features/super-admin/components/audit-log-page'
+import { OnboardingPage } from './features/onboarding/components/onboarding-page'
 import { LoginPage } from './features/auth/components/login-page'
 import { RegisterPage } from './features/auth/components/register-page'
 import { ForgotPasswordPage } from './features/auth/components/forgot-password-page'
@@ -61,6 +70,7 @@ function AppRoutes() {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       </Route>
       <Route path="/workspace-select" element={<WorkspaceSelectPage />} />
+      <Route path="/app/onboarding" element={<RequireRole roles={['admin']}><OnboardingPage /></RequireRole>} />
       <Route path="/vibes" element={<VibesSelection />} />
       <Route path="/shadcn-dashboard" element={<ShadcnDashboard />} />
 
@@ -82,6 +92,17 @@ function AppRoutes() {
         <Route path="/app/missions" element={<MissionsPage />} />
         <Route path="/app/missions/:id" element={<MissionDetailPage />} />
         <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      </Route>
+
+      {/* Super-admin (gated by is_super_admin flag) */}
+      <Route element={<RequireSuperAdmin><SuperAdminLayout /></RequireSuperAdmin>}>
+        <Route path="/super-admin" element={<Navigate to="/super-admin/dashboard" replace />} />
+        <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
+        <Route path="/super-admin/workspaces" element={<SuperAdminWorkspacesListPage />} />
+        <Route path="/super-admin/workspaces/:id" element={<SuperAdminWorkspaceDetailPage />} />
+        <Route path="/super-admin/users" element={<SuperAdminUsersListPage />} />
+        <Route path="/super-admin/users/:id" element={<SuperAdminUserDetailPage />} />
+        <Route path="/super-admin/audit-log" element={<SuperAdminAuditLogPage />} />
       </Route>
 
       {/* Default redirect */}

@@ -1,9 +1,32 @@
 import { Router } from 'express'
 import { query } from '../../db/index.js'
 import { sendSuccess, sendError } from '../../utils/response.js'
-import { NotFoundError } from '../../utils/errors.js'
+import { NotFoundError, AppError } from '../../utils/errors.js'
+import { presignPdfUrl } from '../../services/s3-presign-service.js'
 
 const router = Router()
+
+// Hide URLs on non-signed EDL and pre-sign PDF URLs on signed ones.
+function projectEdlUrls<T extends Record<string, unknown>>(row: T): T {
+  if (!row) return row
+  const isSigned = row.statut === 'signe'
+  if (!isSigned) {
+    return {
+      ...row,
+      pdf_url: null,
+      web_url: null,
+      pdf_url_legal: null,
+      web_url_legal: null,
+      url_verification: null,
+    }
+  }
+  return {
+    ...row,
+    pdf_url: presignPdfUrl(row.pdf_url as string | null),
+    pdf_url_legal: presignPdfUrl(row.pdf_url_legal as string | null),
+    // web_url, web_url_legal, url_verification are persistent (per spec)
+  }
+}
 
 // GET /api/v1/edl-inventaires
 router.get('/', async (req, res) => {
@@ -23,7 +46,7 @@ router.get('/', async (req, res) => {
     params.push(limit + 1)
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut, ei.mission_id,
-              ei.date_realisation, ei.date_signature, ei.created_at,
+              ei.date_realisation, ei.date_signature, ei.motif_infructueux, ei.created_at,
               ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        ${where}
@@ -33,7 +56,7 @@ router.get('/', async (req, res) => {
     )
 
     const has_more = result.rows.length > limit
-    const rows = has_more ? result.rows.slice(0, limit) : result.rows
+    const rows = (has_more ? result.rows.slice(0, limit) : result.rows).map(projectEdlUrls)
     const nextCursor = has_more ? rows[rows.length - 1].id : undefined
 
     sendSuccess(res, { data: rows, meta: { cursor: nextCursor, has_more } })
@@ -51,7 +74,7 @@ router.get('/:id', async (req, res) => {
         ei.id, ei.type, ei.sens, ei.statut,
         ei.mission_id, ei.lot_id,
         ei.date_realisation, ei.date_signature,
-        ei.code_acces, ei.commentaire_general, ei.created_at,
+        ei.code_acces, ei.commentaire_general, ei.motif_infructueux, ei.created_at,
         ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification,
         (SELECT json_agg(json_build_object(
           'tiers_id', el.tiers_id,
@@ -75,13 +98,13 @@ router.get('/:id', async (req, res) => {
       [req.params.id, workspaceId]
     )
     if (result.rows.length === 0) throw new NotFoundError('EDL')
-    sendSuccess(res, result.rows[0])
+    sendSuccess(res, projectEdlUrls(result.rows[0]))
   } catch (error) {
     sendError(res, error)
   }
 })
 
-// GET /api/v1/edl-inventaires/:id/pdf — redirect to pdf_url (signed EDLs only)
+// GET /api/v1/edl-inventaires/:id/pdf — redirect to pre-signed pdf_url (signed EDLs only)
 router.get('/:id/pdf', async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
@@ -92,10 +115,10 @@ router.get('/:id/pdf', async (req, res) => {
     if (result.rows.length === 0) throw new NotFoundError('EDL')
     const { statut, pdf_url } = result.rows[0]
     if (statut !== 'signe' || !pdf_url) {
-      sendError(res, new (await import('../../utils/errors.js')).AppError('PDF disponible uniquement pour les EDL signés', 'EDL_NOT_SIGNED', 404))
+      sendError(res, new AppError('PDF disponible uniquement pour les EDL signés', 'EDL_NOT_SIGNED', 404))
       return
     }
-    res.redirect(302, pdf_url)
+    res.redirect(302, presignPdfUrl(pdf_url)!)
   } catch (error) {
     sendError(res, error)
   }

@@ -67,6 +67,46 @@ router.get('/current', async (req, res) => {
   }
 })
 
+// GET /api/workspaces/current/onboarding-checklist — Workspace-level config progress
+router.get('/current/onboarding-checklist', async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+    const result = await query(
+      `SELECT
+         w.siret, w.adresse, w.email, w.logo_url, w.couleur_primaire,
+         (SELECT COUNT(*)::int FROM batiment b WHERE b.workspace_id = $1 AND b.est_archive = false) AS batiments_count,
+         (SELECT COUNT(*)::int FROM invitation i WHERE i.workspace_id = $1) AS invitations_count,
+         (SELECT COUNT(*)::int FROM workspace_user wu WHERE wu.workspace_id = $1 AND wu.est_actif = true) AS members_count
+       FROM workspace w WHERE w.id = $1`,
+      [workspaceId]
+    )
+    if (result.rows.length === 0) {
+      sendError(res, { status: 404, message: 'Workspace introuvable', code: 'NOT_FOUND' })
+      return
+    }
+    const w = result.rows[0]
+    const identity_done = !!(w.siret || w.adresse || w.email)
+    const branding_done = !!(w.logo_url || w.couleur_primaire)
+    const batiments_done = (w.batiments_count ?? 0) > 0
+    const team_done = (w.invitations_count ?? 0) > 0 || (w.members_count ?? 0) > 1
+    const items = [
+      { id: 'identity', label: 'Identité légale', href: '/app/parametres?tab=general', done: identity_done },
+      { id: 'branding', label: 'Logo & couleurs', href: '/app/parametres?tab=general', done: branding_done },
+      { id: 'batiments', label: 'Ajouter des bâtiments', href: '/app/patrimoine', done: batiments_done },
+      { id: 'team', label: 'Inviter votre équipe', href: '/app/parametres?tab=users', done: team_done },
+    ]
+    const done_count = items.filter((i) => i.done).length
+    sendSuccess(res, {
+      items,
+      done_count,
+      total: items.length,
+      all_done: done_count === items.length,
+    })
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
 // PATCH /api/workspaces/current — Update current workspace (admin only)
 router.patch('/current', requireRole('admin'), async (req, res) => {
   try {

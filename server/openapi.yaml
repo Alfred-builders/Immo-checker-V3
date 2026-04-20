@@ -219,30 +219,35 @@ components:
           format: date-time
           nullable: true
           example: "2026-04-18T11:00:00Z"
+        motif_infructueux:
+          type: string
+          nullable: true
+          description: Motif renseigné lorsque l'EDL est infructueux (absence locataire, refus, etc.)
+          example: null
         pdf_url:
           type: string
           nullable: true
-          description: URL du PDF EDL standard
-          example: "https://example.com/edl-abc123.pdf"
+          description: URL pré-signée (24h) du PDF EDL standard. Non-null uniquement si `statut = signe`.
+          example: "https://example.com/edl-abc123.pdf?exp=1743696000&sig=..."
         web_url:
           type: string
           nullable: true
-          description: URL de consultation web
+          description: URL persistante de consultation web. Non-null uniquement si `statut = signe`.
           example: "https://example.com/edl-abc123"
         pdf_url_legal:
           type: string
           nullable: true
-          description: URL du PDF version légale
+          description: URL pré-signée (24h) du PDF version légale. Non-null uniquement si `statut = signe`.
           example: null
         web_url_legal:
           type: string
           nullable: true
-          description: URL de consultation légale
+          description: URL persistante de consultation légale. Non-null uniquement si `statut = signe`.
           example: null
         url_verification:
           type: string
           nullable: true
-          description: Page publique de vérification (QR code, scellé électronique)
+          description: Page publique de vérification (QR code, scellé électronique). Non-null uniquement si `statut = signe`.
           example: null
         locataires:
           type: array
@@ -309,6 +314,25 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    Validation422:
+      description: Données invalides (champ manquant, format incorrect, valeur enum inconnue)
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: array
+                          items: { type: string }
+                        message:
+                          type: string
 
 paths:
   /missions:
@@ -415,12 +439,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mission'
-        '400':
-          description: Données invalides
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: Clé API en lecture seule
+        '422':
+          $ref: '#/components/responses/Validation422'
 
   /missions/{id}:
     get:
@@ -486,14 +510,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Mission'
-        '400':
-          description: Données invalides
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: Mission verrouillée (terminée ou annulée)
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Validation422'
 
     delete:
       summary: Annuler une mission
@@ -527,12 +551,12 @@ paths:
                 properties:
                   cancelled:
                     type: boolean
-        '400':
-          description: Motif manquant ou mission déjà annulée
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           description: Impossible d'annuler une mission avec des EDL signés
+        '422':
+          $ref: '#/components/responses/Validation422'
 
   /missions/{id}/edl-inventaires:
     get:
@@ -641,11 +665,18 @@ paths:
             format: uuid
       responses:
         '302':
-          description: Redirection vers l'URL PDF pré-signée (expire après 24h)
+          description: |
+            Redirection vers l'URL PDF pré-signée (expire après 24h).
+            Suivre la redirection renvoie un `Content-Type: application/pdf`.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: EDL introuvable ou non signé
+          description: EDL introuvable ou non signé (code `EDL_NOT_SIGNED`)
 
   /lots:
     get:
@@ -819,3 +850,9 @@ tags:
     description: Consulter les états des lieux et leurs documents
   - name: Référentiel
     description: Lots et bâtiments (lookup pour créer des missions)
+  - name: Webhooks
+    description: |
+      Configurer des webhooks pour recevoir les événements (`mission.creee`,
+      `mission.annulee`, `edl.signe`, …). La gestion se fait depuis
+      **Paramètres → API & Intégrations** (authentification session, pas clé API).
+      Voir `POST /api/webhooks` pour le schéma de payload.

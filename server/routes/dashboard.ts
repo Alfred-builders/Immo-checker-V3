@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { query } from '../db/index.js'
-import { verifyToken } from '../middleware/auth.js'
+import { verifyToken, requireRole } from '../middleware/auth.js'
 import { sendSuccess, sendError } from '../utils/response.js'
 
 const router = Router()
 router.use(verifyToken)
+// Dashboard back-office = admin + gestionnaire (techniciens have a separate tablet dashboard)
+router.use(requireRole('admin', 'gestionnaire'))
 
 // GET /api/dashboard/stats — Dashboard stat cards
 router.get('/stats', async (req, res) => {

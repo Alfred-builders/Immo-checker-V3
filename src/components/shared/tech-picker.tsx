@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { Check, MagnifyingGlass, UserPlus, User } from '@phosphor-icons/react'
+import { Check, MagnifyingGlass, UserPlus, User, WarningCircle } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
+import { useQueries } from '@tanstack/react-query'
 import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from 'src/components/ui/command'
 import { Button } from 'src/components/ui/button'
+import { api } from 'src/lib/api-client'
+import type { TechnicianConflicts } from 'src/features/missions/types'
 
 interface Technician {
   id: string
@@ -19,6 +22,10 @@ interface Props {
   placeholder?: string
   className?: string
   size?: 'sm' | 'default'
+  /** If provided, surfaces US-827 conflict hints (mission/indispo) for that date. */
+  date?: string
+  /** Mission being reassigned — its own technician assignment does not count as a conflict. */
+  excludeMissionId?: string
 }
 
 const AVATAR_COLORS = [
@@ -36,11 +43,51 @@ function getAvatarColor(id: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
-export function TechPicker({ technicians, value, onSelect, placeholder = 'Technicien...', className, size = 'default' }: Props) {
+/** US-827: fan-out conflict check for all technicians on a given date. */
+function useAllTechConflicts(
+  technicians: Technician[],
+  date: string | undefined,
+  excludeMissionId: string | undefined
+) {
+  const results = useQueries({
+    queries: technicians.map(t => ({
+      queryKey: ['tech-conflicts', t.id, date],
+      queryFn: () => api<TechnicianConflicts>(`/technicians/${t.id}/conflicts?date=${date}`),
+      enabled: !!date,
+      staleTime: 30_000,
+    })),
+  })
+
+  const map = new Map<string, { label: string; variant: 'indispo' | 'mission' } | null>()
+  technicians.forEach((t, i) => {
+    const c = results[i]?.data
+    if (!c) { map.set(t.id, null); return }
+    if (c.indisponibilites.length > 0) {
+      map.set(t.id, { label: 'Indisponible', variant: 'indispo' })
+      return
+    }
+    // Exclude the current mission from the conflict count when reassigning
+    const missions = excludeMissionId
+      ? c.missions.filter(m => m.id !== excludeMissionId)
+      : c.missions
+    if (missions.length > 0) {
+      map.set(t.id, { label: 'Déjà en mission', variant: 'mission' })
+      return
+    }
+    map.set(t.id, null)
+  })
+  return map
+}
+
+export function TechPicker({
+  technicians, value, onSelect, placeholder = 'Technicien...', className, size = 'default',
+  date, excludeMissionId,
+}: Props) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const selected = technicians.find(t => t.id === value)
   const displayName = selected ? `${selected.prenom} ${selected.nom}` : null
+  const conflicts = useAllTechConflicts(technicians, date, excludeMissionId)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,7 +111,7 @@ export function TechPicker({ technicians, value, onSelect, placeholder = 'Techni
           <MagnifyingGlass className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0 ml-2" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[260px] p-0 shadow-elevation-overlay" align="start">
+      <PopoverContent className="w-[280px] p-0 shadow-elevation-overlay" align="start">
         <Command className="bg-transparent">
           <div className="px-2 pt-2 pb-1">
             <CommandInput placeholder="Rechercher..." className="h-8 text-sm rounded-lg" />
@@ -79,12 +126,14 @@ export function TechPicker({ technicians, value, onSelect, placeholder = 'Techni
                 const isSelected = value === t.id
                 const initials = `${t.prenom[0]}${t.nom[0]}`.toUpperCase()
                 const colorClass = getAvatarColor(t.id)
+                const conflict = conflicts.get(t.id)
+                const dimmed = conflict?.variant === 'indispo'
                 return (
                   <CommandItem
                     key={t.id}
                     value={`${t.prenom} ${t.nom} ${t.email || ''}`}
                     onSelect={() => { onSelect(t.id); setOpen(false) }}
-                    className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`}
+                    className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-primary/5' : ''} ${dimmed ? 'opacity-60' : ''}`}
                   >
                     <div className={`h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
                       {initials}
@@ -93,6 +142,16 @@ export function TechPicker({ technicians, value, onSelect, placeholder = 'Techni
                       <div className="text-[13px] font-medium truncate">{t.prenom} {t.nom}</div>
                       {t.email && <div className="text-[10px] text-muted-foreground/50 truncate">{t.email}</div>}
                     </div>
+                    {conflict && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 flex items-center gap-0.5 ${
+                        conflict.variant === 'mission'
+                          ? 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                          : 'bg-muted/60 text-muted-foreground'
+                      }`}>
+                        {conflict.variant === 'mission' && <WarningCircle className="h-2.5 w-2.5" weight="fill" />}
+                        {conflict.label}
+                      </span>
+                    )}
                     {isSelected && <Check className="h-4 w-4 text-primary shrink-0" weight="bold" />}
                   </CommandItem>
                 )

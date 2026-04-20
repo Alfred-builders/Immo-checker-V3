@@ -8,6 +8,8 @@ import { NotFoundError, AppError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
+// Back-office only: techniciens have no access to patrimoine (webapp uses admin/gestionnaire roles)
+router.use(requireRole('admin', 'gestionnaire'))
 
 // GET /api/batiments — List buildings with search, filters, pagination
 router.get('/', async (req, res) => {

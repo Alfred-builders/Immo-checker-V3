@@ -8,6 +8,7 @@ import { NotFoundError, AppError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
+router.use(requireRole('admin', 'gestionnaire'))
 
 // GET /api/tiers — List tiers with search, filters, pagination
 router.get('/', async (req, res) => {

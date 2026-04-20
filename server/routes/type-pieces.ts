@@ -8,6 +8,7 @@ import { NotFoundError, AppError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
+router.use(requireRole('admin', 'gestionnaire'))
 
 // Enums
 const categoriePieceEnum = z.enum([

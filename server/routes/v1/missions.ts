@@ -5,8 +5,24 @@ import { requireWriteScope } from '../../middleware/api-key-auth.js'
 import { sendSuccess, sendError } from '../../utils/response.js'
 import { NotFoundError, AppError } from '../../utils/errors.js'
 import { dispatchWebhook } from '../../services/webhook-service.js'
+import { presignPdfUrl } from '../../services/s3-presign-service.js'
 
 const router = Router()
+
+// Null out URLs on non-signed EDL; pre-sign PDF URLs on signed ones (US-601).
+function projectEdlRows<T extends Record<string, unknown>>(edls: T[] | null): T[] | null {
+  if (!Array.isArray(edls)) return edls
+  return edls.map(e => {
+    if (e.statut !== 'signe') {
+      return { ...e, pdf_url: null, web_url: null, pdf_url_legal: null, web_url_legal: null, url_verification: null }
+    }
+    return {
+      ...e,
+      pdf_url: presignPdfUrl(e.pdf_url as string | null),
+      pdf_url_legal: presignPdfUrl(e.pdf_url_legal as string | null),
+    }
+  })
+}
 
 const createSchema = z.object({
   lot_id: z.string().uuid(),
@@ -87,7 +103,8 @@ router.get('/:id', async (req, res) => {
               json_build_object('id', l.id, 'designation', l.designation, 'type_bien', l.type_bien,
                 'etage', l.etage, 'surface', l.surface) AS lot,
               (SELECT json_agg(json_build_object('id', ei.id, 'type', ei.type, 'sens', ei.sens,
-                'statut', ei.statut, 'pdf_url', ei.pdf_url, 'web_url', ei.web_url,
+                'statut', ei.statut, 'motif_infructueux', ei.motif_infructueux,
+                'pdf_url', ei.pdf_url, 'web_url', ei.web_url,
                 'pdf_url_legal', ei.pdf_url_legal, 'web_url_legal', ei.web_url_legal,
                 'url_verification', ei.url_verification))
                FROM edl_inventaire ei WHERE ei.mission_id = m.id) AS edls
@@ -97,7 +114,9 @@ router.get('/:id', async (req, res) => {
       [req.params.id, workspaceId]
     )
     if (result.rows.length === 0) throw new NotFoundError('Mission')
-    sendSuccess(res, result.rows[0])
+    const mission = result.rows[0]
+    mission.edls = projectEdlRows(mission.edls)
+    sendSuccess(res, mission)
   } catch (error) {
     sendError(res, error)
   }
@@ -115,14 +134,14 @@ router.get('/:id/edl-inventaires', async (req, res) => {
 
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut,
-              ei.date_realisation, ei.date_signature, ei.created_at,
+              ei.date_realisation, ei.date_signature, ei.motif_infructueux, ei.created_at,
               ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        WHERE ei.mission_id = $1 AND ei.workspace_id = $2
        ORDER BY ei.created_at ASC`,
       [req.params.id, workspaceId]
     )
-    sendSuccess(res, result.rows)
+    sendSuccess(res, projectEdlRows(result.rows))
   } catch (error) {
     sendError(res, error)
   }

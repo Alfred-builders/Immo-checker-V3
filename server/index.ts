@@ -5,6 +5,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import authRoutes from './routes/auth.js'
+import userRoutes from './routes/users.js'
+import superAdminRoutes from './routes/super-admin/index.js'
 import batimentRoutes from './routes/batiments.js'
 import lotRoutes from './routes/lots.js'
 import preferenceRoutes from './routes/preferences.js'
@@ -21,6 +23,7 @@ import dashboardRoutes from './routes/dashboard.js'
 import apiKeyRoutes from './routes/api-keys.js'
 import webhookRoutes from './routes/webhooks.js'
 import notificationRoutes from './routes/notifications.js'
+import searchRoutes from './routes/search.js'
 import docsRouter from './routes/docs.js'
 import v1MissionsRouter from './routes/v1/missions.js'
 import v1EdlRouter from './routes/v1/edl.js'
@@ -62,6 +65,8 @@ app.get('/api/health', (_req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/super-admin', superAdminRoutes)
 app.use('/api/batiments', batimentRoutes)
 app.use('/api/lots', lotRoutes)
 app.use('/api/preferences', preferenceRoutes)
@@ -80,6 +85,7 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/api-keys', apiKeyRoutes)
 app.use('/api/webhooks', webhookRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/search', searchRoutes)
 app.use('/api/docs', docsRouter)
 
 // ── Public API v1 (API key auth + rate limit) ──

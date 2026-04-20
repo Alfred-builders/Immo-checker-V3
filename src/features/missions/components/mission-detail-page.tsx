@@ -13,6 +13,7 @@ import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
+import { TechPicker } from 'src/components/shared/tech-picker'
 import { useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateCle, useDeleteCle, useAddCle, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission } from '../api'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { CancelMissionModal } from './cancel-mission-modal'
@@ -357,10 +358,14 @@ export function MissionDetailPage() {
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span>
               </div>
               {editing && !isLocked && (
-                <Select onValueChange={handleAssignTechnician}>
-                  <SelectTrigger className="h-10"><SelectValue placeholder="Changer de technicien..." /></SelectTrigger>
-                  <SelectContent>{technicians.map((t) => <SelectItem key={t.id} value={t.id}>{t.prenom} {t.nom}</SelectItem>)}</SelectContent>
-                </Select>
+                <TechPicker
+                  technicians={technicians}
+                  onSelect={handleAssignTechnician}
+                  placeholder="Changer de technicien..."
+                  className="w-full"
+                  date={formData.date_planifiee || (mission.date_planifiee || '').slice(0, 10)}
+                  excludeMissionId={mission.id}
+                />
               )}
             </div>
           ) : (
@@ -369,7 +374,16 @@ export function MissionDetailPage() {
                 <div className="h-11 w-11 rounded-xl bg-muted/50 flex items-center justify-center"><UserPlus className="h-5 w-5 text-muted-foreground/40" /></div>
                 <p className="text-[14px] text-muted-foreground/50 italic">Aucun technicien assigné</p>
               </div>
-              {!isLocked && <Select onValueChange={handleAssignTechnician}><SelectTrigger className="h-10"><SelectValue placeholder="Assigner un technicien..." /></SelectTrigger><SelectContent>{technicians.map((t) => <SelectItem key={t.id} value={t.id}>{t.prenom} {t.nom}</SelectItem>)}</SelectContent></Select>}
+              {!isLocked && (
+                <TechPicker
+                  technicians={technicians}
+                  onSelect={handleAssignTechnician}
+                  placeholder="Assigner un technicien..."
+                  className="w-full"
+                  date={formData.date_planifiee || (mission.date_planifiee || '').slice(0, 10)}
+                  excludeMissionId={mission.id}
+                />
+              )}
             </div>
           )}
         </CardBlock>

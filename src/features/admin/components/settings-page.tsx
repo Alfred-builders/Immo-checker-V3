@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple, ArrowSquareOut } from '@phosphor-icons/react'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../../../hooks/use-auth'
+import { usePermissions } from '../../../hooks/use-permissions'
 import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
@@ -13,6 +14,7 @@ import { Skeleton } from 'src/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { useWorkspaceDetails, useUpdateWorkspace, useWorkspaceUsers, useInvitations, useSendInvitation, useChangeRole, useSetUserStatus, useResendInvitation, useCancelInvitation, useApiKeys, useCreateApiKey, useRevokeApiKey, useUpdateApiKey, useWebhooks, useCreateWebhook, useUpdateWebhook, useDeleteWebhook, useTestWebhook, useWebhookDeliveries } from '../api'
 import type { WorkspaceUser, Invitation, ApiKey, CreateApiKeyResult, WebhookConfig, WebhookDelivery, WebhookEvent } from '../api'
+import { api } from '../../../lib/api-client'
 
 const ROLES = ['admin', 'gestionnaire', 'technicien'] as const
 type Role = (typeof ROLES)[number]
@@ -43,24 +45,36 @@ const NAV_LINKS: { label: string; icon: typeof BuildingOffice; href: string; des
 
 export function SettingsPage() {
   const [searchParams] = useSearchParams()
+  const { isAdmin, canManageTemplates } = usePermissions()
   const initialTab = (searchParams.get('tab') as Section | null) ?? 'general'
   const [section, setSection] = useState<Section>(
     initialTab === 'invitations' ? 'users' : ['general', 'users', 'api'].includes(initialTab) ? initialTab : 'general'
   )
   const navigate = useNavigate()
 
+  // Force non-admins back to a safe default section (their only content is Config EDL links on the side nav)
+  useEffect(() => {
+    if (!isAdmin && section !== 'general') {
+      setSection('general')
+    }
+  }, [isAdmin, section])
+
+  const visibleNavItems = isAdmin ? NAV_ITEMS : []
+
   return (
     <div className="px-8 py-6 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configurez votre workspace et gérez votre équipe</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isAdmin ? 'Configurez votre workspace et gérez votre équipe' : 'Configuration du référentiel EDL'}
+        </p>
       </div>
 
       <div className="flex gap-8">
         {/* Left sidebar nav */}
         <nav className="w-56 shrink-0">
           <div className="space-y-1 sticky top-20">
-            {NAV_ITEMS.map(({ key, label, icon: Icon }) => (
+            {visibleNavItems.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setSection(key)}
@@ -75,29 +89,67 @@ export function SettingsPage() {
               </button>
             ))}
 
-            {/* EPIC 4 sub-pages — coming soon */}
-            <div className="pt-4 mt-4 border-t border-border/60">
-              <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
-              {NAV_LINKS.map(({ label, icon: Icon, href }) => (
-                <div
-                  key={href}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none"
-                  title="À venir"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="flex-1">{label}</span>
-                  <span className="text-[10px] font-medium text-muted-foreground/50 bg-muted/60 px-1.5 py-0.5 rounded">À venir</span>
-                </div>
-              ))}
-            </div>
+            {/* EPIC 4 sub-pages — Config EDL — disabled until backend + UI are fully shipped */}
+            {canManageTemplates && (
+              <div className={visibleNavItems.length > 0 ? 'pt-4 mt-4 border-t border-border/60' : ''}>
+                <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
+                {NAV_LINKS.map(({ label, icon: Icon, href }) => (
+                  <div
+                    key={href}
+                    title="Bientôt disponible"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none"
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">{label}</span>
+                    <span className="text-[9px] font-semibold tracking-wider uppercase bg-muted/50 text-muted-foreground/60 px-1.5 py-0.5 rounded">À venir</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </nav>
 
         {/* Content area */}
         <div className="flex-1 min-w-0">
-          {section === 'general' && <GeneralSection />}
-          {section === 'users' && <MembresSection />}
-          {section === 'api' && <ApiSection />}
+          {isAdmin && section === 'general' && <GeneralSection />}
+          {isAdmin && section === 'users' && <MembresSection />}
+          {isAdmin && section === 'api' && <ApiSection />}
+          {!isAdmin && <GestionnaireEmptyState />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GestionnaireEmptyState() {
+  const tiles = [
+    { label: 'Templates', icon: GridFour },
+    { label: 'Catalogue', icon: BookOpen },
+    { label: 'Critères', icon: Sliders },
+  ]
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised p-8">
+      <div className="flex flex-col items-center text-center max-w-md mx-auto">
+        <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+          <Sliders className="h-5 w-5 text-primary" />
+        </div>
+        <h3 className="text-base font-semibold text-foreground mb-2">Configuration du référentiel EDL</h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          Bientôt, vous pourrez configurer les pièces, items et critères utilisés lors des états des lieux.
+          Ces modules sont en cours de développement.
+        </p>
+        <div className="grid grid-cols-3 gap-3 w-full">
+          {tiles.map(({ label, icon: Icon }) => (
+            <div
+              key={label}
+              title="Bientôt disponible"
+              className="relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/40 bg-muted/10 cursor-not-allowed select-none"
+            >
+              <Icon className="h-5 w-5 text-muted-foreground/40" />
+              <span className="text-xs font-medium text-muted-foreground/60">{label}</span>
+              <span className="absolute top-1.5 right-1.5 text-[8px] font-semibold tracking-wider uppercase bg-muted/60 text-muted-foreground/60 px-1 py-0.5 rounded">À venir</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -109,6 +161,7 @@ function GeneralSection() {
   const { data: ws, isLoading } = useWorkspaceDetails()
   const updateMutation = useUpdateWorkspace()
   const { refreshWorkspace } = useAuth()
+  const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [nom, setNom] = useState('')
   const [siret, setSiret] = useState('')
@@ -168,6 +221,18 @@ function GeneralSection() {
     } catch (err: any) { toast.error(err.message || 'Erreur') }
   }
 
+  async function handleRelaunchOnboarding() {
+    try {
+      await api('/users/me/onboarding', {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'reset' }),
+      })
+      navigate('/app/onboarding')
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur')
+    }
+  }
+
   if (isLoading) return <div className="space-y-6">{[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
   if (!ws) return <p className="text-muted-foreground">Workspace introuvable</p>
 
@@ -179,9 +244,14 @@ function GeneralSection() {
           <h2 className="text-lg font-semibold text-foreground">Informations générales</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Identité et coordonnées de votre workspace</p>
         </div>
-        {!editing && (
-          <Button variant="outline" size="sm" onClick={startEdit}>Modifier</Button>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleRelaunchOnboarding} className="text-muted-foreground">
+            Relancer l'onboarding
+          </Button>
+          {!editing && (
+            <Button variant="outline" size="sm" onClick={startEdit}>Modifier</Button>
+          )}
+        </div>
       </div>
 
       {/* Identity block */}

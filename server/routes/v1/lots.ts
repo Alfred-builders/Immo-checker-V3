@@ -2,8 +2,20 @@ import { Router } from 'express'
 import { query } from '../../db/index.js'
 import { sendSuccess, sendError } from '../../utils/response.js'
 import { NotFoundError } from '../../utils/errors.js'
+import { presignPdfUrl } from '../../services/s3-presign-service.js'
 
 const router = Router()
+
+function projectEdlUrls<T extends Record<string, unknown>>(row: T): T {
+  if (row.statut !== 'signe') {
+    return { ...row, pdf_url: null, web_url: null, pdf_url_legal: null, web_url_legal: null, url_verification: null }
+  }
+  return {
+    ...row,
+    pdf_url: presignPdfUrl(row.pdf_url as string | null),
+    pdf_url_legal: presignPdfUrl(row.pdf_url_legal as string | null),
+  }
+}
 
 // GET /api/v1/lots
 router.get('/', async (req, res) => {
@@ -80,7 +92,7 @@ router.get('/:id/edl-inventaires', async (req, res) => {
     params.push(limit + 1)
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut, ei.mission_id,
-              ei.date_realisation, ei.date_signature, ei.created_at,
+              ei.date_realisation, ei.date_signature, ei.motif_infructueux, ei.created_at,
               ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        ${where}
@@ -90,7 +102,7 @@ router.get('/:id/edl-inventaires', async (req, res) => {
     )
 
     const has_more = result.rows.length > limit
-    const rows = has_more ? result.rows.slice(0, limit) : result.rows
+    const rows = (has_more ? result.rows.slice(0, limit) : result.rows).map(projectEdlUrls)
     sendSuccess(res, { data: rows, meta: { cursor: has_more ? rows[rows.length - 1].id : undefined, has_more } })
   } catch (error) {
     sendError(res, error)

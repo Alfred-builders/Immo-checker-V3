@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from 'src/components/ui/select'
 import { Skeleton } from 'src/components/ui/skeleton'
+import { TechPicker } from 'src/components/shared/tech-picker'
 import {
   useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians,
 } from '../../missions/api'
@@ -122,7 +123,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
   const [planningDirty, setPlanningDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showRevalidation, setShowRevalidation] = useState(false)
-  const [selectedTechId, setSelectedTechId] = useState<string>('')
   const [assigning, setAssigning] = useState(false)
 
   useEffect(() => {
@@ -133,7 +133,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
       setStatutRdv(mission.statut_rdv || '')
       setCommentaire(mission.commentaire || '')
       setPlanningDirty(false)
-      setSelectedTechId('')
     }
   }, [mission])
 
@@ -181,10 +180,10 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
     finally { setSaving(false) }
   }
 
-  async function handleAssignTechnician() {
-    if (!mission || !selectedTechId) return
+  async function handleAssignTechnician(userId: string) {
+    if (!mission || !userId) return
     setAssigning(true)
-    try { await assignTech.mutateAsync({ missionId: mission.id, user_id: selectedTechId }); setSelectedTechId(''); toast.success('Technicien assigné') }
+    try { await assignTech.mutateAsync({ missionId: mission.id, user_id: userId }); toast.success('Technicien assigné') }
     catch { toast.error("Erreur lors de l'assignation") }
     finally { setAssigning(false) }
   }
@@ -336,18 +335,14 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                       <p className="text-[13px] text-muted-foreground/50 italic">Aucun technicien</p>
                     </div>
                     {!isLocked && (
-                      <div className="flex gap-2">
-                        <Select value={selectedTechId} onValueChange={setSelectedTechId}>
-                          <SelectTrigger className="flex-1 h-9"><SelectValue placeholder="Assigner..." /></SelectTrigger>
-                          <SelectContent>
-                            {technicians.map((t) => <SelectItem key={t.id} value={t.id}>{t.prenom} {t.nom}</SelectItem>)}
-                            {technicians.length === 0 && <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucun disponible</div>}
-                          </SelectContent>
-                        </Select>
-                        <Button size="icon" variant="outline" onClick={handleAssignTechnician} disabled={!selectedTechId || assigning} className="h-9 w-9 shrink-0">
-                          <UserPlus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <TechPicker
+                        technicians={technicians}
+                        onSelect={handleAssignTechnician}
+                        placeholder={assigning ? 'Assignation...' : 'Assigner un technicien...'}
+                        className="w-full"
+                        date={datePlanifiee}
+                        excludeMissionId={mission.id}
+                      />
                     )}
                   </div>
                 )}

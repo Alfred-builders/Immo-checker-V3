@@ -15,6 +15,13 @@ router.use(verifyToken)
 router.get('/stats', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const userId = req.user!.userId
+    const isTechnicien = req.user!.role === 'technicien'
+    const techScope = isTechnicien
+      ? `AND EXISTS (SELECT 1 FROM mission_technicien mt_scope WHERE mt_scope.mission_id = m.id AND mt_scope.user_id = $2)`
+      : ''
+    const params: unknown[] = [workspaceId]
+    if (isTechnicien) params.push(userId)
     const result = await query(
       `SELECT
         count(*) FILTER (WHERE m.statut NOT IN ('annulee'))::int as total,
@@ -29,8 +36,8 @@ router.get('/stats', async (req, res) => {
         )::int as pending,
         count(*) FILTER (WHERE m.date_planifiee > CURRENT_DATE AND m.statut IN ('planifiee', 'assignee'))::int as upcoming
       FROM mission m
-      WHERE m.workspace_id = $1 AND m.est_archive = false`,
-      [workspaceId]
+      WHERE m.workspace_id = $1 AND m.est_archive = false ${techScope}`,
+      params
     )
     sendSuccess(res, result.rows[0])
   } catch (error) {
@@ -42,6 +49,8 @@ router.get('/stats', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const userId = req.user!.userId
+    const isTechnicien = req.user!.role === 'technicien'
     const {
       search, statut, statut_rdv, technicien_id, date_from, date_to,
       pending_actions, lot_id, cursor, limit: rawLimit
@@ -51,6 +60,13 @@ router.get('/', async (req, res) => {
     let where = `m.workspace_id = $1 AND m.est_archive = false`
     const params: unknown[] = [workspaceId]
     let paramIndex = 2
+
+    // Technicien scoping — only see missions they are assigned to
+    if (isTechnicien) {
+      where += ` AND EXISTS (SELECT 1 FROM mission_technicien mt_scope WHERE mt_scope.mission_id = m.id AND mt_scope.user_id = $${paramIndex})`
+      params.push(userId)
+      paramIndex++
+    }
 
     // Default: exclude annulee unless explicitly filtered
     if (statut) {
@@ -206,6 +222,18 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const userId = req.user!.userId
+    const isTechnicien = req.user!.role === 'technicien'
+
+    // Technicien scoping — 404 if they are not assigned to this mission
+    if (isTechnicien) {
+      const scope = await query(
+        `SELECT 1 FROM mission_technicien WHERE mission_id = $1 AND user_id = $2`,
+        [req.params.id, userId]
+      )
+      if (scope.rows.length === 0) throw new NotFoundError('Mission')
+    }
+
     const result = await query(
       `SELECT m.*, m.date_planifiee::date::text as date_planifiee,
         -- Lot

@@ -14,6 +14,19 @@ router.use(verifyToken)
 router.get('/:id', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
+    const userId = req.user!.userId
+    const isTechnicien = req.user!.role === 'technicien'
+
+    // Technicien scoping — only EDLs linked to a mission they're assigned to
+    if (isTechnicien) {
+      const scope = await query(
+        `SELECT 1 FROM edl_inventaire ei
+         JOIN mission_technicien mt ON mt.mission_id = ei.mission_id
+         WHERE ei.id = $1 AND ei.workspace_id = $2 AND mt.user_id = $3`,
+        [req.params.id, workspaceId, userId]
+      )
+      if (scope.rows.length === 0) throw new NotFoundError('EDL')
+    }
 
     const result = await query(
       `SELECT ei.*,
