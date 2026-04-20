@@ -190,7 +190,7 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     const { rows } = await import('../db/index.js').then(db =>
       db.query(
-        `SELECT u.id, u.email, u.nom, u.prenom, w.id as workspace_id, w.nom as workspace_nom,
+        `SELECT u.id, u.email, u.nom, u.prenom, u.tel, w.id as workspace_id, w.nom as workspace_nom,
                 w.type_workspace, w.logo_url, w.couleur_primaire, w.couleur_fond, w.fond_style, wu.role
          FROM utilisateur u
          JOIN workspace_user wu ON wu.user_id = u.id
@@ -211,6 +211,7 @@ router.get('/me', verifyToken, async (req, res) => {
       email: row.email,
       nom: row.nom,
       prenom: row.prenom,
+      tel: row.tel || null,
       workspace: {
         id: row.workspace_id,
         nom: row.workspace_nom,
@@ -225,6 +226,54 @@ router.get('/me', verifyToken, async (req, res) => {
   } catch (error) {
     sendError(res, error)
   }
+})
+
+// Update own profile
+const updateProfileSchema = z.object({
+  nom: z.string().min(1).max(255).optional(),
+  prenom: z.string().min(1).max(255).optional(),
+  tel: z.string().max(20).nullable().optional(),
+})
+router.patch('/me', verifyToken, validate(updateProfileSchema), async (req, res) => {
+  try {
+    const { userId } = req.user!
+    const { nom, prenom, tel } = req.body
+    const sets: string[] = []
+    const params: unknown[] = []
+    let idx = 1
+    if (nom !== undefined) { sets.push(`nom = $${idx++}`); params.push(nom) }
+    if (prenom !== undefined) { sets.push(`prenom = $${idx++}`); params.push(prenom) }
+    if (tel !== undefined) { sets.push(`tel = $${idx++}`); params.push(tel) }
+    if (sets.length === 0) { sendError(res, { status: 400, message: 'Aucun champ à mettre à jour', code: 'VALIDATION_ERROR' }); return }
+    sets.push('updated_at = now()')
+    params.push(userId)
+    const db = await import('../db/index.js')
+    const result = await db.query(`UPDATE utilisateur SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, nom, prenom, tel`, params)
+    sendSuccess(res, result.rows[0])
+  } catch (error) { sendError(res, error) }
+})
+
+// Change own password (authenticated)
+const changePasswordSchema = z.object({
+  current_password: z.string().min(1),
+  new_password: z.string().min(8).regex(/[A-Z]/, 'Au moins 1 majuscule').regex(/[0-9]/, 'Au moins 1 chiffre'),
+})
+router.post('/change-password', verifyToken, validate(changePasswordSchema), async (req, res) => {
+  try {
+    const { userId } = req.user!
+    const { current_password, new_password } = req.body
+    const db = await import('../db/index.js')
+    const { rows } = await db.query(`SELECT password_hash FROM utilisateur WHERE id = $1`, [userId])
+    if (rows.length === 0) { sendError(res, { status: 404, message: 'Utilisateur introuvable', code: 'NOT_FOUND' }); return }
+    const bcryptMod = (await import('bcryptjs')).default
+    const valid = await bcryptMod.compare(current_password, rows[0].password_hash)
+    if (!valid) { sendError(res, { status: 400, message: 'Mot de passe actuel incorrect', code: 'INVALID_PASSWORD' }); return }
+    const { hashPassword } = await import('../services/auth-service.js')
+    const newHash = await hashPassword(new_password)
+    await db.query(`UPDATE utilisateur SET password_hash = $1, updated_at = now() WHERE id = $2`, [newHash, userId])
+    await db.query(`DELETE FROM refresh_token WHERE user_id = $1`, [userId])
+    sendSuccess(res, { changed: true })
+  } catch (error) { sendError(res, error) }
 })
 
 // List all workspaces for current user (for workspace switcher)

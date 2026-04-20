@@ -20,6 +20,7 @@ import { CataloguePage } from './features/templates/components/catalogue-page'
 import { CriteresPage } from './features/templates/components/criteres-page'
 import { MissionsPage } from './features/missions/components/missions-page'
 import { MissionDetailPage } from './features/missions/components/mission-detail-page'
+import { ProfilePage } from './features/auth/components/profile-page'
 import { DashboardPage } from './features/dashboard/components/dashboard-page'
 import { ShadcnDashboard } from './features/dashboard/components/shadcn-dashboard'
 import VibesSelection from './vibes-selection'
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/app/parametres/templates/:id" element={<TemplateDetailPage />} />
         <Route path="/app/parametres/catalogue" element={<CataloguePage />} />
         <Route path="/app/parametres/criteres" element={<CriteresPage />} />
+        <Route path="/app/profil" element={<ProfilePage />} />
         <Route path="/app/missions" element={<MissionsPage />} />
         <Route path="/app/missions/:id" element={<MissionDetailPage />} />
         <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />

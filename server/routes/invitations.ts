@@ -4,10 +4,24 @@ import { query } from '../db/index.js'
 import { verifyToken, requireRole } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError } from '../utils/response.js'
-import { ConflictError } from '../utils/errors.js'
+import { ConflictError, ForbiddenError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
+
+// Helper: check if user is the last active admin in workspace
+async function isLastAdmin(workspaceId: string, userId: string): Promise<boolean> {
+  const { rows } = await query(
+    `SELECT COUNT(*)::int as total FROM workspace_user WHERE workspace_id = $1 AND role = 'admin' AND est_actif = true`,
+    [workspaceId]
+  )
+  if (rows[0].total > 1) return false
+  const { rows: target } = await query(
+    `SELECT 1 FROM workspace_user WHERE workspace_id = $1 AND user_id = $2 AND role = 'admin' AND est_actif = true`,
+    [workspaceId, userId]
+  )
+  return target.length > 0
+}
 
 // GET /api/invitations — List workspace invitations (admin only — settings page)
 router.get('/', requireRole('admin'), async (req, res) => {
@@ -42,12 +56,15 @@ router.get('/users', requireRole('admin', 'gestionnaire'), async (req, res) => {
       roleClause = `AND wu.role = $2`
     }
 
+    // For role-filtered queries (e.g. technician picker), only return active users
+    const activeClause = role ? 'AND wu.est_actif = true' : ''
+
     const result = await query(
-      `SELECT u.id, u.email, u.nom, u.prenom, wu.role, wu.created_at
+      `SELECT u.id, u.email, u.nom, u.prenom, u.tel, wu.role, wu.est_actif, wu.created_at, wu.deactivated_at
        FROM workspace_user wu
        JOIN utilisateur u ON u.id = wu.user_id
-       WHERE wu.workspace_id = $1 ${roleClause}
-       ORDER BY wu.created_at DESC`,
+       WHERE wu.workspace_id = $1 ${roleClause} ${activeClause}
+       ORDER BY wu.est_actif DESC, wu.created_at DESC`,
       params
     )
     sendSuccess(res, result.rows)
@@ -120,6 +137,11 @@ router.patch('/users/:userId/role', requireRole('admin'), async (req, res) => {
       return
     }
 
+    // Last-admin guard: prevent demoting the only admin
+    if (role !== 'admin' && await isLastAdmin(workspaceId, req.params.userId as string)) {
+      throw new ForbiddenError('Impossible de retirer le rôle admin au dernier administrateur')
+    }
+
     const result = await query(
       `UPDATE workspace_user SET role = $1, updated_at = now()
        WHERE user_id = $2 AND workspace_id = $3 RETURNING *`,
@@ -131,6 +153,36 @@ router.patch('/users/:userId/role', requireRole('admin'), async (req, res) => {
       return
     }
 
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// PATCH /api/invitations/users/:userId/status — Deactivate / reactivate user (admin only)
+const statusSchema = z.object({ est_actif: z.boolean() })
+router.patch('/users/:userId/status', requireRole('admin'), validate(statusSchema), async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+    const targetId = req.params.userId as string
+    const { est_actif } = req.body
+
+    if (targetId === req.user!.userId && !est_actif) {
+      throw new ForbiddenError('Vous ne pouvez pas désactiver votre propre compte')
+    }
+    if (!est_actif && await isLastAdmin(workspaceId, targetId)) {
+      throw new ForbiddenError('Impossible de désactiver le dernier administrateur')
+    }
+
+    const result = await query(
+      `UPDATE workspace_user SET est_actif = $1, deactivated_at = CASE WHEN $1 = false THEN now() ELSE NULL END, updated_at = now()
+       WHERE user_id = $2 AND workspace_id = $3 RETURNING *`,
+      [est_actif, targetId, workspaceId]
+    )
+    if (result.rows.length === 0) {
+      sendError(res, { status: 404, message: 'Utilisateur non trouvé', code: 'NOT_FOUND' })
+      return
+    }
     sendSuccess(res, result.rows[0])
   } catch (error) {
     sendError(res, error)

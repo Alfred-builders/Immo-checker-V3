@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple, ArrowSquareOut } from '@phosphor-icons/react'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
+import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useAuth } from '../../../hooks/use-auth'
@@ -10,7 +11,7 @@ import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
-import { useWorkspaceDetails, useUpdateWorkspace, useWorkspaceUsers, useInvitations, useSendInvitation, useChangeRole, useResendInvitation, useCancelInvitation, useApiKeys, useCreateApiKey, useRevokeApiKey, useUpdateApiKey, useWebhooks, useCreateWebhook, useUpdateWebhook, useDeleteWebhook, useTestWebhook, useWebhookDeliveries } from '../api'
+import { useWorkspaceDetails, useUpdateWorkspace, useWorkspaceUsers, useInvitations, useSendInvitation, useChangeRole, useSetUserStatus, useResendInvitation, useCancelInvitation, useApiKeys, useCreateApiKey, useRevokeApiKey, useUpdateApiKey, useWebhooks, useCreateWebhook, useUpdateWebhook, useDeleteWebhook, useTestWebhook, useWebhookDeliveries } from '../api'
 import type { WorkspaceUser, Invitation, ApiKey, CreateApiKeyResult, WebhookConfig, WebhookDelivery, WebhookEvent } from '../api'
 
 const ROLES = ['admin', 'gestionnaire', 'technicien'] as const
@@ -30,8 +31,7 @@ type Section = 'general' | 'users' | 'invitations' | 'api'
 
 const NAV_ITEMS: { key: Section; label: string; icon: typeof BuildingOffice; description: string }[] = [
   { key: 'general', label: 'Général', icon: BuildingOffice, description: 'Informations du workspace' },
-  { key: 'users', label: 'Membres', icon: UsersThree, description: 'Gérer les utilisateurs' },
-  { key: 'invitations', label: 'Invitations', icon: Envelope, description: 'Inviter des collaborateurs' },
+  { key: 'users', label: 'Membres', icon: UsersThree, description: 'Utilisateurs & invitations' },
   { key: 'api', label: 'API & Intégrations', icon: Code, description: 'Clés API et webhooks' },
 ]
 
@@ -45,7 +45,7 @@ export function SettingsPage() {
   const [searchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as Section | null) ?? 'general'
   const [section, setSection] = useState<Section>(
-    ['general', 'users', 'invitations', 'api'].includes(initialTab) ? initialTab : 'general'
+    initialTab === 'invitations' ? 'users' : ['general', 'users', 'api'].includes(initialTab) ? initialTab : 'general'
   )
   const navigate = useNavigate()
 
@@ -79,14 +79,15 @@ export function SettingsPage() {
             <div className="pt-4 mt-4 border-t border-border/60">
               <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
               {NAV_LINKS.map(({ label, icon: Icon, href }) => (
-                <a
+                <div
                   key={href}
-                  href={href}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none"
+                  title="À venir"
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span className="flex-1">{label}</span>
-                </a>
+                  <span className="text-[10px] font-medium text-muted-foreground/50 bg-muted/60 px-1.5 py-0.5 rounded">À venir</span>
+                </div>
               ))}
             </div>
           </div>
@@ -95,8 +96,7 @@ export function SettingsPage() {
         {/* Content area */}
         <div className="flex-1 min-w-0">
           {section === 'general' && <GeneralSection />}
-          {section === 'users' && <UsersSection />}
-          {section === 'invitations' && <InvitationsSection />}
+          {section === 'users' && <MembresSection />}
           {section === 'api' && <ApiSection />}
         </div>
       </div>
@@ -408,66 +408,109 @@ function DisplayRow({ label, value }: { label: string; value: React.ReactNode })
 }
 
 // ── Users Section ──
+function MembresSection() {
+  const [subTab, setSubTab] = useState<'users' | 'invitations'>('users')
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">Membres</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Gérez votre équipe et invitez de nouveaux collaborateurs</p>
+      </div>
+      <div className="flex items-center bg-muted/60 rounded-full p-0.5 w-fit">
+        <button onClick={() => setSubTab('users')} className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${subTab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Utilisateurs
+        </button>
+        <button onClick={() => setSubTab('invitations')} className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${subTab === 'invitations' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Invitations
+        </button>
+      </div>
+      {subTab === 'users' && <UsersSection />}
+      {subTab === 'invitations' && <InvitationsSection />}
+    </div>
+  )
+}
+
 function UsersSection() {
   const { data: users, isLoading } = useWorkspaceUsers()
+  const { user: currentUser } = useAuth()
   const changeRole = useChangeRole()
+  const setUserStatus = useSetUserStatus()
+  const [confirmAction, setConfirmAction] = useState<{ user: WorkspaceUser; action: 'deactivate' | 'reactivate' } | null>(null)
 
   function handleRoleChange(user: WorkspaceUser, newRole: string) {
     changeRole.mutate(
       { userId: user.id, role: newRole as Role },
       {
         onSuccess: () => toast.success(`Rôle de ${user.prenom} ${user.nom} mis à jour`),
-        onError: () => toast.error('Erreur'),
+        onError: (err: any) => toast.error(err.message || 'Erreur'),
       }
     )
   }
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Membres</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Gérez les utilisateurs et leurs permissions</p>
-      </div>
+  function handleStatusConfirm() {
+    if (!confirmAction) return
+    setUserStatus.mutate(
+      { userId: confirmAction.user.id, est_actif: confirmAction.action === 'reactivate' },
+      {
+        onSuccess: () => { toast.success(confirmAction.action === 'deactivate' ? 'Membre désactivé' : 'Membre réactivé'); setConfirmAction(null) },
+        onError: (err: any) => { toast.error(err.message || 'Erreur'); setConfirmAction(null) },
+      }
+    )
+  }
 
+  const activeCount = users?.filter(u => u.est_actif).length ?? 0
+
+  return (
+    <div className="space-y-4">
       {isLoading && <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>}
 
       {!isLoading && users && (
         <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-3.5 border-b border-border/60">
             <span className="text-xs font-medium text-muted-foreground">
-              {users.length} membre{users.length !== 1 ? 's' : ''}
+              {activeCount} actif{activeCount !== 1 ? 's' : ''} / {users.length} au total
             </span>
           </div>
 
-          {/* User rows */}
           {users.length > 0 ? (
             <div className="divide-y divide-border/40">
               {users.map((user) => {
                 const rc = roleConfig[user.role]
+                const isSelf = user.id === currentUser?.id
                 return (
-                  <div key={user.id} className="flex items-center gap-4 px-6 py-4 hover:bg-primary/[0.04] transition-colors duration-150">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-bold text-primary/70">{user.prenom[0]}{user.nom[0]}</span>
+                  <div key={user.id} className={`flex items-center gap-4 px-6 py-4 transition-colors duration-150 ${user.est_actif ? 'hover:bg-primary/[0.04]' : 'opacity-40'}`}>
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${user.est_actif ? 'bg-gradient-to-br from-primary/20 to-primary/5' : 'bg-muted/40'}`}>
+                      <span className={`text-xs font-bold ${user.est_actif ? 'text-primary/70' : 'text-muted-foreground/50'}`}>{user.prenom[0]}{user.nom[0]}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{user.prenom} {user.nom}</p>
+                      <p className="text-sm font-medium text-foreground">{user.prenom} {user.nom}{isSelf ? ' (vous)' : ''}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
-                    <Badge className={`${rc.bg} ${rc.color} ${rc.border} text-[10px]`}>{rc.label}</Badge>
-                    <Select value={user.role} onValueChange={(v) => handleRoleChange(user, v)}>
-                      <SelectTrigger className="w-40 h-8 text-xs"><SelectValue /></SelectTrigger>
+                    {/* Role — clickable select disguised as badge */}
+                    <Select value={user.role} onValueChange={(v) => handleRoleChange(user, v)} disabled={!user.est_actif}>
+                      <SelectTrigger className={`h-7 w-auto gap-1 px-2.5 rounded-full border text-[10px] font-semibold ${rc.bg} ${rc.color} ${rc.border}`}>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         {ROLES.map((r) => (
                           <SelectItem key={r} value={r} className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-3 w-3" /> {roleConfig[r].label}
-                              <span className="text-muted-foreground text-[10px]">— {roleConfig[r].description}</span>
-                            </div>
+                            <span className="flex items-center gap-2"><Shield className="h-3 w-3" /> {roleConfig[r].label} <span className="text-muted-foreground/50">— {roleConfig[r].description}</span></span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* Statut badge */}
+                    <Badge className={user.est_actif ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]' : 'bg-zinc-100 text-zinc-500 border-zinc-200 text-[10px]'}>{user.est_actif ? 'Actif' : 'Inactif'}</Badge>
+                    {/* Action */}
+                    {user.est_actif ? (
+                      <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50" disabled={isSelf} onClick={() => setConfirmAction({ user, action: 'deactivate' })}>
+                        Désactiver
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setConfirmAction({ user, action: 'reactivate' })}>
+                        Réactiver
+                      </Button>
+                    )}
                   </div>
                 )
               })}
@@ -476,6 +519,18 @@ function UsersSection() {
             <EmptyState icon={UsersThree} message="Aucun membre dans ce workspace" />
           )}
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          open={!!confirmAction}
+          onOpenChange={() => setConfirmAction(null)}
+          title={confirmAction.action === 'deactivate' ? `Désactiver ${confirmAction.user.prenom} ${confirmAction.user.nom} ?` : `Réactiver ${confirmAction.user.prenom} ${confirmAction.user.nom} ?`}
+          description={confirmAction.action === 'deactivate' ? 'Cet utilisateur perdra l\'accès à ce workspace. Les données passées sont conservées.' : 'Cet utilisateur retrouvera l\'accès à ce workspace.'}
+          confirmLabel={confirmAction.action === 'deactivate' ? 'Désactiver' : 'Réactiver'}
+          variant={confirmAction.action === 'deactivate' ? 'destructive' : 'default'}
+          onConfirm={handleStatusConfirm}
+        />
       )}
     </div>
   )
@@ -534,12 +589,7 @@ function InvitationsSection() {
   ]
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold text-foreground">Invitations</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">Invitez de nouveaux membres dans votre workspace</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Invite form */}
       <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
         <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border/60">

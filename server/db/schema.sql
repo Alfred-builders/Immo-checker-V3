@@ -588,3 +588,10 @@ CREATE TABLE IF NOT EXISTS webhook_delivery (
 CREATE INDEX IF NOT EXISTS idx_webhook_delivery_webhook ON webhook_delivery(webhook_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_webhook_delivery_status  ON webhook_delivery(statut, created_at);
 CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_token(token_hash);
+
+-- ============================================================
+-- MIGRATION: User management improvements (US-578/580/810)
+-- ============================================================
+ALTER TABLE workspace_user ADD COLUMN IF NOT EXISTS est_actif BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE workspace_user ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_workspace_user_actif ON workspace_user(workspace_id, est_actif) WHERE est_actif = true;

@@ -8,7 +8,11 @@ export interface WorkspaceUser {
   email: string
   nom: string
   prenom: string
+  tel: string | null
   role: 'admin' | 'gestionnaire' | 'technicien'
+  est_actif: boolean
+  created_at: string
+  deactivated_at: string | null
 }
 
 export interface Invitation {
@@ -148,6 +152,33 @@ export function useCancelInvitation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invitations'] })
     },
+  })
+}
+
+// ── User Status (deactivate/reactivate) ──
+
+export function useSetUserStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, est_actif }: { userId: string; est_actif: boolean }) =>
+      api(`/invitations/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ est_actif }) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['workspace-users'] }) },
+  })
+}
+
+// ── Profile & Password ──
+
+export function useUpdateProfile() {
+  return useMutation({
+    mutationFn: (data: { nom?: string; prenom?: string; tel?: string | null }) =>
+      api<{ id: string; nom: string; prenom: string; tel: string | null }>('/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  })
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) =>
+      api<{ changed: boolean }>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
   })
 }
 

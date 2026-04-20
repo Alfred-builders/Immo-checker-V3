@@ -102,7 +102,7 @@ export function TechPicker({ technicians, value, onSelect, placeholder = 'Techni
           <div className="border-t border-border/30 p-1">
             <CommandItem
               value="__invite__"
-              onSelect={() => { setOpen(false); navigate('/app/parametres?tab=invitations') }}
+              onSelect={() => { setOpen(false); navigate('/app/parametres?tab=users') }}
               className="flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer text-primary"
             >
               <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

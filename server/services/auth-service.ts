@@ -142,7 +142,7 @@ export async function switchWorkspace(userId: string, workspaceId: string) {
      FROM workspace_user wu
      JOIN workspace w ON w.id = wu.workspace_id
      JOIN utilisateur u ON u.id = wu.user_id
-     WHERE wu.user_id = $1 AND wu.workspace_id = $2 AND w.statut = 'actif'`,
+     WHERE wu.user_id = $1 AND wu.workspace_id = $2 AND w.statut = 'actif' AND wu.est_actif = true`,
     [userId, workspaceId]
   )
 

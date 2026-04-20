@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, Bell, PushPin, CaretUpDown, Check, ArrowLeft } from '@phosphor-icons/react'
+import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, Bell, PushPin, CaretUpDown, Check, ArrowLeft, User } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/use-auth'
 import { useQuery } from '@tanstack/react-query'
@@ -212,9 +212,14 @@ export function MainLayout() {
             )}
           </div>
           {expanded && (
-            <button onClick={handleLogout} className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors">
-              <SignOut size={14} /><span>Déconnexion</span>
-            </button>
+            <div className="space-y-0.5">
+              <a href="/app/profil" className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
+                <User size={14} /><span>Mon profil</span>
+              </a>
+              <button onClick={handleLogout} className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors">
+                <SignOut size={14} /><span>Déconnexion</span>
+              </button>
+            </div>
           )}
         </div>
       </aside>
