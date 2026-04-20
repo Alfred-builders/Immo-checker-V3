@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
+import { PasswordStrengthMeter, scorePassword } from 'src/components/password-strength-meter'
 import { api } from '../../../lib/api-client'
 
 export function ResetPasswordPage() {
@@ -17,9 +18,7 @@ export function ResetPasswordPage() {
     e.preventDefault()
     setError('')
     if (password !== confirm) { setError('Les mots de passe ne correspondent pas'); return }
-    if (password.length < 8) { setError('8 caracteres minimum'); return }
-    if (!/[A-Z]/.test(password)) { setError('Au moins 1 majuscule'); return }
-    if (!/[0-9]/.test(password)) { setError('Au moins 1 chiffre'); return }
+    if (scorePassword(password) < 3) { setError('Mot de passe trop faible (8 caractères, 1 majuscule, 1 chiffre)'); return }
 
     setLoading(true)
     try {
@@ -50,6 +49,7 @@ export function ResetPasswordPage() {
         <div className="space-y-2">
           <Label className="text-sm font-medium text-muted-foreground">Nouveau mot de passe</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-10 rounded-xl" />
+          <PasswordStrengthMeter value={password} />
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-medium text-muted-foreground">Confirmer</Label>

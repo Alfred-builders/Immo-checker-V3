@@ -170,8 +170,8 @@ export function useSetUserStatus() {
 
 export function useUpdateProfile() {
   return useMutation({
-    mutationFn: (data: { nom?: string; prenom?: string; tel?: string | null }) =>
-      api<{ id: string; nom: string; prenom: string; tel: string | null }>('/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: (data: { nom?: string; prenom?: string; tel?: string | null; avatar_url?: string | null }) =>
+      api<{ id: string; nom: string; prenom: string; tel: string | null; avatar_url: string | null }>('/auth/me', { method: 'PATCH', body: JSON.stringify(data) }),
   })
 }
 

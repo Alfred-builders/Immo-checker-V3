@@ -29,15 +29,16 @@ const loginSchema = z.object({
 router.post('/login', loginLimiter, validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body
-    const result = await authService.login(email, password)
+    const ip = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim()) || req.ip || null
+    const result = await authService.login(email, password, ip)
 
     if (result.workspaces.length === 1) {
       // Single workspace — auto-switch
       const ws = result.workspaces[0]
       const { accessToken, refreshToken } = await authService.switchWorkspace(result.user.id, ws.id)
 
-      res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 })
-      res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 })
+      res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 2 * 60 * 60 * 1000 })
+      res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 30 * 24 * 60 * 60 * 1000 })
 
       sendSuccess(res, {
         user: result.user,
@@ -101,8 +102,8 @@ router.post('/switch-workspace', async (req, res) => {
 
     const { accessToken, refreshToken, payload } = await authService.switchWorkspace(userId, workspaceId)
 
-    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 })
-    res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 2 * 60 * 60 * 1000 })
+    res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 30 * 24 * 60 * 60 * 1000 })
 
     sendSuccess(res, { user: payload })
   } catch (error) {
@@ -129,8 +130,8 @@ router.post('/register', validate(registerSchema), async (req, res) => {
     // Auto-login after registration
     const { accessToken, refreshToken } = await authService.switchWorkspace(result.userId, result.workspaceId)
 
-    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 })
-    res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 2 * 60 * 60 * 1000 })
+    res.cookie('refresh_token', refreshToken, { ...COOKIE_OPTIONS, maxAge: 30 * 24 * 60 * 60 * 1000 })
 
     sendSuccess(res, {
       user: { userId: result.userId, email: result.email, workspaceId: result.workspaceId, role: result.role },
@@ -169,8 +170,8 @@ router.post('/refresh', async (req, res) => {
 
     const { accessToken, refreshToken: newRefreshToken } = await authService.switchWorkspace(userId, workspaceId)
 
-    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 30 * 60 * 1000 })
-    res.cookie('refresh_token', newRefreshToken, { ...COOKIE_OPTIONS, maxAge: 7 * 24 * 60 * 60 * 1000 })
+    res.cookie('access_token', accessToken, { ...COOKIE_OPTIONS, maxAge: 2 * 60 * 60 * 1000 })
+    res.cookie('refresh_token', newRefreshToken, { ...COOKIE_OPTIONS, maxAge: 30 * 24 * 60 * 60 * 1000 })
 
     sendSuccess(res, { refreshed: true })
   } catch (error) {
@@ -190,7 +191,9 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     const { rows } = await import('../db/index.js').then(db =>
       db.query(
-        `SELECT u.id, u.email, u.nom, u.prenom, u.tel, w.id as workspace_id, w.nom as workspace_nom,
+        `SELECT u.id, u.email, u.nom, u.prenom, u.tel, u.avatar_url, u.last_login_at, u.last_login_ip,
+                u.is_super_admin, u.onboarding_completed_at,
+                w.id as workspace_id, w.nom as workspace_nom,
                 w.type_workspace, w.logo_url, w.couleur_primaire, w.couleur_fond, w.fond_style, wu.role
          FROM utilisateur u
          JOIN workspace_user wu ON wu.user_id = u.id
@@ -212,6 +215,11 @@ router.get('/me', verifyToken, async (req, res) => {
       nom: row.nom,
       prenom: row.prenom,
       tel: row.tel || null,
+      avatar_url: row.avatar_url || null,
+      last_login_at: row.last_login_at || null,
+      last_login_ip: row.last_login_ip || null,
+      is_super_admin: row.is_super_admin === true,
+      onboarding_completed_at: row.onboarding_completed_at,
       workspace: {
         id: row.workspace_id,
         nom: row.workspace_nom,
@@ -229,26 +237,34 @@ router.get('/me', verifyToken, async (req, res) => {
 })
 
 // Update own profile
+const AVATAR_MAX_BYTES = 2_800_000 // ~2 MB JPEG base64-encoded
 const updateProfileSchema = z.object({
   nom: z.string().min(1).max(255).optional(),
   prenom: z.string().min(1).max(255).optional(),
-  tel: z.string().max(20).nullable().optional(),
+  tel: z.string().max(32).nullable().optional(),
+  avatar_url: z
+    .string()
+    .max(AVATAR_MAX_BYTES, 'Image trop lourde (max ~2 MB)')
+    .regex(/^data:image\/(png|jpeg|jpg|webp);base64,/, 'Format invalide (png/jpeg/webp)')
+    .nullable()
+    .optional(),
 })
 router.patch('/me', verifyToken, validate(updateProfileSchema), async (req, res) => {
   try {
     const { userId } = req.user!
-    const { nom, prenom, tel } = req.body
+    const { nom, prenom, tel, avatar_url } = req.body
     const sets: string[] = []
     const params: unknown[] = []
     let idx = 1
     if (nom !== undefined) { sets.push(`nom = $${idx++}`); params.push(nom) }
     if (prenom !== undefined) { sets.push(`prenom = $${idx++}`); params.push(prenom) }
     if (tel !== undefined) { sets.push(`tel = $${idx++}`); params.push(tel) }
+    if (avatar_url !== undefined) { sets.push(`avatar_url = $${idx++}`); params.push(avatar_url) }
     if (sets.length === 0) { sendError(res, { status: 400, message: 'Aucun champ à mettre à jour', code: 'VALIDATION_ERROR' }); return }
     sets.push('updated_at = now()')
     params.push(userId)
     const db = await import('../db/index.js')
-    const result = await db.query(`UPDATE utilisateur SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, nom, prenom, tel`, params)
+    const result = await db.query(`UPDATE utilisateur SET ${sets.join(', ')} WHERE id = $${idx} RETURNING id, nom, prenom, tel, avatar_url`, params)
     sendSuccess(res, result.rows[0])
   } catch (error) { sendError(res, error) }
 })
@@ -376,7 +392,8 @@ router.get('/invitation/:token', async (req, res) => {
   try {
     const { rows } = await import('../db/index.js').then(db =>
       db.query(
-        `SELECT i.email, i.role, w.nom as workspace_nom, w.logo_url
+        `SELECT i.email, i.role, i.workspace_id, w.nom as workspace_nom, w.logo_url,
+                (SELECT COUNT(*)::int FROM workspace_user wu WHERE wu.workspace_id = w.id) AS existing_members
          FROM invitation i
          JOIN workspace w ON w.id = i.workspace_id
          WHERE i.token = $1 AND i.accepted_at IS NULL AND i.expires_at > now() AND i.role != 'reset_password'`,
@@ -389,12 +406,14 @@ router.get('/invitation/:token', async (req, res) => {
       return
     }
 
+    const r = rows[0]
     sendSuccess(res, {
       valid: true,
-      email: rows[0].email,
-      role: rows[0].role,
-      workspace_nom: rows[0].workspace_nom,
-      workspace_logo: rows[0].logo_url,
+      email: r.email,
+      role: r.role,
+      workspace_nom: r.workspace_nom,
+      workspace_logo: r.logo_url,
+      is_first_admin: r.role === 'admin' && (r.existing_members ?? 0) === 0,
     })
   } catch (error) {
     sendError(res, error)

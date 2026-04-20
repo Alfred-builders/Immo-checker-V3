@@ -272,6 +272,43 @@ Ces regles sont non-negociables en V1. Elles evitent le scope creep et clarifien
 
 ---
 
+## 7c-bis. Workspace onboarding & super-admin
+
+### Création d'un workspace (Option B — super-admin provisioning)
+- Pas d'inscription publique V1. Workspaces créés via `/super-admin/workspaces` (UI réservée aux users `is_super_admin = true`).
+- Formulaire : nom + type + email admin initial → crée workspace + envoie invitation admin (email Resend).
+- Initialisation 1er super-admin : `scripts/init-super-admin.sql` (remplacer `EMAIL_ICI` puis `psql $DATABASE_URL -f ...`).
+
+### Flags utilisateur
+- `utilisateur.is_super_admin BOOLEAN` — re-vérifié en DB via middleware `requireSuperAdmin` (démotion immédiate garantie, pas juste via JWT).
+- `utilisateur.onboarding_completed_at TIMESTAMPTZ` — flag **par user** (décision 20/04/2026). Un admin formé ne revoit pas le wizard en rejoignant un nouveau WS.
+- `utilisateur.onboarding_current_step INT` + `onboarding_skipped_steps TEXT[]` — reprise fine du wizard.
+
+### Wizard onboarding (US-836)
+- 5 steps : Bienvenue → Identité → Branding → Équipe → Terminé.
+- Skippable dès le step 1 (bouton "Explorer d'abord"). Relançable depuis Paramètres → Général.
+- Auto-redirect depuis `register/:token` vers `/app/onboarding` UNIQUEMENT si `is_first_admin = true` (renvoyé par `GET /auth/invitation/:token`).
+- Import CSV NON inclus — le step "Terminé" pointe vers `/app/patrimoine`.
+
+### Checklist dashboard
+- Calcul **par workspace** (pas par user, cf mitigation Q3) : identité / branding / bâtiments / équipe.
+- Endpoint `GET /api/workspaces/current/onboarding-checklist`.
+- Dismissable via localStorage `onboarding_checklist_dismissed_{workspaceId}`.
+- Disparition auto quand `all_done = true`.
+
+### Audit log super-admin
+- Table `audit_log` — toute action super-admin tracée (création/suspension WS, promotion/démotion super-admin, renvoi invitation).
+- Service `logAudit()` dans `server/services/audit-service.ts`.
+- Consultation via `/super-admin/audit-log`.
+
+### Sécurité super-admin
+- Routes `/super-admin/*` invisibles depuis le back-office normal (pas de lien sidebar).
+- Layout distinct avec bannière rouge "Zone Super-administrateur".
+- Impossible de retirer ses propres droits super-admin (protection anti-orphelinage).
+- Workspace `statut = 'suspendu'` bloque login (filtre `w.statut = 'actif'` dans `authService.login` + `switchWorkspace`).
+
+---
+
 ## 7d. Transitions d'etat — Regles critiques
 
 - **planifiee → assignee** : quand technicien accepte l'invitation

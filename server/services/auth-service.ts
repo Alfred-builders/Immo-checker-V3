@@ -10,8 +10,8 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret'
-const ACCESS_TOKEN_EXPIRY = '30m'
-const REFRESH_TOKEN_EXPIRY_DAYS = 7
+const ACCESS_TOKEN_EXPIRY = '2h'
+const REFRESH_TOKEN_EXPIRY_DAYS = 30
 const MAX_FAILED_ATTEMPTS = 10
 const LOCKOUT_MINUTES = 15
 const BCRYPT_ROUNDS = 12
@@ -67,10 +67,10 @@ export async function verifyRefreshToken(token: string): Promise<string> {
   return result.rows[0].user_id
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, ipAddress?: string | null) {
   // Check if user exists
   const userResult = await query(
-    `SELECT id, email, nom, prenom, password_hash, failed_login_attempts, locked_until
+    `SELECT id, email, nom, prenom, password_hash, failed_login_attempts, locked_until, is_super_admin
      FROM utilisateur WHERE email = $1`,
     [email.toLowerCase().trim()]
   )
@@ -114,10 +114,13 @@ export async function login(email: string, password: string) {
     throw new UnauthorizedError('Email ou mot de passe incorrect')
   }
 
-  // Reset failed attempts on successful login
+  // Reset failed attempts + record last login
   await query(
-    `UPDATE utilisateur SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
-    [user.id]
+    `UPDATE utilisateur
+     SET failed_login_attempts = 0, locked_until = NULL,
+         last_login_at = now(), last_login_ip = $1
+     WHERE id = $2`,
+    [ipAddress || null, user.id]
   )
 
   // Get user's workspaces
@@ -131,7 +134,13 @@ export async function login(email: string, password: string) {
   )
 
   return {
-    user: { id: user.id, email: user.email, nom: user.nom, prenom: user.prenom },
+    user: {
+      id: user.id,
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      is_super_admin: user.is_super_admin === true,
+    },
     workspaces: workspacesResult.rows,
   }
 }

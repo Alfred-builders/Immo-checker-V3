@@ -2,11 +2,51 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api-client'
 
+export type Role = 'admin' | 'gestionnaire' | 'technicien'
+
 interface User {
   id: string
   email: string
   nom: string
   prenom: string
+  role: Role
+  tel: string | null
+  avatar_url: string | null
+  last_login_at: string | null
+  last_login_ip: string | null
+  is_super_admin: boolean
+  onboarding_completed_at: string | null
+}
+
+type MeResponse = {
+  id: string
+  email: string
+  nom: string
+  prenom: string
+  tel: string | null
+  avatar_url: string | null
+  last_login_at: string | null
+  last_login_ip: string | null
+  is_super_admin: boolean
+  onboarding_completed_at: string | null
+  workspace: Workspace
+  role: Role
+}
+
+function userFromMe(data: MeResponse): User {
+  return {
+    id: data.id,
+    email: data.email,
+    nom: data.nom,
+    prenom: data.prenom,
+    role: data.role,
+    tel: data.tel ?? null,
+    avatar_url: data.avatar_url ?? null,
+    last_login_at: data.last_login_at ?? null,
+    last_login_ip: data.last_login_ip ?? null,
+    is_super_admin: data.is_super_admin === true,
+    onboarding_completed_at: data.onboarding_completed_at ?? null,
+  }
 }
 
 interface Workspace {
@@ -53,14 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check auth on mount — skipAuthRedirect to avoid infinite reload loop
   useEffect(() => {
-    api<{ id: string; email: string; nom: string; prenom: string; workspace: Workspace; role: string }>(
-      '/auth/me',
-      { skipAuthRedirect: true }
-    )
+    api<MeResponse>('/auth/me', { skipAuthRedirect: true })
       .then((data) => {
         setState({
-          user: { id: data.id, email: data.email, nom: data.nom, prenom: data.prenom },
-          workspace: data.workspace,
+          user: userFromMe(data),
+          workspace: { ...data.workspace, role: data.role },
           isLoading: false,
           isAuthenticated: true,
         })
@@ -82,8 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (!result.requireWorkspaceSelect && result.workspace) {
+      const userWithRole: User = {
+        ...result.user,
+        role: result.workspace.role as Role,
+        is_super_admin: (result.user as any)?.is_super_admin === true,
+        onboarding_completed_at: (result.user as any)?.onboarding_completed_at ?? null,
+      }
       setState({
-        user: result.user,
+        user: userWithRole,
         workspace: result.workspace,
         isLoading: false,
         isAuthenticated: true,
@@ -104,23 +147,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     // Reload user info with new workspace
-    const data = await api<{ id: string; email: string; nom: string; prenom: string; workspace: Workspace; role: string }>('/auth/me')
+    const data = await api<MeResponse>('/auth/me')
 
     queryClient.clear()
 
     setState({
-      user: { id: data.id, email: data.email, nom: data.nom, prenom: data.prenom },
-      workspace: data.workspace,
+      user: userFromMe(data),
+      workspace: { ...data.workspace, role: data.role },
       isLoading: false,
       isAuthenticated: true,
     })
   }, [queryClient])
 
   const refreshWorkspace = useCallback(async () => {
-    const data = await api<{ id: string; email: string; nom: string; prenom: string; workspace: Workspace; role: string }>('/auth/me')
+    const data = await api<MeResponse>('/auth/me')
     setState({
-      user: { id: data.id, email: data.email, nom: data.nom, prenom: data.prenom },
-      workspace: data.workspace,
+      user: userFromMe(data),
+      workspace: { ...data.workspace, role: data.role },
       isLoading: false,
       isAuthenticated: true,
     })

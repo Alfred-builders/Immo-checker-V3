@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/use-auth'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api-client'
 import { BellDropdown } from '../features/notifications/components/bell-dropdown'
+import { GlobalSearchBar } from '../features/search/components/global-search-bar'
 
 const SIDEBAR_COLLAPSED_W = 64
 const SIDEBAR_EXPANDED_W = 240
@@ -211,7 +212,11 @@ export function MainLayout() {
             title="Mon profil"
             className="flex items-center gap-3 px-1 py-1 -mx-1 rounded-md hover:bg-accent/50 transition-colors"
           >
-            <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center text-primary font-semibold text-[11px] shrink-0 transition-transform hover:scale-105">{initials}</div>
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt={`${user.prenom} ${user.nom}`} className="w-8 h-8 rounded-xl object-cover shrink-0 transition-transform hover:scale-105 border border-border/40" />
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center text-primary font-semibold text-[11px] shrink-0 transition-transform hover:scale-105">{initials}</div>
+            )}
             {expanded && (
               <div className="flex-1 min-w-0"><p className="text-[13px] font-medium text-foreground truncate">{user?.prenom} {user?.nom}</p></div>
             )}
@@ -247,7 +252,10 @@ export function MainLayout() {
               ))}
             </nav>
           </div>
-          <BellDropdown />
+          <div className="flex items-center gap-3">
+            <GlobalSearchBar />
+            <BellDropdown />
+          </div>
         </header>
 
         <main className="flex-1">

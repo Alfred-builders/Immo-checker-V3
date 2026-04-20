@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Eye, EyeSlash, ArrowRight, EnvelopeSimple, Lock } from '@phosphor-icons/react'
 import { useAuth } from '../../../hooks/use-auth'
+import { api } from '../../../lib/api-client'
 import { Button } from '../../../components/ui/button'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
@@ -12,8 +13,15 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, switchWorkspace } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('reason') === 'technicien_webapp') {
+      setError('Le back-office est réservé aux admins et gestionnaires. Utilisez l\'app tablette ImmoChecker pour accéder à vos missions.')
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,10 +31,32 @@ export function LoginPage() {
     try {
       const result = await login(email, password)
 
+      const isSuperAdmin = (result.user as any)?.is_super_admin === true
+
       if (result.requireWorkspaceSelect) {
+        // Filter out workspaces where the user is technicien — webapp back-office only
+        const eligible = (result.workspaces ?? []).filter((w: any) => w.role !== 'technicien')
+        if (eligible.length === 0) {
+          // If they're a super-admin without any non-technicien workspace, we can't give them a JWT
+          await api('/auth/logout', { method: 'POST' }).catch(() => {})
+          setError('Le back-office est réservé aux admins et gestionnaires. Utilisez l\'app tablette ImmoChecker pour accéder à vos missions.')
+          return
+        }
+        if (eligible.length === 1) {
+          await switchWorkspace(eligible[0].id, result.user.id)
+          navigate(isSuperAdmin ? '/super-admin/dashboard' : '/app/dashboard')
+          return
+        }
         navigate('/workspace-select', {
-          state: { workspaces: result.workspaces, user: result.user },
+          state: { workspaces: eligible, user: result.user, isSuperAdmin },
         })
+      } else if ((result as any).workspace?.role === 'technicien') {
+        // Log out immediately — techniciens can't use the webapp
+        await api('/auth/logout', { method: 'POST' }).catch(() => {})
+        setError('Le back-office est réservé aux admins et gestionnaires. Utilisez l\'app tablette ImmoChecker pour accéder à vos missions.')
+      } else if (isSuperAdmin) {
+        // Super-admins go directly to their dedicated back-office
+        navigate('/super-admin/dashboard')
       } else {
         navigate('/app/dashboard')
       }

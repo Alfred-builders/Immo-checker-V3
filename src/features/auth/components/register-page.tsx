@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
+import { PasswordStrengthMeter, scorePassword } from 'src/components/password-strength-meter'
 
 import { api } from '../../../lib/api-client'
 import { useAuth } from '../../../hooks/use-auth'
@@ -14,6 +15,7 @@ interface InvitationInfo {
   role?: string
   workspace_nom?: string
   workspace_logo?: string | null
+  is_first_admin?: boolean
 }
 
 export function RegisterPage() {
@@ -54,14 +56,19 @@ export function RegisterPage() {
     setError('')
     if (!nom.trim() || !prenom.trim()) { setError('Nom et prénom sont requis'); return }
     if (password !== confirm) { setError('Les mots de passe ne correspondent pas'); return }
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      setError('8 caracteres min, 1 majuscule, 1 chiffre'); return
+    if (scorePassword(password) < 3) {
+      setError('Mot de passe trop faible (8 caractères, 1 majuscule, 1 chiffre)'); return
     }
 
     setSubmitting(true)
     try {
       await api('/auth/register', { method: 'POST', body: JSON.stringify({ token, nom, prenom, password }) })
-      navigate('/app/dashboard')
+      // New admin → onboarding wizard; other roles → dashboard direct
+      if (invitation?.is_first_admin) {
+        navigate('/app/onboarding')
+      } else {
+        navigate('/app/dashboard')
+      }
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription')
     }
@@ -79,6 +86,15 @@ export function RegisterPage() {
         <h2 className="text-lg font-semibold text-foreground">Rejoindre {invitation.workspace_nom}</h2>
         <p className="text-sm text-muted-foreground mt-1">Role : <span className="capitalize font-medium">{invitation.role}</span></p>
       </div>
+
+      {invitation.is_first_admin && (
+        <div className="mb-5 p-3.5 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+          <p className="font-semibold text-foreground mb-1">🎉 Vous êtes le premier administrateur</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Après inscription, un assistant vous guidera pour configurer votre espace ImmoChecker (SIRET, logo, équipe, bâtiments).
+          </p>
+        </div>
+      )}
 
       {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
 
@@ -100,6 +116,7 @@ export function RegisterPage() {
         <div className="space-y-2">
           <Label className="text-sm font-medium text-muted-foreground">Mot de passe *</Label>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="h-10 rounded-xl" placeholder="8 car. min, 1 maj, 1 chiffre" />
+          <PasswordStrengthMeter value={password} />
         </div>
         <div className="space-y-2">
           <Label className="text-sm font-medium text-muted-foreground">Confirmer *</Label>

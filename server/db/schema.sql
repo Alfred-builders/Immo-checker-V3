@@ -34,8 +34,11 @@ CREATE TABLE IF NOT EXISTS utilisateur (
   prenom VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   tel VARCHAR(20),
+  avatar_url TEXT,
   auth_provider VARCHAR(50) DEFAULT 'email',
   signature_image TEXT,
+  last_login_at TIMESTAMPTZ,
+  last_login_ip VARCHAR(45),
   failed_login_attempts INT NOT NULL DEFAULT 0,
   locked_until TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -258,6 +261,8 @@ CREATE TABLE IF NOT EXISTS edl_inventaire (
   signature_locataire_url TEXT,
   pdf_url TEXT,
   web_url TEXT,
+  pdf_url_legal TEXT,
+  web_url_legal TEXT,
   url_verification TEXT,
   verification_token VARCHAR(100),
   est_archive BOOLEAN NOT NULL DEFAULT false,
@@ -615,3 +620,40 @@ CREATE INDEX IF NOT EXISTS idx_notification_user_ws_unread
   ON notification (user_id, workspace_id, est_lu, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notification_created_at
   ON notification (created_at);
+
+-- ============================================================
+-- MIGRATION: User profile enrichment (avatar + login tracking)
+-- ============================================================
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(45);
+
+-- ============================================================
+-- MIGRATION: Super-admin + Onboarding (US-577/836)
+-- ============================================================
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS onboarding_completed_at TIMESTAMPTZ;
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS onboarding_skipped_steps TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS onboarding_current_step INT NOT NULL DEFAULT 1;
+
+-- Super-admin audit log
+CREATE TABLE IF NOT EXISTS audit_log (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  super_admin_user_id UUID NOT NULL REFERENCES utilisateur(id),
+  action              VARCHAR(100) NOT NULL,
+  target_type         VARCHAR(30) NOT NULL,
+  target_id           UUID NOT NULL,
+  metadata            JSONB NOT NULL DEFAULT '{}',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target
+  ON audit_log(target_type, target_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_super_admin
+  ON audit_log(super_admin_user_id, created_at DESC);
+
+-- ============================================================
+-- MIGRATION: EDL legal document URLs (US-601)
+-- Separates standard PDF/web from legal version rendered by tablet
+-- ============================================================
+ALTER TABLE edl_inventaire ADD COLUMN IF NOT EXISTS pdf_url_legal TEXT;
+ALTER TABLE edl_inventaire ADD COLUMN IF NOT EXISTS web_url_legal TEXT;

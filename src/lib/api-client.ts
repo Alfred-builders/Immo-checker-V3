@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+
 const API_BASE = '/api'
 
 interface ApiError {
@@ -17,6 +19,15 @@ class ApiClientError extends Error {
     this.status = status
     this.details = details
   }
+}
+
+// Throttle 403 toasts to avoid spam when multiple queries fire simultaneously
+let last403ToastAt = 0
+function notify403(message: string) {
+  const now = Date.now()
+  if (now - last403ToastAt < 2000) return
+  last403ToastAt = now
+  toast.error(message || 'Action non autorisée pour votre rôle')
 }
 
 let isRefreshing = false
@@ -51,6 +62,9 @@ async function handleResponse<T>(response: Response, skipAuthRedirect: boolean):
       error: response.statusText,
       code: 'UNKNOWN_ERROR',
     }))
+    if (response.status === 403) {
+      notify403(body.error)
+    }
     throw new ApiClientError(body.error, body.code, response.status, body.details)
   }
 
