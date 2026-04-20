@@ -137,6 +137,8 @@ router.get('/', async (req, res) => {
 
     const sql = `
       SELECT it.*,
+        u.nom AS user_nom,
+        u.prenom AS user_prenom,
         json_build_object('id', u.id, 'nom', u.nom, 'prenom', u.prenom, 'email', u.email) as technicien
       FROM indisponibilite_technicien it
       JOIN utilisateur u ON u.id = it.user_id

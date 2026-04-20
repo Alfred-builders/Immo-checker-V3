@@ -223,7 +223,10 @@ export function useIndisponibilites(params?: { user_id?: string; date_from?: str
 
   return useQuery({
     queryKey: ['indisponibilites', params],
-    queryFn: () => api<IndisponibiliteTechnicien[]>(`/indisponibilites${qs ? `?${qs}` : ''}`),
+    queryFn: async () => {
+      const res = await api<{ data: IndisponibiliteTechnicien[]; meta?: unknown }>(`/indisponibilites${qs ? `?${qs}` : ''}`)
+      return res.data ?? []
+    },
     enabled: !!params,
     retry: false,
   })

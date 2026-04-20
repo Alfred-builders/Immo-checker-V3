@@ -25,6 +25,7 @@ import { MissionCalendar } from '../../missions/components/mission-calendar'
 import { MiniCalendar } from './mini-calendar'
 import { DayMissionsModal } from './day-missions-modal'
 import { MissionDrawer } from './mission-drawer'
+import { OnboardingChecklistCard } from '../../onboarding/components/onboarding-checklist-card'
 import { formatDate } from 'src/lib/formatters'
 import { cn } from 'src/lib/cn'
 import type { Mission, MissionStatut } from '../../missions/types'
@@ -389,6 +390,9 @@ export function DashboardPage() {
                 <StatMetricCard label="À venir (7 jours)" value={stats?.upcoming_7d ?? 0} color="sky" tag="cette semaine" footerText="Planifiées" tagIcon={<CalendarBlank className="size-3" />} onClick={() => openMetric('upcoming')} />
                 <StatMetricCard label="Taux de complétion" value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} missions`} color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
               </div>
+
+              {/* Onboarding section — admin only, auto-hides when workspace is fully configured */}
+              <OnboardingChecklistCard />
 
               {/* US-838 + US-839 + US-841: Calendar + Right panel (mini calendar + actions) */}
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 px-4 lg:px-6 items-start">

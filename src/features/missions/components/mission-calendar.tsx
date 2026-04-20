@@ -1,17 +1,18 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CaretLeft, CaretRight, Clock, WarningCircle, User, Plus, ArrowsClockwise, PencilSimple, Trash,
+  CaretLeft, CaretRight, Clock, WarningCircle, User, Plus, ArrowsClockwise, PencilSimple, Trash, MapPin,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popover'
+import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
+import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
-import type { Mission, MissionStatut, IndisponibiliteTechnicien } from '../types'
+import type { Mission, IndisponibiliteTechnicien, StatutDerive } from '../types'
 import {
-  missionStatutLabels,
   sensLabels, sensColors,
   getStatutDerive, getPendingActions,
 } from '../types'
@@ -111,7 +112,8 @@ export function MissionCalendar(props: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutFilter, setStatutFilter] = useState<string>('all')
+  const [statutFilter, setStatutFilter] = useState<StatutDerive | 'all'>('all')
+  const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
   const today = new Date()
 
   const { data: techData } = useWorkspaceTechnicians()
@@ -143,18 +145,25 @@ export function MissionCalendar(props: Props) {
   const dateFrom = mode === 'week' ? toDateStr(weekDays[0]) : toDateStr(monthDays[0])
   const dateTo = mode === 'week' ? toDateStr(weekDays[6]) : toDateStr(monthDays[monthDays.length - 1])
 
+  // Fetch the full visible range — status is derived client-side so we cannot
+  // pre-filter server-side without losing the "Actions en attente" and "Confirmée"
+  // computed buckets (US-838).
   const { data: weekMissionsData, isLoading } = useMissions({
     date_from: dateFrom,
     date_to: dateTo,
-    statut: statutFilter !== 'all' ? statutFilter as MissionStatut : undefined,
     technicien_id: techFilter !== 'all' ? techFilter : undefined,
   })
   const allMissions = weekMissionsData?.data ?? []
 
+  const visibleMissions = useMemo(() => {
+    if (statutFilter === 'all') return allMissions
+    return allMissions.filter(m => getStatutDerive(m) === statutFilter)
+  }, [allMissions, statutFilter])
+
   // Group missions by day
   const missionsByDay = useMemo(() => {
     const map: Record<string, Mission[]> = {}
-    for (const m of allMissions) {
+    for (const m of visibleMissions) {
       if (!m.date_planifiee) continue
       const key = m.date_planifiee.split('T')[0]
       if (!map[key]) map[key] = []
@@ -164,7 +173,7 @@ export function MissionCalendar(props: Props) {
       map[key].sort((a, b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''))
     }
     return map
-  }, [allMissions])
+  }, [visibleMissions])
 
   // Fetch indisponibilites (week view only, non-blocking on error)
   const indispoQuery = useIndisponibilites(mode === 'week' ? { date_from: dateFrom, date_to: dateTo } : undefined)
@@ -190,7 +199,7 @@ export function MissionCalendar(props: Props) {
   }, [indisposRaw, weekDays, mode])
 
   // Mission count for the visible range
-  const totalVisible = allMissions.length
+  const totalVisible = visibleMissions.length
 
   // Navigation
   function goBack() { mode === 'week' ? setWeekOffset(w => w - 1) : setMonthOffset(m => m - 1) }
@@ -238,12 +247,13 @@ export function MissionCalendar(props: Props) {
           className="w-[170px]"
         />
 
-        <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+        <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as StatutDerive | 'all')}>
+          <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous</SelectItem>
             <SelectItem value="planifiee">Planifiée</SelectItem>
-            <SelectItem value="assignee">Assignée</SelectItem>
+            <SelectItem value="actions_en_attente">Actions en attente</SelectItem>
+            <SelectItem value="confirmee">Confirmée</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
@@ -263,6 +273,18 @@ export function MissionCalendar(props: Props) {
               <span className="text-[10px] text-muted-foreground/50 font-medium">{l.label}</span>
             </div>
           ))}
+          {mode === 'week' && (
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-4 h-2.5 rounded-sm border border-border/60"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)',
+                }}
+              />
+              <span className="text-[10px] text-muted-foreground/50 font-medium">Indisponible</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -306,7 +328,9 @@ export function MissionCalendar(props: Props) {
                   key={key}
                   className={`p-1.5 space-y-1.5 ${isToday ? 'bg-primary/[0.02]' : isWeekend ? 'bg-muted/10' : ''} ${i < 6 ? 'border-r border-border/20' : ''} ${props.onEmptyDayClick && !isLoading ? 'cursor-pointer hover:bg-primary/[0.03] transition-colors' : ''}`}
                   onClick={(e) => {
-                    if ((e.target as HTMLElement).closest('[data-mission-card]')) return
+                    const t = e.target as HTMLElement
+                    if (t.closest('[data-mission-card]')) return
+                    if (t.closest('[data-radix-popper-content-wrapper], [role="dialog"], [role="alertdialog"]')) return
                     if (props.onEmptyDayClick) props.onEmptyDayClick(key)
                   }}
                 >
@@ -314,7 +338,11 @@ export function MissionCalendar(props: Props) {
 
                   {/* Indisponibilites */}
                   {!isLoading && dayIndispos.map(ind => (
-                    <IndispoBlock key={ind.id} indispo={ind} />
+                    <IndispoBlock
+                      key={ind.id}
+                      indispo={ind}
+                      onEdit={(id) => setEditingIndispoId(id)}
+                    />
                   ))}
 
                   {!isLoading && dayMissions.map(mission => (
@@ -380,6 +408,13 @@ export function MissionCalendar(props: Props) {
         </div>
       )}
       </div>{/* close outer card */}
+
+      {/* Edit indisponibilité (US-838) — single modal at calendar root */}
+      <UnavailabilityModal
+        open={editingIndispoId !== null}
+        onOpenChange={(v) => { if (!v) setEditingIndispoId(null) }}
+        editId={editingIndispoId ?? undefined}
+      />
     </div>
   )
 }
@@ -414,6 +449,12 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
             )}
           </div>
           <p className="text-[10px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
+          {mission.adresse && (
+            <div className="flex items-center gap-0.5 mt-0.5 text-[9px] text-muted-foreground/60 truncate">
+              <MapPin className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{mission.adresse}</span>
+            </div>
+          )}
           {mission.heure_debut && (
             <div className="flex items-center gap-0.5 mt-0.5 text-[9px] text-muted-foreground/50">
               <Clock className="h-2.5 w-2.5" />
@@ -456,10 +497,11 @@ function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void
 }
 
 /* ── Indisponibilite Block (with popup) ── */
-function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) {
+function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechnicien; onEdit?: (parentId: string) => void }) {
   const deleteMutation = useDeleteIndisponibilite()
   const updateMutation = useUpdateIndisponibilite()
   const [showRecurringConfirm, setShowRecurringConfirm] = useState(false)
+  const [showSimpleConfirm, setShowSimpleConfirm] = useState(false)
   const techName = `${ind.user_prenom || ''} ${ind.user_nom || 'Technicien'}`.trim()
 
   // Virtual occurrence: id = "parentId__YYYY-MM-DD"
@@ -471,8 +513,14 @@ function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) 
     if (ind.est_recurrent) {
       setShowRecurringConfirm(true)
     } else {
-      if (confirm('Supprimer cette indisponibilité ?')) deleteMutation.mutate(parentId)
+      setShowSimpleConfirm(true)
     }
+  }
+
+  function confirmSimpleDelete() {
+    deleteMutation.mutate(parentId, {
+      onSuccess: () => setShowSimpleConfirm(false),
+    })
   }
 
   async function deleteOccurrenceOnly() {
@@ -496,25 +544,39 @@ function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) 
     setShowRecurringConfirm(false)
   }
 
+  const initials = `${(ind.user_prenom?.[0] || '').toUpperCase()}${(ind.user_nom?.[0] || '').toUpperCase()}` || '—'
+  const title = ind.motif || 'Indisponible'
+  const timeLabel = ind.est_journee_entiere
+    ? 'Journée entière'
+    : `${new Date(ind.date_debut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}–${new Date(ind.date_fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div className="px-2 py-1.5 rounded-lg bg-muted/40 border border-dashed border-border/50 cursor-pointer hover:bg-muted/60 transition-colors">
-          <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60 font-semibold">
-            {ind.est_recurrent && <ArrowsClockwise className="h-2.5 w-2.5 shrink-0 text-muted-foreground/40" />}
-            <span className="truncate">{techName}</span>
+        <div
+          data-mission-card
+          className="px-2 py-2 rounded-lg border border-border/40 cursor-pointer hover:brightness-95 transition-all min-h-[64px] flex flex-col justify-between gap-1.5"
+          style={{
+            backgroundColor: 'rgba(150, 150, 150, 0.05)',
+            backgroundImage:
+              'repeating-linear-gradient(135deg, transparent 0px, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 6px)',
+          }}
+          title={techName}
+        >
+          <div className="flex items-start gap-1.5 text-[10px] font-semibold text-foreground/75 leading-tight">
+            <span className="text-[12px] leading-none shrink-0 mt-0.5" aria-hidden>⛔</span>
+            <span className="line-clamp-2 break-words">{title}</span>
+            {ind.est_recurrent && <ArrowsClockwise size={10} weight="bold" className="shrink-0 text-muted-foreground/50 ml-auto mt-0.5" />}
           </div>
-          {ind.motif && <p className="text-[8px] text-muted-foreground/40 truncate mt-0.5">{ind.motif}</p>}
-          {!ind.est_journee_entiere && ind.date_debut && (
-            <p className="text-[8px] text-muted-foreground/40 mt-0.5">
-              {new Date(ind.date_debut).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              {' - '}
-              {new Date(ind.date_fin).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
+          <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+            <Clock size={9} className="shrink-0" />
+            <span className="truncate">{timeLabel}</span>
+            <span className="mx-0.5">·</span>
+            <span className="font-semibold">{initials}</span>
+          </div>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3" side="right">
+      <PopoverContent className="w-64 p-3" side="right" onClick={(e) => e.stopPropagation()}>
         {showRecurringConfirm ? (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-foreground">Supprimer l'indisponibilité</p>
@@ -545,6 +607,11 @@ function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) 
               {ind.est_recurrent && <p className="flex items-center gap-1"><ArrowsClockwise className="h-3 w-3" /> Récurrent</p>}
             </div>
             <div className="flex gap-2 pt-1">
+              {onEdit && (
+                <Button variant="ghost" size="xs" onClick={() => onEdit(parentId)}>
+                  <PencilSimple className="h-3 w-3" /> Modifier
+                </Button>
+              )}
               <Button variant="ghost" size="xs" className="text-destructive hover:text-destructive" onClick={handleDeleteClick} disabled={deleteMutation.isPending || updateMutation.isPending}>
                 <Trash className="h-3 w-3" /> Supprimer
               </Button>
@@ -552,6 +619,16 @@ function IndispoBlock({ indispo: ind }: { indispo: IndisponibiliteTechnicien }) 
           </div>
         )}
       </PopoverContent>
+      <ConfirmDialog
+        open={showSimpleConfirm}
+        onOpenChange={setShowSimpleConfirm}
+        title="Supprimer l'indisponibilité ?"
+        description={`${title} — ${techName} · ${timeLabel}. Cette action est irréversible.`}
+        confirmLabel={deleteMutation.isPending ? 'Suppression…' : 'Supprimer'}
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={confirmSimpleDelete}
+      />
     </Popover>
   )
 }
