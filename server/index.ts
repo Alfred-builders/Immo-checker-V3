@@ -20,6 +20,7 @@ import indisponibiliteRoutes, { technicianConflictRouter } from './routes/indisp
 import dashboardRoutes from './routes/dashboard.js'
 import apiKeyRoutes from './routes/api-keys.js'
 import webhookRoutes from './routes/webhooks.js'
+import notificationRoutes from './routes/notifications.js'
 import docsRouter from './routes/docs.js'
 import v1MissionsRouter from './routes/v1/missions.js'
 import v1EdlRouter from './routes/v1/edl.js'
@@ -78,6 +79,7 @@ app.use('/api/technicians', technicianConflictRouter)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/api-keys', apiKeyRoutes)
 app.use('/api/webhooks', webhookRoutes)
+app.use('/api/notifications', notificationRoutes)
 app.use('/api/docs', docsRouter)
 
 // ── Public API v1 (API key auth + rate limit) ──

@@ -595,3 +595,23 @@ CREATE INDEX IF NOT EXISTS idx_refresh_token_hash ON refresh_token(token_hash);
 ALTER TABLE workspace_user ADD COLUMN IF NOT EXISTS est_actif BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE workspace_user ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_workspace_user_actif ON workspace_user(workspace_id, est_actif) WHERE est_actif = true;
+
+-- ============================================================
+-- MIGRATION: In-app notifications (US-821)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notification (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id       UUID NOT NULL REFERENCES utilisateur(id) ON DELETE CASCADE,
+  workspace_id  UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  type          TEXT NOT NULL,
+  titre         TEXT NOT NULL,
+  message       TEXT,
+  lien          TEXT,
+  est_lu        BOOLEAN NOT NULL DEFAULT false,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at       TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_notification_user_ws_unread
+  ON notification (user_id, workspace_id, est_lu, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notification_created_at
+  ON notification (created_at);

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, Bell, PushPin, CaretUpDown, Check, ArrowLeft, User } from '@phosphor-icons/react'
+import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, PushPin, CaretUpDown, Check, ArrowLeft } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/use-auth'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api-client'
+import { BellDropdown } from '../features/notifications/components/bell-dropdown'
 
 const SIDEBAR_COLLAPSED_W = 64
 const SIDEBAR_EXPANDED_W = 240
@@ -205,21 +206,20 @@ export function MainLayout() {
 
         <div className={`border-t border-border/50 py-3 ${ICON_PL} pr-3 space-y-2`}>
           <WorkspaceSwitcher expanded={expanded} />
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center text-primary font-semibold text-[11px] shrink-0">{initials}</div>
+          <Link
+            to="/app/profil"
+            title="Mon profil"
+            className="flex items-center gap-3 px-1 py-1 -mx-1 rounded-md hover:bg-accent/50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center text-primary font-semibold text-[11px] shrink-0 transition-transform hover:scale-105">{initials}</div>
             {expanded && (
               <div className="flex-1 min-w-0"><p className="text-[13px] font-medium text-foreground truncate">{user?.prenom} {user?.nom}</p></div>
             )}
-          </div>
+          </Link>
           {expanded && (
-            <div className="space-y-0.5">
-              <a href="/app/profil" className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors">
-                <User size={14} /><span>Mon profil</span>
-              </a>
-              <button onClick={handleLogout} className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors">
-                <SignOut size={14} /><span>Déconnexion</span>
-              </button>
-            </div>
+            <button onClick={handleLogout} className="w-full flex items-center gap-2 px-1 py-1.5 text-[12px] text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors">
+              <SignOut size={14} /><span>Déconnexion</span>
+            </button>
           )}
         </div>
       </aside>
@@ -247,10 +247,7 @@ export function MainLayout() {
               ))}
             </nav>
           </div>
-          <button className="relative h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
-            <Bell size={18} />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-          </button>
+          <BellDropdown />
         </header>
 
         <main className="flex-1">

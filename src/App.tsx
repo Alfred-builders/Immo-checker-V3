@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Component, useEffect, type ReactNode, type ErrorInfo } from 'react'
 import { AuthProvider, useAuth } from './hooks/use-auth'
+import { RequireRole } from './components/shared/require-role'
 import { AuthLayout } from './layouts/auth-layout'
 import { MainLayout } from './layouts/main-layout'
 import { LoginPage } from './features/auth/components/login-page'
@@ -21,12 +22,13 @@ import { CriteresPage } from './features/templates/components/criteres-page'
 import { MissionsPage } from './features/missions/components/missions-page'
 import { MissionDetailPage } from './features/missions/components/mission-detail-page'
 import { ProfilePage } from './features/auth/components/profile-page'
+import { NotificationsPage } from './features/notifications/components/notifications-page'
 import { DashboardPage } from './features/dashboard/components/dashboard-page'
 import { ShadcnDashboard } from './features/dashboard/components/shadcn-dashboard'
 import VibesSelection from './vibes-selection'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
 
   if (isLoading) {
     return (
@@ -38,6 +40,11 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // Bloquer les techniciens du back-office webapp — réservé à l'app tablette
+  if (user?.role === 'technicien') {
+    return <Navigate to="/login?reason=technicien_webapp" replace />
   }
 
   return <>{children}</>
@@ -65,12 +72,13 @@ function AppRoutes() {
         <Route path="/app/patrimoine/lots/:id" element={<LotDetailPage />} />
         <Route path="/app/tiers" element={<TiersPage />} />
         <Route path="/app/tiers/:id" element={<TiersDetailPage />} />
-        <Route path="/app/parametres" element={<SettingsPage />} />
-        <Route path="/app/parametres/templates" element={<TemplatesPage />} />
-        <Route path="/app/parametres/templates/:id" element={<TemplateDetailPage />} />
-        <Route path="/app/parametres/catalogue" element={<CataloguePage />} />
-        <Route path="/app/parametres/criteres" element={<CriteresPage />} />
+        <Route path="/app/parametres" element={<RequireRole roles={['admin', 'gestionnaire']}><SettingsPage /></RequireRole>} />
+        <Route path="/app/parametres/templates" element={<RequireRole roles={['admin', 'gestionnaire']}><TemplatesPage /></RequireRole>} />
+        <Route path="/app/parametres/templates/:id" element={<RequireRole roles={['admin', 'gestionnaire']}><TemplateDetailPage /></RequireRole>} />
+        <Route path="/app/parametres/catalogue" element={<RequireRole roles={['admin', 'gestionnaire']}><CataloguePage /></RequireRole>} />
+        <Route path="/app/parametres/criteres" element={<RequireRole roles={['admin', 'gestionnaire']}><CriteresPage /></RequireRole>} />
         <Route path="/app/profil" element={<ProfilePage />} />
+        <Route path="/app/notifications" element={<NotificationsPage />} />
         <Route path="/app/missions" element={<MissionsPage />} />
         <Route path="/app/missions/:id" element={<MissionDetailPage />} />
         <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
