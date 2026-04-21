@@ -266,16 +266,16 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                 <div className="bg-muted/20 rounded-xl p-4 space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-[11px]">Date</Label>
-                    <Input type="date" value={datePlanifiee} onChange={(e) => handlePlanningChange('date_planifiee', e.target.value)} disabled={isLocked} className="h-9" />
+                    <Input type="date" value={datePlanifiee} onChange={(e) => handlePlanningChange('date_planifiee', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-[11px]">Début</Label>
-                      <Input type="time" value={heureDebut} onChange={(e) => handlePlanningChange('heure_debut', e.target.value)} disabled={isLocked} className="h-9" />
+                      <Input type="time" value={heureDebut} onChange={(e) => handlePlanningChange('heure_debut', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-[11px]">Fin</Label>
-                      <Input type="time" value={heureFin} onChange={(e) => handlePlanningChange('heure_fin', e.target.value)} disabled={isLocked} className="h-9" />
+                      <Input type="time" value={heureFin} onChange={(e) => handlePlanningChange('heure_fin', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
                     </div>
                   </div>
                   <div className="space-y-1.5">

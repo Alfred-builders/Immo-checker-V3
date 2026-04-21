@@ -278,10 +278,10 @@ export function MissionDetailPage() {
         <CardBlock title="Planning" icon={Calendar} locked={isLocked}>
           {editing && !isTerminated ? (
             <div className="space-y-3">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Date</Label><Input type="date" value={formData.date_planifiee} onChange={(e) => setFormData(prev => ({ ...prev, date_planifiee: e.target.value }))} className="h-10" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Date</Label><Input type="date" value={formData.date_planifiee} onChange={(e) => setFormData(prev => ({ ...prev, date_planifiee: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><Input type="time" value={formData.heure_debut} onChange={(e) => setFormData(prev => ({ ...prev, heure_debut: e.target.value }))} className="h-10" /></div>
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure fin</Label><Input type="time" value={formData.heure_fin} onChange={(e) => setFormData(prev => ({ ...prev, heure_fin: e.target.value }))} className="h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><Input type="time" value={formData.heure_debut} onChange={(e) => setFormData(prev => ({ ...prev, heure_debut: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure fin</Label><Input type="time" value={formData.heure_fin} onChange={(e) => setFormData(prev => ({ ...prev, heure_fin: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
               </div>
               <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Statut RDV</Label><Select value={formData.statut_rdv} onValueChange={(v) => setFormData(prev => ({ ...prev, statut_rdv: v }))}><SelectTrigger className="h-10"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="a_confirmer">À confirmer</SelectItem><SelectItem value="confirme">Confirmé</SelectItem><SelectItem value="reporte">Reporté</SelectItem></SelectContent></Select></div>
             </div>

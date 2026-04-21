@@ -198,7 +198,7 @@ export function TiersDetailPage() {
                 <Input value={formData.prenom} onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))} className="h-9 text-sm" />
               </FieldRow>
               <FieldRow label="Date de naissance" editing={editing} value={tiers.date_naissance || '—'}>
-                <Input type="date" value={formData.date_naissance} onChange={(e) => setFormData(prev => ({ ...prev, date_naissance: e.target.value }))} className="h-9 text-sm" />
+                <Input type="date" value={formData.date_naissance} onChange={(e) => setFormData(prev => ({ ...prev, date_naissance: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-9 text-sm cursor-pointer" />
               </FieldRow>
               <FieldRow label="Notes" editing={editing} value={tiers.notes || '—'} last>
                 <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} className="text-sm" />

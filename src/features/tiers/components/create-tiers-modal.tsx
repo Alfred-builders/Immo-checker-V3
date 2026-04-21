@@ -117,7 +117,7 @@ export function CreateTiersModal({ open, onOpenChange, onCreated, defaultTypePer
                   </div>
                   <div className="col-span-2 space-y-1.5">
                     <Label className="text-xs">Date de naissance</Label>
-                    <Input type="date" value={dateNaissance} onChange={(e) => setDateNaissance(e.target.value)} className="h-9" />
+                    <Input type="date" value={dateNaissance} onChange={(e) => setDateNaissance(e.target.value)} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-9 cursor-pointer" />
                   </div>
                 </>
               ) : (
