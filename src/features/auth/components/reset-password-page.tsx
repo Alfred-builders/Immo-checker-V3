@@ -25,7 +25,7 @@ export function ResetPasswordPage() {
       await api('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) })
       setDone(true)
     } catch (err: any) {
-      setError(err.message || 'Lien invalide ou expire')
+      setError(err.message || 'Lien invalide ou expiré')
     }
     setLoading(false)
   }
@@ -33,7 +33,7 @@ export function ResetPasswordPage() {
   if (done) {
     return (
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-foreground mb-2">Mot de passe reinitialise</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Mot de passe réinitialisé</h2>
         <p className="text-sm text-muted-foreground mb-6">Vous pouvez maintenant vous connecter.</p>
         <Link to="/login" className="text-sm text-primary hover:text-primary/80 font-medium">Se connecter</Link>
       </div>
@@ -43,7 +43,7 @@ export function ResetPasswordPage() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-foreground mb-1">Nouveau mot de passe</h2>
-      <p className="text-sm text-muted-foreground mb-6">Min 8 caracteres, 1 majuscule, 1 chiffre.</p>
+      <p className="text-sm text-muted-foreground mb-6">Min 8 caractères, 1 majuscule, 1 chiffre.</p>
       {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -56,7 +56,7 @@ export function ResetPasswordPage() {
           <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="h-10 rounded-xl" />
         </div>
         <Button type="submit" className="w-full h-10 rounded-xl font-semibold" disabled={loading}>
-          {loading ? 'Reinitialisation...' : 'Reinitialiser'}
+          {loading ? 'Réinitialisation...' : 'Réinitialiser'}
         </Button>
       </form>
     </div>

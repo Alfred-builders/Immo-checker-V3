@@ -44,9 +44,9 @@ export function RegisterPage() {
   if (!invitation?.valid) {
     return (
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-foreground mb-2">Invitation expiree</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Invitation expirée</h2>
         <p className="text-sm text-muted-foreground mb-6">Ce lien d'invitation n'est plus valide. Contactez votre administrateur pour en recevoir un nouveau.</p>
-        <Link to="/login" className="text-sm text-primary hover:text-primary/80 font-medium">Retour a la connexion</Link>
+        <Link to="/login" className="text-sm text-primary hover:text-primary/80 font-medium">Retour à la connexion</Link>
       </div>
     )
   }
@@ -84,7 +84,7 @@ export function RegisterPage() {
           <img src="/logo.png" alt="ImmoChecker" className="h-12 w-12 mx-auto rounded-xl object-cover mb-3" />
         )}
         <h2 className="text-lg font-semibold text-foreground">Rejoindre {invitation.workspace_nom}</h2>
-        <p className="text-sm text-muted-foreground mt-1">Role : <span className="capitalize font-medium">{invitation.role}</span></p>
+        <p className="text-sm text-muted-foreground mt-1">Rôle : <span className="capitalize font-medium">{invitation.role}</span></p>
       </div>
 
       {invitation.is_first_admin && (
@@ -105,7 +105,7 @@ export function RegisterPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-muted-foreground">Prenom *</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Prénom *</Label>
             <Input value={prenom} onChange={(e) => setPrenom(e.target.value)} required className="h-10 rounded-xl" />
           </div>
           <div className="space-y-2">
