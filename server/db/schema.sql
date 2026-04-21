@@ -77,6 +77,17 @@ CREATE TABLE IF NOT EXISTS refresh_token (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Password reset tokens (separate from invitation — different semantics)
+CREATE TABLE IF NOT EXISTS password_reset_token (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES utilisateur(id) ON DELETE CASCADE,
+  token_hash VARCHAR(64) NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_token_hash ON password_reset_token(token_hash) WHERE used_at IS NULL;
+
 -- ============================================================
 -- COUCHE 2 : TIERS
 -- ============================================================

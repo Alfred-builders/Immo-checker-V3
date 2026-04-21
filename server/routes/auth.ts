@@ -321,21 +321,17 @@ router.post('/forgot-password', forgotLimiter, async (req, res) => {
     )
     if (userResult.rows.length === 0) { sendSuccess(res, { sent: true }); return }
 
-    // Generate reset token — store HASH in DB, send plain token to user
-    const token = crypto.randomUUID()
+    const token = crypto.randomBytes(32).toString('hex')
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
     await import('../db/index.js').then(db =>
       db.query(
-        `INSERT INTO invitation (workspace_id, email, role, token, invited_by, expires_at)
-         SELECT wu.workspace_id, $1, 'reset_password', $2, $3, $4
-         FROM workspace_user wu WHERE wu.user_id = $3 LIMIT 1`,
-        [email.toLowerCase().trim(), tokenHash, userResult.rows[0].id, expiresAt]
+        `INSERT INTO password_reset_token (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+        [userResult.rows[0].id, tokenHash, expiresAt]
       )
     )
 
-    // Send email with plain token (not the hash)
     const { sendPasswordResetEmail } = await import('../services/email-service.js')
     await sendPasswordResetEmail(email.toLowerCase().trim(), token).catch(err => console.error('[email] Reset email failed:', err))
 
@@ -354,32 +350,30 @@ router.post('/reset-password', async (req, res) => {
       return
     }
 
-    // Hash the incoming token to compare with stored hash
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
 
-    const invResult = await import('../db/index.js').then(db =>
+    const tokenResult = await import('../db/index.js').then(db =>
       db.query(
-        `SELECT i.email FROM invitation i
-         WHERE i.token = $1 AND i.role = 'reset_password' AND i.accepted_at IS NULL AND i.expires_at > now()`,
+        `SELECT t.id, t.user_id, u.email FROM password_reset_token t
+         JOIN utilisateur u ON u.id = t.user_id
+         WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now()`,
         [tokenHash]
       )
     )
 
-    if (invResult.rows.length === 0) {
+    if (tokenResult.rows.length === 0) {
       sendError(res, { status: 400, message: 'Lien de réinitialisation invalide ou expiré', code: 'TOKEN_INVALID' })
       return
     }
 
     const { hashPassword } = await import('../services/auth-service.js')
     const hash = await hashPassword(password)
+    const { id: tokenId, user_id: userId } = tokenResult.rows[0]
 
-    await import('../db/index.js').then(db =>
-      db.query(`UPDATE utilisateur SET password_hash = $1, updated_at = now() WHERE email = $2`, [hash, invResult.rows[0].email])
-    )
-
-    await import('../db/index.js').then(db =>
-      db.query(`UPDATE invitation SET accepted_at = now() WHERE token = $1`, [tokenHash])
-    )
+    await import('../db/index.js').then(async db => {
+      await db.query(`UPDATE utilisateur SET password_hash = $1, updated_at = now() WHERE id = $2`, [hash, userId])
+      await db.query(`UPDATE password_reset_token SET used_at = now() WHERE id = $1`, [tokenId])
+    })
 
     sendSuccess(res, { reset: true })
   } catch (error) {
@@ -396,7 +390,7 @@ router.get('/invitation/:token', async (req, res) => {
                 (SELECT COUNT(*)::int FROM workspace_user wu WHERE wu.workspace_id = w.id) AS existing_members
          FROM invitation i
          JOIN workspace w ON w.id = i.workspace_id
-         WHERE i.token = $1 AND i.accepted_at IS NULL AND i.expires_at > now() AND i.role != 'reset_password'`,
+         WHERE i.token = $1 AND i.accepted_at IS NULL AND i.expires_at > now()`,
         [req.params.token]
       )
     )
