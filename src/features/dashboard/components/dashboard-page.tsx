@@ -388,7 +388,7 @@ export function DashboardPage() {
                 <StatMetricCard label="EDL du mois" value={stats?.edl_month ?? 0} tag="+8 ce mois" footerText="Entrées + sorties" tagIcon={<IconTrendingUp className="size-3" />} onClick={() => openMetric('edl')} />
                 <StatMetricCard label="Actions en attente" value={stats?.pending_actions ?? 0} color="amber" tag="urgent" footerText="À traiter" tagIcon={<WarningCircle className="size-3" weight="fill" />} onClick={() => openMetric('pending')} />
                 <StatMetricCard label="À venir (7 jours)" value={stats?.upcoming_7d ?? 0} color="sky" tag="cette semaine" footerText="Planifiées" tagIcon={<CalendarBlank className="size-3" />} onClick={() => openMetric('upcoming')} />
-                <StatMetricCard label="Taux de complétion" value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} missions`} color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
+                <StatMetricCard label={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} ce mois (hors annulées)`} value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText="Missions terminées ce mois" color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
               </div>
 
               {/* Onboarding section — admin only, auto-hides when workspace is fully configured */}
@@ -469,7 +469,7 @@ export function DashboardPage() {
                 <StatMetricCard label="EDL du mois" value={stats?.edl_month ?? 0} tag="+8 ce mois" footerText="Entrées + sorties" tagIcon={<IconTrendingUp className="size-3" />} onClick={() => openMetric('edl')} />
                 <StatMetricCard label="Actions en attente" value={stats?.pending_actions ?? 0} color="amber" tag="urgent" footerText="À traiter" tagIcon={<WarningCircle className="size-3" weight="fill" />} onClick={() => openMetric('pending')} />
                 <StatMetricCard label="À venir (7 jours)" value={stats?.upcoming_7d ?? 0} color="sky" tag="cette semaine" footerText="Planifiées" tagIcon={<CalendarBlank className="size-3" />} onClick={() => openMetric('upcoming')} />
-                <StatMetricCard label="Taux de complétion" value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} missions`} color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
+                <StatMetricCard label={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} ce mois (hors annulées)`} value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText="Missions terminées ce mois" color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
               </div>
 
               {/* Area chart */}
