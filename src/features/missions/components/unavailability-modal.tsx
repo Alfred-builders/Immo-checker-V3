@@ -8,7 +8,7 @@ import { Textarea } from 'src/components/ui/textarea'
 import { Switch } from 'src/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import {
-  useIndisponibilites,
+  useIndisponibilite,
   useCreateIndisponibilite,
   useUpdateIndisponibilite,
   useDeleteIndisponibilite,
@@ -51,8 +51,7 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
   const deleteMutation = useDeleteIndisponibilite()
 
   // Fetch existing data if editing
-  const { data: allIndispos } = useIndisponibilites()
-  const existingData = editId ? allIndispos?.find(i => i.id === editId) : undefined
+  const { data: existingData } = useIndisponibilite(editId)
 
   // Form state
   const [userId, setUserId] = useState(preselectedUserId || '')
@@ -252,8 +251,9 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                 type="date"
                 value={dateDebut}
                 onChange={(e) => setDateDebut(e.target.value)}
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
                 required
-                className="h-9"
+                className="h-9 cursor-pointer"
               />
             </div>
             <div className="space-y-1.5">
@@ -262,7 +262,8 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                 type="date"
                 value={dateFin}
                 onChange={(e) => setDateFin(e.target.value)}
-                className="h-9"
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="h-9 cursor-pointer"
                 min={dateDebut}
               />
             </div>
@@ -277,7 +278,8 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                   type="time"
                   value={heureDebut}
                   onChange={(e) => setHeureDebut(e.target.value)}
-                  className="h-9"
+                  onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                  className="h-9 cursor-pointer"
                 />
               </div>
               <div className="space-y-1.5">
@@ -286,7 +288,8 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                   type="time"
                   value={heureFin}
                   onChange={(e) => setHeureFin(e.target.value)}
-                  className="h-9"
+                  onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                  className="h-9 cursor-pointer"
                 />
               </div>
             </div>
@@ -399,7 +402,8 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                         type="date"
                         value={recurrenceUntil}
                         onChange={(e) => setRecurrenceUntil(e.target.value)}
-                        className="h-7 text-xs"
+                        onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                        className="h-7 text-xs cursor-pointer"
                         min={dateDebut}
                       />
                     )}

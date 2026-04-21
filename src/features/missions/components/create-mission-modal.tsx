@@ -283,20 +283,22 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
               type="date"
               value={datePlanifiée}
               onChange={(e) => setDatePlanifiée(e.target.value)}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
               required
-              className="h-9"
+              className="h-9 cursor-pointer"
             />
           </div>
 
           {/* 5. Heures */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Heure debut</Label>
+              <Label className="text-xs">Heure début</Label>
               <Input
                 type="time"
                 value={heureDebut}
                 onChange={(e) => setHeureDebut(e.target.value)}
-                className="h-9"
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="h-9 cursor-pointer"
               />
             </div>
             <div className="space-y-1.5">
@@ -305,7 +307,8 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                 type="time"
                 value={heureFin}
                 onChange={(e) => setHeureFin(e.target.value)}
-                className="h-9"
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                className="h-9 cursor-pointer"
               />
             </div>
           </div>
