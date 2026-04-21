@@ -450,13 +450,13 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
           </div>
           <p className="text-[10px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
           {mission.adresse && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[9px] text-muted-foreground/60 truncate">
+            <div className="flex items-center gap-0.5 mt-0.5 text-[10px] text-muted-foreground/80 truncate">
               <MapPin className="h-2.5 w-2.5 shrink-0" />
               <span className="truncate">{mission.adresse}</span>
             </div>
           )}
           {mission.heure_debut && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[9px] text-muted-foreground/50">
+            <div className="flex items-center gap-0.5 mt-0.5 text-[10px] font-medium text-muted-foreground/75">
               <Clock className="h-2.5 w-2.5" />
               {formatTime(mission.heure_debut)}{mission.heure_fin ? `-${formatTime(mission.heure_fin)}` : ''}
             </div>
@@ -563,16 +563,19 @@ function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechni
           }}
           title={techName}
         >
-          <div className="flex items-start gap-1.5 text-[10px] font-semibold text-foreground/75 leading-tight">
-            <span className="text-[12px] leading-none shrink-0 mt-0.5" aria-hidden>⛔</span>
-            <span className="line-clamp-2 break-words">{title}</span>
-            {ind.est_recurrent && <ArrowsClockwise size={10} weight="bold" className="shrink-0 text-muted-foreground/50 ml-auto mt-0.5" />}
+          <div className="flex items-start justify-between gap-1">
+            <div className="flex items-start gap-1.5 text-[10px] font-semibold text-foreground/75 leading-tight min-w-0">
+              <span className="text-[12px] leading-none shrink-0 mt-0.5" aria-hidden>⛔</span>
+              <span className="line-clamp-2 break-words">{title}</span>
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0">
+              {ind.est_recurrent && <ArrowsClockwise size={10} weight="bold" className="text-muted-foreground/50" />}
+              <div className="h-4 w-4 rounded bg-primary/10 flex items-center justify-center text-[7px] font-bold text-primary">{initials}</div>
+            </div>
           </div>
-          <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+          <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/75">
             <Clock size={9} className="shrink-0" />
             <span className="truncate">{timeLabel}</span>
-            <span className="mx-0.5">·</span>
-            <span className="font-semibold">{initials}</span>
           </div>
         </div>
       </PopoverTrigger>
