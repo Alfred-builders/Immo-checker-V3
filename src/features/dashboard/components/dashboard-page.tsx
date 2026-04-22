@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react'
-import { Plus, CalendarBlank, Clock, WarningCircle, CaretRight, CaretUp, CaretDown, FileText, SquaresFour, ChartLine, CheckCircle } from '@phosphor-icons/react'
+import { Plus, CalendarBlank, Clock, WarningCircle, CaretRight, CaretUp, CaretDown, FileText, SquaresFour, ChartLine, CheckCircle, MapPin, User } from '@phosphor-icons/react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, Line, LineChart, Pie, PieChart, Sector, XAxis } from 'recharts'
 import type { PieSectorShapeProps } from 'recharts/types/polar/Pie'
 import { Button } from 'src/components/ui/button'
@@ -26,7 +26,7 @@ import { MiniCalendar } from './mini-calendar'
 import { DayMissionsModal } from './day-missions-modal'
 import { MissionDrawer } from './mission-drawer'
 import { OnboardingChecklistCard } from '../../onboarding/components/onboarding-checklist-card'
-import { formatDate } from 'src/lib/formatters'
+import { formatDate, formatTime } from 'src/lib/formatters'
 import { cn } from 'src/lib/cn'
 import type { Mission, MissionStatut } from '../../missions/types'
 import { missionStatutLabels, missionStatutColors, sensLabels, sensColors, getPendingActions } from '../../missions/types'
@@ -310,9 +310,28 @@ export function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-medium text-foreground truncate max-w-[200px]">{m.lot_designation}</div>
-                                  <div className="text-[11px] text-muted-foreground/50 truncate max-w-[200px]">{m.adresse || m.batiment_designation}</div>
+                                  {(m.adresse || m.batiment_designation) && (
+                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 truncate max-w-[200px] mt-0.5">
+                                      <MapPin className="h-2.5 w-2.5 shrink-0" />
+                                      <span className="truncate">{m.adresse || m.batiment_designation}</span>
+                                    </div>
+                                  )}
                                 </td>
-                                <td className="px-4 py-3 text-muted-foreground text-[12px]">{formatDate(m.date_planifiee)}</td>
+                                <td className="px-4 py-3">
+                                  <div className="text-[12px] text-muted-foreground">{formatDate(m.date_planifiee)}</div>
+                                  {m.heure_debut && (
+                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5">
+                                      <Clock className="h-2.5 w-2.5 shrink-0" />
+                                      <span>{formatTime(m.heure_debut)}{m.heure_fin ? `–${formatTime(m.heure_fin)}` : ''}</span>
+                                    </div>
+                                  )}
+                                  {m.technicien && (
+                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5">
+                                      <User className="h-2.5 w-2.5 shrink-0" />
+                                      <span className="truncate">{m.technicien.prenom} {m.technicien.nom}</span>
+                                    </div>
+                                  )}
+                                </td>
                                 <td className="px-4 py-3">
                                   <div className="flex flex-wrap gap-1">
                                     {m.edl_types.map(type => (
