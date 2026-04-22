@@ -119,7 +119,8 @@ export function MissionCalendar(props: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutFilter, setStatutFilter] = useState<'all' | 'a_traiter' | 'prete' | 'terminee' | 'annulee'>('all')
+  const [statutMissionFilter, setStatutMissionFilter] = useState<'all' | 'planifiee' | 'terminee' | 'annulee'>('all')
+  const [statutRdvFilter, setStatutRdvFilter] = useState<'all' | 'a_confirmer' | 'confirme' | 'reporte'>('all')
   const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
   const today = new Date()
 
@@ -163,14 +164,12 @@ export function MissionCalendar(props: Props) {
   const allMissions = weekMissionsData?.data ?? []
 
   const visibleMissions = useMemo(() => {
-    if (statutFilter === 'all') return allMissions
-    const aTraiterGroup: StatutAffichage[] = ['a_assigner', 'invitation_envoyee', 'refusee', 'rdv_a_confirmer', 'reportee']
     return allMissions.filter(m => {
-      const s = getStatutAffichage(m)
-      if (statutFilter === 'a_traiter') return aTraiterGroup.includes(s)
-      return s === statutFilter
+      if (statutMissionFilter !== 'all' && m.statut !== statutMissionFilter) return false
+      if (statutRdvFilter !== 'all' && m.statut_rdv !== statutRdvFilter) return false
+      return true
     })
-  }, [allMissions, statutFilter])
+  }, [allMissions, statutMissionFilter, statutRdvFilter])
 
   // Group missions by day
   const missionsByDay = useMemo(() => {
@@ -259,14 +258,23 @@ export function MissionCalendar(props: Props) {
           className="w-[170px]"
         />
 
-        <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as typeof statutFilter)}>
-          <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+        <Select value={statutMissionFilter} onValueChange={(v) => setStatutMissionFilter(v as typeof statutMissionFilter)}>
+          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Statut mission" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="a_traiter">À traiter</SelectItem>
-            <SelectItem value="prete">Prête</SelectItem>
+            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="planifiee">Planifiée</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statutRdvFilter} onValueChange={(v) => setStatutRdvFilter(v as typeof statutRdvFilter)}>
+          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Statut RDV" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous RDV</SelectItem>
+            <SelectItem value="a_confirmer">À confirmer</SelectItem>
+            <SelectItem value="confirme">Confirmé</SelectItem>
+            <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
 
