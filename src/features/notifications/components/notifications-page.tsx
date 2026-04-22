@@ -112,6 +112,11 @@ export function NotificationsPage() {
   )
 }
 
+// Strip leading emoji markers (e.g. 🧪 from dev/test seeds) from the displayed title.
+function cleanTitle(s: string): string {
+  return s.replace(/^\s*\p{Extended_Pictographic}[\uFE00-\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u, '')
+}
+
 function Row({ n }: { n: Notification }) {
   const navigate = useNavigate()
   const markAsRead = useMarkAsRead()
@@ -132,7 +137,7 @@ function Row({ n }: { n: Notification }) {
       <button onClick={handleClick} className="flex-1 min-w-0 text-left">
         <div className="flex items-start gap-2">
           <p className={`text-sm leading-tight ${n.est_lu ? 'text-foreground' : 'font-semibold text-foreground'}`}>
-            {n.titre}
+            {cleanTitle(n.titre)}
           </p>
           {!n.est_lu && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1.5" />}
         </div>

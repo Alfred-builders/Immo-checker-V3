@@ -43,6 +43,11 @@ function colorFor(type: string) {
   return COLOR_MAP[type] ?? 'text-muted-foreground bg-muted'
 }
 
+// Strip leading emoji markers (e.g. 🧪 from dev/test seeds) from the displayed title.
+function cleanTitle(s: string): string {
+  return s.replace(/^\s*\p{Extended_Pictographic}[\uFE00-\uFE0F\u200D\p{Extended_Pictographic}]*\s*/u, '')
+}
+
 export function BellDropdown() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -143,7 +148,7 @@ function NotificationItem({ n, onClick }: { n: Notification; onClick: () => void
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-[13px] leading-tight ${n.est_lu ? 'text-foreground' : 'font-semibold text-foreground'}`}>
-            {n.titre}
+            {cleanTitle(n.titre)}
           </p>
           {!n.est_lu && <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-1" />}
         </div>
