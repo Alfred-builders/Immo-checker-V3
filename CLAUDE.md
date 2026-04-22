@@ -97,7 +97,7 @@ Ces décisions sont dispersées dans les EPICs et les docs de référence. Elles
 ### Missions
 
 - 1 mission = 1 lot (non modifiable apres creation)
-- Statut simplifie : `planifiee` | `assignee` | `terminee` | `annulee`
+- Statut simplifie (cycle de vie pur) : `planifiee` | `terminee` | `annulee`. L'acceptation technicien vit dans `MissionTechnicien.statut_invitation`, la confirmation locataire dans `statut_rdv` — 3 axes orthogonaux. Le badge UI dérivé est calculé via `getStatutAffichage()` (8 valeurs).
 - Auto-terminaison : quand tous les EDL lies sont signes
 - Verrouillage post-terminaison : date/heure/technicien en lecture seule. Seuls commentaire + cles modifiables.
 - Annulation bloquee si mission terminee (EDL signes = documents legaux)
@@ -144,7 +144,7 @@ Le technicien n'a acces qu'a l'app mobile. Pas d'interface desktop.
 
 ### Mission
 
-`Planifiee` -> `Assignee` -> `Terminee` (auto) | `Annulee`
+`Planifiee` -> `Terminee` (auto quand tous EDL signés) | `Annulee`. L'acceptation technicien ne change pas `mission.statut` — elle vit dans `MissionTechnicien.statut_invitation`.
 
 ### EDL / Inventaire
 
@@ -152,7 +152,7 @@ Le technicien n'a acces qu'a l'app mobile. Pas d'interface desktop.
 
 ### Statuts separes sur la Mission
 
-- **statut** : `planifiee` | `assignee` | `terminee` | `annulee`
+- **statut** : `planifiee` | `terminee` | `annulee` (cycle de vie pur — 3 valeurs)
 - **statut_rdv** : `a_confirmer` | `confirme` | `reporte`
 - **MissionTechnicien.statut_invitation** : `en_attente` | `accepte` | `refuse`
 
@@ -311,9 +311,10 @@ Ces regles sont non-negociables en V1. Elles evitent le scope creep et clarifien
 
 ## 7d. Transitions d'etat — Regles critiques
 
-- **planifiee → assignee** : quand technicien accepte l'invitation
-- **assignee → terminee** : auto quand TOUS les EDL lies sont signes
+- **Acceptation technicien** : ne change PAS `mission.statut` — `MissionTechnicien.statut_invitation` passe `en_attente → accepte`. La mission reste `planifiee`.
+- **planifiee → terminee** : auto quand TOUS les EDL lies sont signes
 - **annulation** : admin + motif obligatoire. **IMPOSSIBLE si terminee** (erreur `MISSION_LOCKED`)
+- **Badge UI unique** : `getStatutAffichage()` combine les 3 axes (`statut` + `statut_invitation` + `statut_rdv`) en un label/couleur unique (8 valeurs : a_assigner, invitation_envoyee, refusee, rdv_a_confirmer, reportee, prete, terminee, annulee). Source de vérité pour toute l'UI.
 - **Verrouillage post-terminaison** : tout lecture seule SAUF commentaire + CleMission (statut, lieu_depot)
 - **lot_id** immutable des la creation de mission
 - **EDL** : `brouillon → signe` (immuable, document legal) ou `brouillon → infructueux`
