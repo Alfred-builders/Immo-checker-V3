@@ -11,10 +11,10 @@ import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
-import type { Mission, IndisponibiliteTechnicien, StatutAffichage } from '../types'
+import type { Mission, IndisponibiliteTechnicien, MissionStatut } from '../types'
 import {
   sensLabels, sensColors,
-  getStatutAffichage, getPendingActions,
+  getPendingActions,
 } from '../types'
 
 /* ── Constants ── */
@@ -24,33 +24,21 @@ const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Jui
 
 type CalendarMode = 'week' | 'month'
 
-// Couleurs de fond pastel par statut d'affichage (8 valeurs, cf types.ts).
-// Regroupées visuellement : "à traiter" = amber/orange, "prête" = vert, "terminée" = gris, "annulée" = rouge.
-const statutCardColors: Record<StatutAffichage, string> = {
-  a_assigner: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  invitation_envoyee: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
-  refusee: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  rdv_a_confirmer: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
-  reportee: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
-  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
+// Couleurs de fond pastel par statut mission brut (3 valeurs).
+const statutCardColors: Record<MissionStatut, string> = {
+  planifiee: 'bg-sky-50 border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800',
   terminee: 'bg-muted/30 border-border/30',
   annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
-const statutDotColors: Record<StatutAffichage, string> = {
-  a_assigner: 'bg-orange-500',
-  invitation_envoyee: 'bg-amber-500',
-  refusee: 'bg-orange-500',
-  rdv_a_confirmer: 'bg-amber-500',
-  reportee: 'bg-amber-500',
-  prete: 'bg-emerald-500',
+const statutDotColors: Record<MissionStatut, string> = {
+  planifiee: 'bg-sky-500',
   terminee: 'bg-muted-foreground/30',
   annulee: 'bg-red-400',
 }
 
 const legendItems = [
-  { label: 'À traiter', color: 'bg-orange-500' },
-  { label: 'Prête', color: 'bg-emerald-500' },
+  { label: 'Planifiée', color: 'bg-sky-500' },
   { label: 'Terminée', color: 'bg-muted-foreground/30' },
   { label: 'Annulée', color: 'bg-red-400' },
 ]
@@ -441,9 +429,8 @@ export function MissionCalendar(props: Props) {
 /* ── Week Card (detailed) ── */
 function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
   const compact = false
-  const affichage = getStatutAffichage(mission)
-  const cardColor = statutCardColors[affichage]
-  const dotColor = statutDotColors[affichage]
+  const cardColor = statutCardColors[mission.statut]
+  const dotColor = statutDotColors[mission.statut]
   const pendingActions = getPendingActions(mission)
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
@@ -503,8 +490,7 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
 
 /* ── Month Card (compact) ── */
 function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
-  const affichage = getStatutAffichage(mission)
-  const dotColor = statutDotColors[affichage]
+  const dotColor = statutDotColors[mission.statut]
 
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
