@@ -1,6 +1,8 @@
 // ── Mission Status Enums ──
 
-export type MissionStatut = 'planifiee' | 'assignee' | 'terminee' | 'annulee'
+// Cycle de vie pur de la mission. La réponse du technicien vit dans
+// mission_technicien.statut_invitation, la confirmation du locataire dans statut_rdv.
+export type MissionStatut = 'planifiee' | 'terminee' | 'annulee'
 export type StatutRdv = 'a_confirmer' | 'confirme' | 'reporte'
 export type StatutInvitation = 'en_attente' | 'accepte' | 'refuse'
 export type SensEDL = 'entree' | 'sortie'
@@ -10,14 +12,33 @@ export type TypeCle = 'cle_principale' | 'badge' | 'boite_aux_lettres' | 'parkin
 export type StatutCle = 'remise' | 'a_deposer' | 'deposee'
 export type TypeBail = 'individuel' | 'collectif'
 
-// Derived status for visual display (combines 3 independent statuses)
-export type StatutDerive = 'planifiee' | 'actions_en_attente' | 'confirmee' | 'terminee' | 'annulee'
+// Statut unique d'affichage dérivé des 3 axes (mission.statut + statut_invitation + statut_rdv).
+// Source de vérité pour tous les badges/couleurs dans l'UI.
+export type StatutAffichage =
+  | 'a_assigner'
+  | 'invitation_envoyee'
+  | 'refusee'
+  | 'rdv_a_confirmer'
+  | 'reportee'
+  | 'prete'
+  | 'terminee'
+  | 'annulee'
 
 // ── Labels ──
 
 export const missionStatutLabels: Record<MissionStatut, string> = {
   planifiee: 'Planifiée',
-  assignee: 'Assignée',
+  terminee: 'Terminée',
+  annulee: 'Annulée',
+}
+
+export const statutAffichageLabels: Record<StatutAffichage, string> = {
+  a_assigner: 'À assigner',
+  invitation_envoyee: 'Invitation envoyée',
+  refusee: 'Refusée — à réassigner',
+  rdv_a_confirmer: 'RDV à confirmer',
+  reportee: 'Reportée',
+  prete: 'Confirmée',
   terminee: 'Terminée',
   annulee: 'Annulée',
 }
@@ -57,33 +78,43 @@ export const statutCleLabels: Record<StatutCle, string> = {
 
 // ── Colors ──
 
+// Raw statut colors — 3 valeurs du cycle de vie pur. À n'utiliser que quand on veut afficher
+// le statut BRUT (ex. export CSV, API debug). Pour l'UI utilisateur : préférer getStatutAffichage().
 export const missionStatutColors: Record<MissionStatut, string> = {
   planifiee: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  assignee: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
   terminee: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
   annulee: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
-export const statutDeriveColors: Record<StatutDerive, string> = {
-  planifiee: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  actions_en_attente: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  confirmee: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+export const statutAffichageColors: Record<StatutAffichage, string> = {
+  a_assigner: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  invitation_envoyee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  refusee: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  rdv_a_confirmer: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  reportee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  prete: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
   terminee: 'bg-muted/50 text-muted-foreground',
   annulee: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
-export const statutDeriveBorderColors: Record<StatutDerive, string> = {
-  planifiee: 'border-l-blue-500',
-  actions_en_attente: 'border-l-orange-500',
-  confirmee: 'border-l-emerald-500',
+export const statutAffichageBorderColors: Record<StatutAffichage, string> = {
+  a_assigner: 'border-l-orange-500',
+  invitation_envoyee: 'border-l-amber-500',
+  refusee: 'border-l-orange-500',
+  rdv_a_confirmer: 'border-l-amber-500',
+  reportee: 'border-l-amber-500',
+  prete: 'border-l-emerald-500',
   terminee: 'border-l-muted-foreground',
   annulee: 'border-l-red-500',
 }
 
-export const statutDeriveMarkerColors: Record<StatutDerive, string> = {
-  planifiee: '#3b82f6',
-  actions_en_attente: '#f97316',
-  confirmee: '#10b981',
+export const statutAffichageMarkerColors: Record<StatutAffichage, string> = {
+  a_assigner: '#f97316',
+  invitation_envoyee: '#f59e0b',
+  refusee: '#f97316',
+  rdv_a_confirmer: '#f59e0b',
+  reportee: '#f59e0b',
+  prete: '#10b981',
   terminee: '#9ca3af',
   annulee: '#ef4444',
 }
@@ -107,12 +138,17 @@ export interface MissionTechnicien {
   prenom: string
   est_principal: boolean
   statut_invitation: StatutInvitation
+  email?: string | null
+  assigned_at?: string | null
+  invitation_updated_at?: string | null
 }
 
 export interface EDLLocataire {
   tiers_id: string
   nom: string
   prenom?: string
+  type_personne?: 'physique' | 'morale'
+  raison_sociale?: string
   role_locataire: 'entrant' | 'sortant'
 }
 
@@ -132,6 +168,7 @@ export interface EDLInventaire {
   url_web: string | null
   url_pdf_legal: string | null
   url_web_legal: string | null
+  created_at?: string | null
   locataires: EDLLocataire[]
 }
 
@@ -181,7 +218,7 @@ export interface MissionDetail extends Mission {
     adresse: { rue: string; ville: string; code_postal: string } | null
   }
   proprietaires: Array<{ id: string; nom: string; prenom?: string; type_personne: string }>
-  mandataire: { id: string; nom: string; raison_sociale?: string } | null
+  mandataire: { id: string; nom: string; prenom?: string; type_personne?: 'physique' | 'morale'; raison_sociale?: string } | null
   edls: EDLInventaire[]
   cles: CleMission[]
   created_by_nom: string
@@ -221,22 +258,40 @@ export interface RecurrenceConfig {
 }
 
 export interface TechnicianConflicts {
-  missions: Array<{ id: string; reference: string; date_planifiee: string; heure_debut: string | null; heure_fin: string | null }>
+  missions: Array<{
+    id: string
+    reference: string
+    date_planifiee: string
+    heure_debut: string | null
+    heure_fin: string | null
+    lot?: { id: string; designation: string } | null
+    adresse?: string | null
+  }>
   indisponibilites: Array<{ id: string; date_debut: string; date_fin: string; motif: string | null }>
 }
 
 // ── Helpers ──
 
-export function getStatutDerive(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutDerive {
-  if (mission.statut === 'terminee') return 'terminee'
+// Source de vérité UNIQUE pour l'affichage d'un statut de mission dans l'UI.
+// Combine les 3 axes (mission.statut, statut_invitation, statut_rdv) en un seul badge.
+export function getStatutAffichage(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutAffichage {
   if (mission.statut === 'annulee') return 'annulee'
+  if (mission.statut === 'terminee') return 'terminee'
+  if (!mission.technicien) return 'a_assigner'
+  if (mission.technicien.statut_invitation === 'en_attente') return 'invitation_envoyee'
+  if (mission.technicien.statut_invitation === 'refuse') return 'refusee'
+  if (mission.statut_rdv === 'a_confirmer') return 'rdv_a_confirmer'
+  if (mission.statut_rdv === 'reporte') return 'reportee'
+  return 'prete'
+}
 
-  const hasNoTech = !mission.technicien
-  const invitationPending = mission.technicien && mission.technicien.statut_invitation !== 'accepte'
-  const rdvNotConfirmed = mission.statut_rdv === 'a_confirmer'
+// Statuts "actions en attente" = dashboard stat card + bloc US-841 + filtre sous-sélection.
+const PENDING_AFFICHAGE: StatutAffichage[] = [
+  'a_assigner', 'invitation_envoyee', 'refusee', 'rdv_a_confirmer', 'reportee',
+]
 
-  if (hasNoTech || invitationPending || rdvNotConfirmed) return 'actions_en_attente'
-  return 'confirmee'
+export function hasPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): boolean {
+  return PENDING_AFFICHAGE.includes(getStatutAffichage(mission))
 }
 
 export function getPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): string[] {
