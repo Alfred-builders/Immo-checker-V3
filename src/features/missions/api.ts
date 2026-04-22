@@ -232,6 +232,15 @@ export function useIndisponibilites(params?: { user_id?: string; date_from?: str
   })
 }
 
+export function useIndisponibilite(id?: string) {
+  return useQuery({
+    queryKey: ['indisponibilite', id],
+    queryFn: () => api<IndisponibiliteTechnicien>(`/indisponibilites/${id}`),
+    enabled: !!id,
+    retry: false,
+  })
+}
+
 export function useCreateIndisponibilite() {
   const qc = useQueryClient()
   return useMutation({

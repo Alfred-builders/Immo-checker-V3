@@ -177,6 +177,25 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/indisponibilites/:id — Get a single unavailability (parent record, not expanded)
+router.get('/:id', async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+    const result = await query(
+      `SELECT it.*,
+        json_build_object('id', u.id, 'nom', u.nom, 'prenom', u.prenom, 'email', u.email) as technicien
+       FROM indisponibilite_technicien it
+       JOIN utilisateur u ON u.id = it.user_id
+       WHERE it.id = $1 AND it.workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+    if (result.rows.length === 0) throw new NotFoundError('Indisponibilite')
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
 // POST /api/indisponibilites — Create unavailability
 const createIndispoSchema = z.object({
   user_id: z.uuid(),
