@@ -30,6 +30,7 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
   const [batimentId, setBatimentId] = useState(preselectedBatimentId || '')
   const [designation, setDesignation] = useState('')
   const [typeBien, setTypeBien] = useState(preselectedTypeBien || 'appartement')
+  const [typeBienPrecision, setTypeBienPrecision] = useState('')
   const [referenceInterne, setReferenceInterne] = useState('')
   const [etage, setEtage] = useState('')
   const [emplacementPalier, setEmplacementPalier] = useState('')
@@ -80,6 +81,7 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
   function resetLot() {
     if (!preselectedBatimentId) setBatimentId('')
     setDesignation(''); setReferenceInterne(''); setTypeBien(preselectedTypeBien || 'appartement')
+    setTypeBienPrecision('')
     setEtage(''); setEmplacementPalier(''); setSurface(''); setMeuble(false); setNbPieces('')
     setDpeClasse(''); setGesClasse(''); setEauChaudeType(''); setEauChaudeMode('')
     setChauffageType(''); setChauffageMode(''); setCommentaire(''); setStep('lot')
@@ -118,7 +120,9 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
     try {
       const result = await createLotMutation.mutateAsync({
         batiment_id: batimentId, designation, reference_interne: referenceInterne || undefined,
-        type_bien: typeBien, etage: etage || undefined, emplacement_palier: emplacementPalier || undefined,
+        type_bien: typeBien,
+        type_bien_precision: typeBien === 'autre' ? (typeBienPrecision.trim() || undefined) : undefined,
+        etage: etage || undefined, emplacement_palier: emplacementPalier || undefined,
         surface: surface ? parseFloat(surface) : undefined, meuble, nb_pieces: nbPieces || undefined,
         dpe_classe: dpeClasse || undefined, ges_classe: gesClasse || undefined,
         eau_chaude_type: eauChaudeType || undefined, eau_chaude_mode: eauChaudeMode || undefined,
@@ -178,7 +182,7 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Type de bien *</Label>
-                    <Select value={typeBien} onValueChange={setTypeBien}>
+                    <Select value={typeBien} onValueChange={(v) => { setTypeBien(v); if (v !== 'autre') setTypeBienPrecision('') }}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {['appartement','maison','studio','local_commercial','parking','cave','autre'].map(t =>
@@ -187,6 +191,19 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
                       </SelectContent>
                     </Select>
                   </div>
+                  {typeBien === 'autre' && (
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs">Préciser le type *</Label>
+                      <Input
+                        value={typeBienPrecision}
+                        onChange={(e) => setTypeBienPrecision(e.target.value)}
+                        placeholder="Ex : Entrepôt, Loft, Box moto…"
+                        maxLength={100}
+                        required
+                        className="h-9"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
                     <Label className="text-xs">Réf. interne</Label>
                     <Input value={referenceInterne} onChange={(e) => setReferenceInterne(e.target.value)} placeholder="Bail, réf cadastrale..." className="h-9" />

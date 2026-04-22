@@ -18,7 +18,7 @@ import { FloatingSaveBar } from '../../../components/shared/floating-save-bar'
 import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { useLotDetail, useUpdateLot, useSearchTiers, useLinkProprietaire, useUnlinkProprietaire } from '../api'
 import { useMissions } from '../../missions/api'
-import { missionStatutLabels, missionStatutColors, sensLabels, sensColors } from '../../missions/types'
+import { statutAffichageLabels, statutAffichageColors, sensLabels, sensColors, getStatutAffichage } from '../../missions/types'
 import { CreateMissionModal } from '../../missions/components/create-mission-modal'
 import { CreateTiersModal } from '../../tiers/components/create-tiers-modal'
 import { formatDate } from '../../../lib/formatters'
@@ -91,7 +91,7 @@ export function LotDetailPage() {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
   const [formData, setFormData] = useState({
-    designation: '', type_bien: '', etage: '', surface: '', nb_pieces: '',
+    designation: '', type_bien: '', type_bien_precision: '', etage: '', surface: '', nb_pieces: '',
     meuble: false, emplacement_palier: '', num_cave: '', num_parking: '',
     dpe_classe: '', ges_classe: '', commentaire: '', reference_interne: '',
     eau_chaude_type: '', eau_chaude_mode: '', chauffage_type: '', chauffage_mode: '',
@@ -102,6 +102,7 @@ export function LotDetailPage() {
     if (lot) {
       setFormData({
         designation: lot.designation || '', type_bien: lot.type_bien || '',
+        type_bien_precision: lot.type_bien_precision || '',
         etage: lot.etage || '', surface: lot.surface?.toString() || '',
         nb_pieces: lot.nb_pieces || '', meuble: lot.meuble || false,
         emplacement_palier: lot.emplacement_palier || '',
@@ -138,6 +139,7 @@ export function LotDetailPage() {
   function handleCancel() {
     if (lot) setFormData({
       designation: lot.designation || '', type_bien: lot.type_bien || '',
+      type_bien_precision: lot.type_bien_precision || '',
       etage: lot.etage || '', surface: lot.surface?.toString() || '',
       nb_pieces: lot.nb_pieces || '', meuble: lot.meuble || false,
       emplacement_palier: lot.emplacement_palier || '',
@@ -155,6 +157,7 @@ export function LotDetailPage() {
     try {
       await updateMutation.mutateAsync({
         id: lot!.id, designation: formData.designation, type_bien: formData.type_bien,
+        type_bien_precision: formData.type_bien === 'autre' ? (formData.type_bien_precision.trim() || null) : null,
         etage: formData.etage || null, surface: formData.surface ? parseFloat(formData.surface) : null,
         nb_pieces: formData.nb_pieces || null, meuble: formData.meuble,
         emplacement_palier: formData.emplacement_palier || null,
@@ -223,12 +226,35 @@ export function LotDetailPage() {
           <FieldRow label="Référence" editing={editing} value={lot.reference_interne || '—'} mono>
             <Input value={formData.reference_interne} onChange={(e) => setFormData(prev => ({ ...prev, reference_interne: e.target.value }))} className="h-9 text-sm" />
           </FieldRow>
-          <FieldRow label="Type" editing={editing} value={typeBienLabels[lot.type_bien] || lot.type_bien}>
-            <Select value={formData.type_bien} onValueChange={(v) => setFormData(prev => ({ ...prev, type_bien: v }))}>
+          <FieldRow
+            label="Type"
+            editing={editing}
+            value={
+              lot.type_bien === 'autre' && lot.type_bien_precision
+                ? `Autre — ${lot.type_bien_precision}`
+                : (typeBienLabels[lot.type_bien] || lot.type_bien)
+            }
+          >
+            <Select value={formData.type_bien} onValueChange={(v) => setFormData(prev => ({ ...prev, type_bien: v, type_bien_precision: v === 'autre' ? prev.type_bien_precision : '' }))}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>{typeBienOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
             </Select>
           </FieldRow>
+          {(editing ? formData.type_bien === 'autre' : lot.type_bien === 'autre') && (
+            <FieldRow
+              label="Précision"
+              editing={editing}
+              value={lot.type_bien_precision || '—'}
+            >
+              <Input
+                value={formData.type_bien_precision}
+                onChange={(e) => setFormData(prev => ({ ...prev, type_bien_precision: e.target.value }))}
+                placeholder="Ex : Entrepôt, Loft, Box moto…"
+                maxLength={100}
+                className="h-9 text-sm"
+              />
+            </FieldRow>
+          )}
           <FieldRow label="Meublé" editing={editing} value={lot.meuble ? 'Oui' : 'Non'} last>
             <Switch checked={formData.meuble} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, meuble: checked }))} />
           </FieldRow>
@@ -626,7 +652,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{m.technicien_nom || '—'}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${missionStatutColors[m.statut]}`}>{missionStatutLabels[m.statut]}</span>
+                      {(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
                     </td>
                   </tr>
                 ))}

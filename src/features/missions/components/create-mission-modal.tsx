@@ -20,19 +20,41 @@ import type { SensEDL, TechnicianConflicts } from '../types'
 import { api } from 'src/lib/api-client'
 import { useQuery, useQueries } from '@tanstack/react-query'
 
+type LotRow = { id: string; designation: string; type_bien: string; batiment_designation: string; adresse: string | null; proprietaire_nom: string | null; etage: string | null }
+
 function useLotSearch(search: string) {
   return useQuery({
     queryKey: ['lots-search', search],
-    queryFn: () => api<{ data: Array<{ id: string; designation: string; type_bien: string; batiment_designation: string; adresse: string | null; proprietaire_nom: string | null; etage: string | null }> }>(`/lots?search=${encodeURIComponent(search)}&limit=20`),
+    queryFn: () => api<{ data: LotRow[] }>(`/lots?search=${encodeURIComponent(search)}&limit=20`),
     enabled: search.length > 0,
   })
 }
 
+function useRecentLots(enabled: boolean) {
+  return useQuery({
+    queryKey: ['lots-recent'],
+    queryFn: () => api<{ data: LotRow[] }>(`/lots?sort=recent&limit=3`),
+    enabled,
+    staleTime: 30_000,
+  })
+}
+
+type TiersRow = { id: string; nom: string; prenom?: string; raison_sociale?: string; type: string; email?: string }
+
 function useTiersSearch(search: string) {
   return useQuery({
     queryKey: ['tiers-search', search, 'locataire'],
-    queryFn: () => api<{ data: Array<{ id: string; nom: string; prenom?: string; raison_sociale?: string; type: string; email?: string }> }>(`/tiers?search=${encodeURIComponent(search)}&role=locataire&limit=20`),
+    queryFn: () => api<{ data: TiersRow[] }>(`/tiers?search=${encodeURIComponent(search)}&role=locataire&limit=20`),
     enabled: search.length > 0,
+  })
+}
+
+function useRecentTiers(enabled: boolean) {
+  return useQuery({
+    queryKey: ['tiers-recent', 'locataire'],
+    queryFn: () => api<{ data: TiersRow[] }>(`/tiers?role=locataire&sort=recent&limit=3`),
+    enabled,
+    staleTime: 30_000,
   })
 }
 
@@ -99,10 +121,17 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   const [showCreateLocataire, setShowCreateLocataire] = useState(false)
 
   const { data: lotData } = useLotSearch(lotSearch)
-  const lots = lotData?.data ?? []
+  const { data: recentLotData } = useRecentLots(open && lotSearch.length === 0)
+  const lots: LotRow[] = lotSearch.length > 0
+    ? (lotData?.data ?? [])
+    : (recentLotData?.data ?? [])
 
   const { data: tiersData } = useTiersSearch(tiersSearch)
-  const tiersOptions = tiersData?.data ?? []
+  const { data: recentTiersData } = useRecentTiers(open && showLocatairePicker && tiersSearch.length === 0)
+  const tiersOptions: TiersRow[] = tiersSearch.length > 0
+    ? (tiersData?.data ?? [])
+    : (recentTiersData?.data ?? [])
+  const isShowingRecentTiers = tiersSearch.length === 0 && tiersOptions.length > 0
 
   // Conflict check for selected tech (existing -- used for the warning box)
   const { data: conflicts } = useTechnicianConflicts(
@@ -197,6 +226,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     }
   }
 
+  const isShowingRecent = lotSearch.length === 0 && lots.length > 0
   const lotOptions = [
     // Include the just-created lot so the picker can display it
     ...(lotId && createdLotLabel && !lots.some(l => l.id === lotId) ? [{ id: lotId, label: createdLotLabel, sublabel: 'Lot créé', meta: '' }] : []),
@@ -204,7 +234,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
       id: l.id,
       label: l.designation,
       sublabel: l.adresse ? `${l.batiment_designation} - ${l.adresse}` : l.batiment_designation,
-      meta: l.type_bien,
+      meta: isShowingRecent ? 'Récent' : l.type_bien,
     })),
   ]
 
@@ -287,6 +317,14 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
               required
               className="h-9 cursor-pointer"
             />
+            {datePlanifiée && datePlanifiée < new Date().toISOString().split('T')[0] && (
+              <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+                <Warning className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" weight="fill" />
+                <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-relaxed">
+                  Cette date est antérieure à aujourd'hui. Vérifie que c'est bien ce que tu souhaites.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* 5. Heures */}
@@ -388,7 +426,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                     id: t.id,
                     label: t.prenom ? `${t.prenom} ${t.nom}` : (t.raison_sociale || t.nom),
                     sublabel: t.email,
-                    meta: t.type === 'physique' ? 'Personne physique' : 'Personne morale',
+                    meta: isShowingRecentTiers ? 'Récent' : (t.type === 'physique' ? 'Personne physique' : 'Personne morale'),
                   }))}
                   value={null}
                   onChange={(id) => {
@@ -479,15 +517,34 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
             {hasConflicts && (
               <div className="flex items-start gap-2 mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800">
                 <Warning className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-800 dark:text-amber-300">
+                <div className="text-xs text-amber-800 dark:text-amber-300 min-w-0 flex-1 space-y-1.5">
                   {conflicts!.missions.length > 0 && (
-                    <p>
-                      {conflicts!.missions.length} mission(s) deja planifiee(s) ce jour:
-                      {conflicts!.missions.map(m => ` ${m.reference}`).join(',')}
-                    </p>
+                    <div>
+                      <p className="font-semibold">
+                        {conflicts!.missions.length} mission{conflicts!.missions.length > 1 ? 's' : ''} déjà planifiée{conflicts!.missions.length > 1 ? 's' : ''} ce jour
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {conflicts!.missions.map(m => {
+                          const creneau = m.heure_debut
+                            ? `${m.heure_debut.slice(0, 5)}${m.heure_fin ? `–${m.heure_fin.slice(0, 5)}` : ''}`
+                            : 'horaire non défini'
+                          return (
+                            <li key={m.id} className="flex items-baseline gap-1.5">
+                              <span className="font-mono font-semibold shrink-0">{m.reference}</span>
+                              <span className="text-amber-700 dark:text-amber-400 shrink-0">· {creneau}</span>
+                              {m.adresse && (
+                                <span className="text-amber-700/80 dark:text-amber-400/80 truncate" title={m.adresse}>
+                                  · {m.adresse}
+                                </span>
+                              )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
                   )}
                   {conflicts!.indisponibilites.length > 0 && (
-                    <p>Technicien marque indisponible ce jour</p>
+                    <p className="font-semibold">Technicien marqué indisponible ce jour</p>
                   )}
                 </div>
               </div>

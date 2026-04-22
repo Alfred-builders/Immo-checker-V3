@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  Calendar, Clock, User, MapPin, BuildingOffice, House,
+  Calendar, Clock, User, Users, MapPin, BuildingOffice, House,
   FileText, Key, Warning, CaretRight, UserPlus, ChatText,
-  ArrowSquareOut, FilePdf, Globe, Scales, CheckCircle,
+  ArrowSquareOut, FilePdf, Globe, Scales, Plus,
 } from '@phosphor-icons/react'
 import { Sheet, SheetContent } from 'src/components/ui/sheet'
 import { Button } from 'src/components/ui/button'
-import { Badge } from 'src/components/ui/badge'
 import { Input } from 'src/components/ui/input'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
@@ -17,113 +16,214 @@ import {
 import { Skeleton } from 'src/components/ui/skeleton'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import {
-  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians,
+  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission,
 } from '../../missions/api'
 import {
-  missionStatutLabels, missionStatutColors,
+  statutAffichageLabels, statutAffichageColors,
   sensLabels, sensColors,
   statutRdvLabels, statutInvitationLabels,
-  getPendingActions,
+  getPendingActions, getStatutAffichage,
 } from '../../missions/types'
-import type { StatutRdv } from '../../missions/types'
+import type { StatutRdv, SensEDL, TypeEDL } from '../../missions/types'
 import { formatDate, formatTime } from 'src/lib/formatters'
+import { cn } from 'src/lib/cn'
 import { toast } from 'sonner'
 
 // ── Labels ──
 
 const statutEdlLabels: Record<string, string> = { brouillon: 'Brouillon', signe: 'Signé', infructueux: 'Infructueux' }
-const statutEdlColors: Record<string, string> = {
-  brouillon: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  signe: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  infructueux: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-}
 const typeBienLabels: Record<string, string> = { appartement: 'Appartement', maison: 'Maison', studio: 'Studio', local_commercial: 'Local commercial', parking: 'Parking', cave: 'Cave', autre: 'Autre' }
-const typeCleLabels: Record<string, string> = { cle_principale: 'Clé principale', badge: 'Badge', boite_aux_lettres: 'Boîte aux lettres', parking: 'Parking', cave: 'Cave', digicode: 'Digicode', autre: 'Autre' }
+const typeCleLabels: Record<string, string> = { cle_principale: 'Clé principale', badge: 'Badge', boite_aux_lettres: 'BAL', parking: 'Parking', cave: 'Cave', digicode: 'Digicode', autre: 'Autre' }
 const statutCleLabels: Record<string, string> = { remise: 'Remise', a_deposer: 'À déposer', deposee: 'Déposée' }
 
-// ── Shared UI ──
+// ── Status colours ──
 
-function Section({ icon: Icon, title, children, badge }: { icon: React.ElementType; title: string; children: React.ReactNode; badge?: React.ReactNode }) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-muted/50 flex items-center justify-center">
-            <Icon className="h-3.5 w-3.5 text-muted-foreground" weight="duotone" />
-          </div>
-          <h3 className="text-[13px] font-semibold text-foreground tracking-tight">{title}</h3>
-        </div>
-        {badge}
-      </div>
-      {children}
-    </div>
-  )
+const statusDot: Record<string, string> = {
+  a_assigner: 'bg-orange-500',
+  invitation_envoyee: 'bg-amber-500',
+  refusee: 'bg-orange-500',
+  rdv_a_confirmer: 'bg-amber-500',
+  reportee: 'bg-amber-500',
+  prete: 'bg-emerald-500',
+  terminee: 'bg-muted-foreground/60',
+  annulee: 'bg-red-500',
 }
 
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border/30 last:border-0">
-      <span className="text-[12px] text-muted-foreground">{label}</span>
-      <span className="text-[13px] font-medium text-foreground">{children}</span>
-    </div>
-  )
-}
+const STATUT_RDV_LABEL = {
+  a_confirmer: 'À confirmer',
+  confirme: 'Confirmé',
+  reporte: 'Reporté',
+} as const
 
-function PersonChip({ name, role, color, to }: { name: string; role: string; color: string; to: string }) {
-  const colors: Record<string, string> = {
-    sky: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-    green: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-    violet: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
-  }
-  return (
-    <Link to={to} className="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-accent/50 transition-colors">
-      <div className={`h-9 w-9 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${colors[color] || colors.sky}`}>
-        {name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-foreground group-hover:text-primary transition-colors truncate">{name}</p>
-        <p className="text-[11px] text-muted-foreground">{role}</p>
-      </div>
-      <CaretRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
-    </Link>
-  )
-}
+const STATUT_RDV_DOT = {
+  a_confirmer: 'bg-amber-500',
+  confirme: 'bg-emerald-500',
+  reporte: 'bg-rose-500',
+} as const
+
+// ── Input style ──
+
+const ghost = cn(
+  'bg-white border border-border/60 rounded-lg shadow-xs',
+  'hover:border-border/90',
+  'focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
+  'transition-colors text-[13px] h-9',
+)
+
+// ── Tabs (no Note) ──
+
+type SectionId = 'planning' | 'equipe' | 'documents' | 'bien'
+
+const SECTIONS: { id: SectionId; label: string; Icon: React.ElementType }[] = [
+  { id: 'planning',  label: 'Planning',  Icon: Calendar  },
+  { id: 'equipe',    label: 'Acteurs',   Icon: Users     },
+  { id: 'bien',      label: 'Bien',      Icon: House     },
+  { id: 'documents', label: 'Docs',      Icon: FileText  },
+]
 
 // ── Skeleton ──
 
 function DrawerSkeleton() {
   return (
-    <div className="flex flex-col gap-5 p-5">
-      <Skeleton className="h-14 rounded-2xl" />
-      <div className="flex gap-2"><Skeleton className="h-6 w-20 rounded-full" /><Skeleton className="h-6 w-24 rounded-full" /></div>
-      <Skeleton className="h-32 rounded-xl" />
-      <Skeleton className="h-20 rounded-xl" />
-      <Skeleton className="h-24 rounded-xl" />
+    <div className="flex flex-col gap-5 px-6 pt-6">
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-16 rounded" />
+          <Skeleton className="h-7 w-36 rounded-lg" />
+        </div>
+        <Skeleton className="h-7 w-24 rounded-full" />
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-6 w-24 rounded-md" />
+        <Skeleton className="h-6 w-20 rounded-md" />
+      </div>
+      <Skeleton className="h-10 w-full rounded-xl" />
+      <div className="space-y-3 pt-1">
+        <Skeleton className="h-4 w-20 rounded" />
+        <Skeleton className="h-9 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-2">
+          <Skeleton className="h-9 rounded-lg" />
+          <Skeleton className="h-9 rounded-lg" />
+        </div>
+        <Skeleton className="h-9 w-full rounded-lg" />
+      </div>
     </div>
   )
 }
 
-// ── Main Component ──
+// ── Section heading ──
+
+function SectionHeading({ children, Icon }: { children: React.ReactNode; Icon?: React.ElementType }) {
+  return (
+    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45 mb-3">
+      {Icon && <Icon className="h-3 w-3 shrink-0" />}
+      {children}
+    </p>
+  )
+}
+
+// ── Unified person row (Technicien + Parties) ──
+
+function PersonRow({ initials, name, subtitle, badge, badgeClass, avatarClass, dot, to }: {
+  initials: string; name: string; subtitle?: string
+  badge?: string; badgeClass?: string
+  avatarClass?: string; dot?: string; to?: string
+}) {
+  const inner = (
+    <div className={cn('flex items-center gap-3 py-2.5', to && 'group')}>
+      <div className="relative shrink-0">
+        <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold', avatarClass || 'bg-primary/10 text-primary')}>
+          {initials}
+        </div>
+        {dot && <span className={cn('absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[#fafafa]', dot)} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium leading-tight truncate">{name}</p>
+        {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+      </div>
+      {badge && <span className={cn('shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full', badgeClass)}>{badge}</span>}
+      {to && <CaretRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-primary transition-colors shrink-0" />}
+    </div>
+  )
+  return to
+    ? <Link to={to} className="hover:opacity-75 transition-opacity block">{inner}</Link>
+    : <>{inner}</>
+}
+
+// ── Helper pills ──
+
+function invitPillClass(statut: string) {
+  if (statut === 'accepte') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+  if (statut === 'refuse')  return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+  return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+}
+
+function ManualInvitationActions({ onAccept, onRefuse, busy }: {
+  onAccept: () => void; onRefuse: () => void; busy: boolean
+}) {
+  return (
+    <div className="mt-1 ml-11 pl-1 flex items-center gap-2 flex-wrap">
+      <span className="text-[11px] text-muted-foreground/70 italic">
+        Confirmation orale reçue (tél, WhatsApp…) ?
+      </span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onAccept}
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+        >
+          ✓ Confirmer
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onRefuse}
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+        >
+          ✗ Refuser
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
+// ── Main ──
 
 export function MissionDrawer({ missionId, open, onClose }: { missionId: string | null; open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const { data: mission, isLoading } = useMissionDetail(missionId || undefined)
-  const updateMission = useUpdateMission()
-  const assignTech = useAssignTechnician()
+  const updateMission    = useUpdateMission()
+  const assignTech       = useAssignTechnician()
   const updateInvitation = useUpdateInvitation()
   const { data: techData } = useWorkspaceTechnicians()
   const technicians = techData ?? []
 
-  const [datePlanifiee, setDatePlanifiee] = useState('')
-  const [heureDebut, setHeureDebut] = useState('')
-  const [heureFin, setHeureFin] = useState('')
-  const [statutRdv, setStatutRdv] = useState<string>('')
-  const [commentaire, setCommentaire] = useState('')
-  const [planningDirty, setPlanningDirty] = useState(false)
-  const [saving, setSaving] = useState(false)
+  // Scroll & active section
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const sectionRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
+    planning: null, equipe: null, documents: null, bien: null,
+  })
+  const [activeSection, setActiveSection] = useState<SectionId>('planning')
+  const scrollingTo = useRef(false)
+
+  // Form state
+  const [datePlanifiee,    setDatePlanifiee]    = useState('')
+  const [heureDebut,       setHeureDebut]       = useState('')
+  const [heureFin,         setHeureFin]         = useState('')
+  const [statutRdv,        setStatutRdv]        = useState<string>('')
+  const [commentaire,      setCommentaire]      = useState('')
+  const [planningDirty,    setPlanningDirty]    = useState(false)
+  const [saving,           setSaving]           = useState(false)
   const [showRevalidation, setShowRevalidation] = useState(false)
-  const [assigning, setAssigning] = useState(false)
+  const [assigning,        setAssigning]        = useState(false)
+  const [showTechPicker,   setShowTechPicker]   = useState(false)
+  const [showAddEdl,       setShowAddEdl]       = useState(false)
+  const [addEdlSens,       setAddEdlSens]       = useState<SensEDL>('entree')
+  const [addEdlType,       setAddEdlType]       = useState<TypeEDL>('edl')
+  const [addEdlSaving,     setAddEdlSaving]     = useState(false)
+  const addEdl = useAddEDLToMission()
 
   useEffect(() => {
     if (mission) {
@@ -136,23 +236,71 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
     }
   }, [mission])
 
+  // Reset on new mission
+  useEffect(() => { setActiveSection('planning'); setShowTechPicker(false); setShowAddEdl(false) }, [missionId])
+
+  // IntersectionObserver — highlight nav tab based on scroll
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container || !mission) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (scrollingTo.current) return
+        // pick the first section that crossed into view from the top
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.getAttribute('data-section') as SectionId)
+          }
+        })
+      },
+      {
+        root: container,
+        rootMargin: '0px 0px -72% 0px',
+        threshold: 0,
+      },
+    )
+
+    SECTIONS.forEach(({ id }) => {
+      const el = sectionRefs.current[id]
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [mission?.id])
+
+  const scrollToSection = useCallback((id: SectionId) => {
+    const el = sectionRefs.current[id]
+    const container = scrollRef.current
+    if (!el || !container) return
+    scrollingTo.current = true
+    setActiveSection(id)
+    // offsetTop is relative to offsetParent, not the scroll container —
+    // use getBoundingClientRect delta to get the correct absolute scroll target
+    const containerRect = container.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const target = container.scrollTop + (elRect.top - containerRect.top) - 12
+    container.scrollTo({ top: target, behavior: 'smooth' })
+    setTimeout(() => { scrollingTo.current = false }, 700)
+  }, [])
+
   const isTerminated = mission?.statut === 'terminee'
-  const isCancelled = mission?.statut === 'annulee'
-  const isLocked = isTerminated || isCancelled
+  const isCancelled  = mission?.statut === 'annulee'
+  const isLocked     = isTerminated || isCancelled
   const pendingActions = mission ? getPendingActions(mission) : []
 
   function handlePlanningChange(field: string, value: string) {
     if (field === 'date_planifiee') setDatePlanifiee(value)
-    if (field === 'heure_debut') setHeureDebut(value)
-    if (field === 'heure_fin') setHeureFin(value)
-    if (field === 'statut_rdv') setStatutRdv(value)
+    if (field === 'heure_debut')    setHeureDebut(value)
+    if (field === 'heure_fin')      setHeureFin(value)
+    if (field === 'statut_rdv')     setStatutRdv(value)
     setPlanningDirty(true)
   }
 
   const planningDateChanged = mission && (
     datePlanifiee !== (mission.date_planifiee || '').slice(0, 10) ||
-    heureDebut !== (mission.heure_debut || '') ||
-    heureFin !== (mission.heure_fin || '')
+    heureDebut    !== (mission.heure_debut || '') ||
+    heureFin      !== (mission.heure_fin || '')
   )
   const techAccepted = mission?.technicien?.statut_invitation === 'accepte'
 
@@ -176,16 +324,35 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
     if (!mission) return
     setSaving(true)
     try { await updateMission.mutateAsync({ id: mission.id, commentaire }); toast.success('Commentaire enregistré') }
-    catch { toast.error('Erreur lors de la sauvegarde') }
+    catch { toast.error('Erreur') }
     finally { setSaving(false) }
+  }
+
+  async function handleManualInvitation(statut: 'accepte' | 'refuse') {
+    if (!mission) return
+    try {
+      await updateInvitation.mutateAsync({ missionId: mission.id, statut_invitation: statut })
+      toast.success(statut === 'accepte' ? 'Invitation confirmée manuellement' : 'Invitation marquée comme refusée')
+    } catch { toast.error('Erreur lors de la mise à jour') }
   }
 
   async function handleAssignTechnician(userId: string) {
     if (!mission || !userId) return
     setAssigning(true)
-    try { await assignTech.mutateAsync({ missionId: mission.id, user_id: userId }); toast.success('Technicien assigné') }
+    try { await assignTech.mutateAsync({ missionId: mission.id, user_id: userId }); setShowTechPicker(false); toast.success('Technicien assigné') }
     catch { toast.error("Erreur lors de l'assignation") }
     finally { setAssigning(false) }
+  }
+
+  async function handleAddEdl() {
+    if (!mission) return
+    setAddEdlSaving(true)
+    try {
+      await addEdl.mutateAsync({ missionId: mission.id, type: addEdlType, sens: addEdlSens })
+      setShowAddEdl(false); setAddEdlSens('entree'); setAddEdlType('edl')
+      toast.success('EDL ajouté')
+    } catch { toast.error("Erreur lors de l'ajout") }
+    finally { setAddEdlSaving(false) }
   }
 
   function formatAddress(adresse: { rue: string; ville: string; code_postal: string } | null) {
@@ -195,328 +362,593 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
-      <SheetContent className="sm:max-w-[480px] p-0 overflow-y-auto border-0" side="right">
+      <SheetContent
+        showCloseButton={false}
+        className="sm:max-w-[480px] p-0 flex flex-col overflow-hidden border-l border-border/30"
+        style={{ backgroundColor: '#fafafa' }}
+        side="right"
+      >
         {isLoading || !mission ? <DrawerSkeleton /> : (
-          <div className="flex flex-col">
-
-            {/* ═══ HERO HEADER ═══ */}
-            <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-md border-b border-border/40 px-6 py-5">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Mission</p>
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">{mission.reference}</h2>
+          <>
+            {/* ═══ HEADER ═══ */}
+            <div className="shrink-0">
+              <div className="px-6 pt-5 pb-4">
+                {/* Reference + status */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-1.5">Mission</p>
+                    <h2 className="text-[22px] font-bold tracking-tight leading-none">{mission.reference}</h2>
+                  </div>
+                  {(() => {
+                    const affichage = getStatutAffichage(mission)
+                    return (
+                      <div className={cn(
+                        'shrink-0 mt-0.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border',
+                        statutAffichageColors[affichage],
+                      )}>
+                        <span className={cn('h-1.5 w-1.5 rounded-full', statusDot[affichage])} />
+                        {statutAffichageLabels[affichage]}
+                      </div>
+                    )
+                  })()}
                 </div>
-                <Badge className={`${missionStatutColors[mission.statut]} text-[11px] px-3 py-1`}>
-                  {missionStatutLabels[mission.statut]}
-                </Badge>
+
+                {/* Meta chips */}
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1">
+                    <Calendar className="h-3 w-3 shrink-0" />
+                    {formatDate(mission.date_planifiee)}
+                  </span>
+                  {(mission.heure_debut || mission.heure_fin) && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1">
+                      <Clock className="h-3 w-3 shrink-0" />
+                      {mission.heure_debut ? formatTime(mission.heure_debut) : '—'}
+                      {mission.heure_fin && <> – {formatTime(mission.heure_fin)}</>}
+                    </span>
+                  )}
+                  {mission.technicien && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1">
+                      <User className="h-3 w-3 shrink-0" />
+                      {mission.technicien.prenom} {mission.technicien.nom}
+                    </span>
+                  )}
+                </div>
+
+                {/* Pending actions */}
+                {pendingActions.length > 0 && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5">
+                    {pendingActions.map((action, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        {action}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Lock banners */}
+                {isTerminated && (
+                  <div className="flex items-center gap-2 mt-3 bg-amber-50 border border-amber-200/50 rounded-lg px-3 py-2 text-[11px] text-amber-800 dark:bg-amber-950/30 dark:border-amber-800/30 dark:text-amber-300">
+                    <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" />
+                    Mission terminée — édition limitée
+                  </div>
+                )}
+                {isCancelled && (
+                  <div className="flex items-center gap-2 mt-3 bg-red-50 border border-red-200/50 rounded-lg px-3 py-2 text-[11px] text-red-800 dark:bg-red-950/30 dark:border-red-800/30 dark:text-red-300">
+                    <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" />
+                    Annulée{mission.motif_annulation && ` — ${mission.motif_annulation}`}
+                  </div>
+                )}
               </div>
 
-              {/* Quick info row */}
-              <div className="flex items-center gap-3 text-[12px] text-muted-foreground flex-wrap">
-                <span className="inline-flex items-center gap-1.5 bg-muted/40 rounded-full px-2.5 py-1">
-                  <Calendar className="h-3.5 w-3.5" weight="duotone" />
-                  {formatDate(mission.date_planifiee)}
-                </span>
-                {mission.heure_debut && (
-                  <span className="inline-flex items-center gap-1.5 bg-muted/40 rounded-full px-2.5 py-1">
-                    <Clock className="h-3.5 w-3.5" weight="duotone" />
-                    {formatTime(mission.heure_debut)}{mission.heure_fin && ` — ${formatTime(mission.heure_fin)}`}
-                  </span>
-                )}
-                {mission.technicien && (
-                  <span className="inline-flex items-center gap-1.5 bg-muted/40 rounded-full px-2.5 py-1">
-                    <User className="h-3.5 w-3.5" weight="duotone" />
-                    {mission.technicien.prenom} {mission.technicien.nom}
-                  </span>
-                )}
-              </div>
-
-              {/* Status banners */}
-              {isTerminated && (
-                <div className="flex items-center gap-2 mt-3 rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-2 text-[12px] text-amber-800 dark:bg-amber-950/30 dark:border-amber-800/40 dark:text-amber-300">
-                  <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" />
-                  Mission terminée — édition limitée
-                </div>
-              )}
-              {isCancelled && (
-                <div className="flex items-center gap-2 mt-3 rounded-xl bg-red-50 border border-red-200/60 px-3 py-2 text-[12px] text-red-800 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-300">
-                  <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" />
-                  Annulée{mission.motif_annulation && ` — ${mission.motif_annulation}`}
-                </div>
-              )}
-            </div>
-
-            {/* ═══ CONTENT ═══ */}
-            <div className="flex flex-col gap-6 px-6 py-5">
-
-              {/* ── Pending actions ── */}
-              {pendingActions.length > 0 && (
-                <div className="space-y-2">
-                  {pendingActions.map((action, i) => (
-                    <div key={i} className="flex items-center gap-2.5 rounded-xl bg-amber-50 border border-amber-200/50 px-3.5 py-2.5 dark:bg-amber-950/20 dark:border-amber-800/30">
-                      <div className="h-2 w-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
-                      <span className="text-[12px] font-medium text-amber-800 dark:text-amber-300">{action}</span>
-                    </div>
+              {/* ── Segmented nav ── */}
+              <div className="px-5 pb-3">
+                <div className="flex items-center gap-0.5 bg-muted/40 rounded-xl p-1">
+                  {SECTIONS.map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      onClick={() => scrollToSection(id)}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150',
+                        activeSection === id
+                          ? 'bg-background text-primary shadow-sm'
+                          : 'text-muted-foreground/60 hover:text-muted-foreground',
+                      )}
+                    >
+                      <Icon
+                        className="h-3.5 w-3.5 shrink-0"
+                        weight={activeSection === id ? 'fill' : 'regular'}
+                      />
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
                   ))}
                 </div>
-              )}
+              </div>
 
-              {/* ── Planning ── */}
-              <Section icon={Calendar} title="Planning">
-                <div className="bg-muted/20 rounded-xl p-4 space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">Date</Label>
-                    <Input type="date" value={datePlanifiee} onChange={(e) => handlePlanningChange('date_planifiee', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+              <div className="h-px bg-border/25" />
+            </div>
+
+            {/* ═══ SCROLLABLE ONE-PAGER ═══ */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+              <div className="px-6 py-5 space-y-8">
+
+                {/* ── Planning ── */}
+                <div
+                  ref={(el) => { sectionRefs.current.planning = el }}
+                  data-section="planning"
+                >
+                  <SectionHeading Icon={Calendar}>Planning</SectionHeading>
+                  <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-[11px]">Début</Label>
-                      <Input type="time" value={heureDebut} onChange={(e) => handlePlanningChange('heure_debut', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
+                      <Label className="text-[11px] font-semibold text-muted-foreground/55">Date</Label>
+                      <Input
+                        type="date"
+                        value={datePlanifiee}
+                        onChange={(e) => handlePlanningChange('date_planifiee', e.target.value)}
+                        onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                        disabled={isLocked}
+                        className={cn(ghost, !isLocked && 'cursor-pointer')}
+                      />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px]">Fin</Label>
-                      <Input type="time" value={heureFin} onChange={(e) => handlePlanningChange('heure_fin', e.target.value)} onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()} disabled={isLocked} className="h-9 cursor-pointer disabled:cursor-default" />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px]">Statut RDV</Label>
-                    <Select value={statutRdv} onValueChange={(v) => handlePlanningChange('statut_rdv', v)} disabled={isLocked}>
-                      <SelectTrigger className="h-9"><SelectValue placeholder="Statut du RDV" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="a_confirmer">À confirmer</SelectItem>
-                        <SelectItem value="confirme">Confirmé</SelectItem>
-                        <SelectItem value="reporte">Reporté</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {planningDirty && !isLocked && !showRevalidation && (
-                    <Button size="sm" onClick={handleSavePlanning} disabled={saving} className="w-full h-9">
-                      {saving ? 'Enregistrement...' : 'Enregistrer'}
-                    </Button>
-                  )}
-
-                  {showRevalidation && (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/60 dark:bg-amber-950/30 space-y-2.5">
-                      <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">Le technicien a accepté. Que faire ?</p>
-                      <div className="flex gap-2">
-                        <Button size="xs" variant="outline" onClick={() => doSavePlanning(true)} disabled={saving}>Revalidation</Button>
-                        <Button size="xs" onClick={() => doSavePlanning(false)} disabled={saving}>Confirmer</Button>
-                        <Button size="xs" variant="ghost" onClick={() => setShowRevalidation(false)}>Annuler</Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold text-muted-foreground/55">Début</Label>
+                        <Input
+                          type="time"
+                          value={heureDebut}
+                          onChange={(e) => handlePlanningChange('heure_debut', e.target.value)}
+                          onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                          disabled={isLocked}
+                          className={cn(ghost, !isLocked && 'cursor-pointer')}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold text-muted-foreground/55">Fin</Label>
+                        <Input
+                          type="time"
+                          value={heureFin}
+                          onChange={(e) => handlePlanningChange('heure_fin', e.target.value)}
+                          onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                          disabled={isLocked}
+                          className={cn(ghost, !isLocked && 'cursor-pointer')}
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              </Section>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-semibold text-muted-foreground/55">Statut RDV</Label>
+                      <Select value={statutRdv} onValueChange={(v) => handlePlanningChange('statut_rdv', v)} disabled={isLocked}>
+                        <SelectTrigger className={cn(ghost, 'w-full')}>
+                          <SelectValue placeholder="Statut du RDV">
+                            <span className="inline-flex items-center gap-2">
+                              <span className={cn('h-2 w-2 rounded-full shrink-0', STATUT_RDV_DOT[statutRdv as keyof typeof STATUT_RDV_DOT])} />
+                              {STATUT_RDV_LABEL[statutRdv as keyof typeof STATUT_RDV_LABEL]}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(STATUT_RDV_LABEL) as Array<keyof typeof STATUT_RDV_LABEL>).map((key) => (
+                            <SelectItem key={key} value={key}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className={cn('h-2 w-2 rounded-full shrink-0', STATUT_RDV_DOT[key])} />
+                                {STATUT_RDV_LABEL[key]}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              {/* ── Technicien ── */}
-              <Section icon={User} title="Technicien">
-                {mission.technicien ? (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-[12px] font-bold text-primary shrink-0">
-                      {mission.technicien.prenom?.[0]}{mission.technicien.nom?.[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground">{mission.technicien.prenom} {mission.technicien.nom}</p>
-                      {mission.technicien.email && <p className="text-[11px] text-muted-foreground truncate">{mission.technicien.email}</p>}
-                    </div>
-                    <Badge variant="outline" className={`text-[10px] shrink-0 ${
-                      mission.technicien.statut_invitation === 'accepte' ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300'
-                        : mission.technicien.statut_invitation === 'refuse' ? 'border-red-200 bg-red-50 text-red-700'
-                        : 'border-amber-200 bg-amber-50 text-amber-700'
-                    }`}>
-                      {statutInvitationLabels[mission.technicien.statut_invitation]}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20">
-                      <div className="h-10 w-10 rounded-xl bg-muted/50 flex items-center justify-center"><UserPlus className="h-4 w-4 text-muted-foreground/40" /></div>
-                      <p className="text-[13px] text-muted-foreground/50 italic">Aucun technicien</p>
-                    </div>
-                    {!isLocked && (
-                      <TechPicker
-                        technicians={technicians}
-                        onSelect={handleAssignTechnician}
-                        placeholder={assigning ? 'Assignation...' : 'Assigner un technicien...'}
-                        className="w-full"
-                        date={datePlanifiee}
-                        excludeMissionId={mission.id}
-                      />
+                    {planningDirty && !isLocked && !showRevalidation && (
+                      <Button size="sm" onClick={handleSavePlanning} disabled={saving} className="w-full h-9">
+                        {saving ? 'Enregistrement…' : 'Enregistrer le planning'}
+                      </Button>
+                    )}
+                    {showRevalidation && (
+                      <div className="rounded-xl bg-amber-50 border border-amber-200/50 px-4 py-3 space-y-2.5 dark:bg-amber-950/20">
+                        <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">Le technicien a accepté — que faire ?</p>
+                        <div className="flex gap-2">
+                          <Button size="xs" variant="outline" onClick={() => doSavePlanning(true)}  disabled={saving}>Revalidation</Button>
+                          <Button size="xs"                   onClick={() => doSavePlanning(false)} disabled={saving}>Confirmer</Button>
+                          <Button size="xs" variant="ghost"   onClick={() => setShowRevalidation(false)}>Annuler</Button>
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-              </Section>
+                </div>
 
-              {/* ── Documents EDL ── */}
-              <Section icon={FileText} title="Documents EDL" badge={
-                mission.edls.length > 0 ? <span className="text-[11px] text-muted-foreground">{mission.edls.length} doc{mission.edls.length > 1 ? 's' : ''}</span> : undefined
-              }>
-                {mission.edls.length === 0 ? (
-                  <div className="flex flex-col items-center py-6 rounded-xl bg-muted/20">
-                    <FileText className="h-8 w-8 text-muted-foreground/20 mb-2" />
-                    <p className="text-[12px] text-muted-foreground/40 italic">Aucun EDL associé</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {mission.edls.map((edl) => (
-                      <div key={edl.id} className={`rounded-xl border overflow-hidden ${edl.statut === 'signe' ? 'bg-green-50/40 border-green-200/50 dark:bg-green-950/10 dark:border-green-800/30' : 'bg-muted/20 border-border/30'}`}>
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <Badge className={`${sensColors[edl.sens]} text-[10px]`}>{sensLabels[edl.sens]}</Badge>
-                            <span className="text-[13px] font-semibold capitalize">{edl.type === 'inventaire' ? 'Inventaire' : 'EDL'}</span>
-                          </div>
-                          <Badge className={`${statutEdlColors[edl.statut] || ''} text-[10px]`}>{statutEdlLabels[edl.statut] || edl.statut}</Badge>
-                        </div>
+                <div className="h-px bg-border/20" />
 
-                        {edl.locataires.length > 0 && (
-                          <div className="px-4 pb-2 flex flex-wrap gap-1">
-                            {edl.locataires.map((l) => (
-                              <span key={l.tiers_id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${l.role_locataire === 'entrant' ? 'bg-green-100/80 text-green-700' : 'bg-orange-100/80 text-orange-700'}`}>
-                                {l.prenom ? `${l.prenom} ${l.nom}` : l.nom}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Document links */}
-                        <div className="border-t border-border/20 px-4 py-2.5 flex flex-wrap gap-1.5">
-                          {[
-                            { url: edl.url_pdf, icon: FilePdf, label: 'PDF', color: 'text-red-500' },
-                            { url: edl.url_web, icon: Globe, label: 'Web', color: 'text-blue-500' },
-                            { url: edl.url_pdf_legal, icon: Scales, label: 'PDF légal', color: 'text-violet-500' },
-                            { url: edl.url_web_legal, icon: Globe, label: 'Web légal', color: 'text-violet-500' },
-                          ].map(({ url, icon: LIcon, label, color }) => url ? (
-                            <a key={label} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-card border border-border/40 text-foreground/70 hover:text-foreground hover:border-border transition-colors">
-                              <LIcon className={`h-3.5 w-3.5 ${color}`} />{label}
-                            </a>
-                          ) : (
-                            <span key={label} className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-muted/30 border border-border/15 text-muted-foreground/30 cursor-not-allowed" title={edl.statut === 'signe' ? 'En attente de génération' : 'Disponible après signature'}>
-                              <LIcon className="h-3.5 w-3.5" />{label}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Section>
-
-              {/* ── Clés ── */}
-              {mission.cles.length > 0 && (
-                <Section icon={Key} title="Clés">
-                  <div className="space-y-2">
-                    {mission.cles.map((cle) => (
-                      <div key={cle.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-muted/60 flex items-center justify-center">
-                            <Key className="h-3.5 w-3.5 text-muted-foreground" weight="duotone" />
-                          </div>
-                          <div>
-                            <p className="text-[13px] font-medium">{typeCleLabels[cle.type_cle] || cle.type_cle}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {cle.quantite > 1 && `x${cle.quantite}`}
-                              {cle.lieu_depot && ` · ${cle.lieu_depot}`}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-[10px]">{statutCleLabels[cle.statut] || cle.statut}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {/* ── Lot & Bâtiment ── */}
-              <Section icon={House} title="Lot & Bâtiment">
-                <div className="space-y-2">
-                  <Link to={`/app/patrimoine/lots/${mission.lot.id}`} className="group flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-accent/50 transition-colors">
-                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 dark:bg-blue-950">
-                      <House className="h-4 w-4 text-blue-600 dark:text-blue-400" weight="duotone" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors truncate">{mission.lot.designation}</p>
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <span>{typeBienLabels[mission.lot.type_bien] || mission.lot.type_bien}</span>
-                        {mission.lot.etage && <><span className="text-muted-foreground/30">·</span><span>Étage {mission.lot.etage}</span></>}
-                        {mission.lot.surface && <><span className="text-muted-foreground/30">·</span><span>{mission.lot.surface} m²</span></>}
-                      </div>
-                    </div>
-                    <ArrowSquareOut className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
-                  </Link>
-
-                  <Link to={`/app/patrimoine/batiments/${mission.lot.batiment.id}`} className="group flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-accent/50 transition-colors">
-                    <div className="h-10 w-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0 dark:bg-violet-950">
-                      <BuildingOffice className="h-4 w-4 text-violet-600 dark:text-violet-400" weight="duotone" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors truncate">{mission.lot.batiment.designation}</p>
-                      {mission.lot.adresse && (
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
-                          <MapPin className="h-3 w-3 shrink-0" weight="duotone" />
-                          {formatAddress(mission.lot.adresse)}
+                {/* ── Équipe ── */}
+                <div
+                  ref={(el) => { sectionRefs.current.equipe = el }}
+                  data-section="equipe"
+                  className="space-y-5"
+                >
+                  {/* Technicien */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
+                          <User className="h-3 w-3 shrink-0" />
+                          Technicien
                         </p>
+                      {!mission.technicien && !isLocked && (
+                        <button
+                          onClick={() => setShowTechPicker(v => !v)}
+                          title="Assigner un technicien"
+                          className={cn(
+                            'h-6 w-6 rounded-md flex items-center justify-center transition-colors',
+                            showTechPicker ? 'bg-primary text-primary-foreground' : 'bg-primary/10 hover:bg-primary/20 text-primary',
+                          )}
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                        </button>
                       )}
                     </div>
-                    <ArrowSquareOut className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
-                  </Link>
-                </div>
-              </Section>
 
-              {/* ── Parties ── */}
-              <Section icon={User} title="Parties">
-                <div className="rounded-xl bg-muted/20 overflow-hidden divide-y divide-border/20">
-                  {mission.proprietaires.map((p) => (
-                    <PersonChip key={p.id} name={p.prenom ? `${p.prenom} ${p.nom}` : p.nom} role="Propriétaire" color="sky" to={`/app/tiers/${p.id}`} />
-                  ))}
-                  {(() => {
-                    const seen = new Set<string>()
-                    return mission.edls.flatMap(edl => edl.locataires.filter(l => {
-                      const key = `${l.tiers_id}-${l.role_locataire}`
-                      if (seen.has(key)) return false
-                      seen.add(key)
-                      return true
-                    }).map(l => (
-                      <PersonChip key={`${l.tiers_id}-${l.role_locataire}`} name={l.prenom ? `${l.prenom} ${l.nom}` : l.nom} role={l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} color={l.role_locataire === 'entrant' ? 'green' : 'orange'} to={`/app/tiers/${l.tiers_id}`} />
-                    )))
-                  })()}
-                  {mission.mandataire && (
-                    <PersonChip name={mission.mandataire.raison_sociale || mission.mandataire.nom} role="Mandataire" color="violet" to={`/app/tiers/${mission.mandataire.id}`} />
+                    {mission.technicien ? (
+                      <>
+                        <PersonRow
+                          initials={`${mission.technicien.prenom?.[0] ?? ''}${mission.technicien.nom?.[0] ?? ''}`}
+                          name={`${mission.technicien.prenom} ${mission.technicien.nom}`}
+                          subtitle={mission.technicien.email}
+                          avatarClass="bg-primary/10 text-primary"
+                          dot={
+                            mission.technicien.statut_invitation === 'accepte' ? 'bg-emerald-500' :
+                            mission.technicien.statut_invitation === 'refuse'  ? 'bg-red-500' : 'bg-amber-400'
+                          }
+                          badge={statutInvitationLabels[mission.technicien.statut_invitation]}
+                          badgeClass={invitPillClass(mission.technicien.statut_invitation)}
+                        />
+                        {mission.technicien.statut_invitation === 'en_attente' && !isLocked && (
+                          <ManualInvitationActions
+                            onAccept={() => handleManualInvitation('accepte')}
+                            onRefuse={() => handleManualInvitation('refuse')}
+                            busy={updateInvitation.isPending}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 py-2.5">
+                          <div className="h-8 w-8 rounded-full bg-muted/20 border border-dashed border-border/40 flex items-center justify-center shrink-0">
+                            <User className="h-3.5 w-3.5 text-muted-foreground/30" />
+                          </div>
+                          <p className="text-[12px] text-muted-foreground/40 italic">Non assigné</p>
+                        </div>
+                        {showTechPicker && (
+                          <div className="rounded-xl border border-border/25 bg-white px-2 py-2">
+                            <TechPicker
+                              technicians={technicians}
+                              onSelect={handleAssignTechnician}
+                              placeholder={assigning ? 'Assignation…' : 'Rechercher un technicien…'}
+                              className="w-full"
+                              date={datePlanifiee}
+                              excludeMissionId={mission.id}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Parties — lecture seule (spec US-811).
+                    * Propriétaire/Mandataire vivent sur le Lot, Locataires sur les EDL.
+                    * Pour modifier : aller sur la fiche Lot (proprio/mandataire) ou l'EDL tablette (locataires).
+                    */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
+                          <Users className="h-3 w-3 shrink-0" />
+                          Parties
+                        </p>
+                    </div>
+
+                    {(mission.proprietaires.length === 0 && !mission.mandataire && !mission.edls.some(e => e.locataires.length > 0)) ? (
+                      <div className="flex items-center gap-3 py-2.5">
+                        <div className="h-8 w-8 rounded-full bg-muted/20 border border-dashed border-border/40 flex items-center justify-center shrink-0">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground/30" />
+                        </div>
+                        <p className="text-[12px] text-muted-foreground/40 italic">Aucune partie renseignée</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border/20">
+                        {mission.proprietaires.map((p) => (
+                          <PersonRow
+                            key={p.id}
+                            initials={`${p.prenom ? p.prenom[0] : ''}${p.nom[0]}`.toUpperCase()}
+                            name={p.prenom ? `${p.prenom} ${p.nom}` : p.nom}
+                            subtitle="Propriétaire"
+                            avatarClass="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                            to={`/app/tiers/${p.id}`}
+                          />
+                        ))}
+                        {(() => {
+                          const seen = new Set<string>()
+                          return mission.edls.flatMap(edl => edl.locataires.filter(l => {
+                            const key = `${l.tiers_id}-${l.role_locataire}`
+                            if (seen.has(key)) return false
+                            seen.add(key); return true
+                          }).map(l => (
+                            <PersonRow
+                              key={`${l.tiers_id}-${l.role_locataire}`}
+                              initials={`${l.prenom ? l.prenom[0] : ''}${l.nom[0]}`.toUpperCase()}
+                              name={l.prenom ? `${l.prenom} ${l.nom}` : l.nom}
+                              subtitle={l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'}
+                              avatarClass={l.role_locataire === 'entrant'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'}
+                              to={`/app/tiers/${l.tiers_id}`}
+                            />
+                          )))
+                        })()}
+                        {mission.mandataire && (
+                          <PersonRow
+                            initials={(mission.mandataire.raison_sociale || mission.mandataire.nom).slice(0, 2).toUpperCase()}
+                            name={mission.mandataire.raison_sociale || mission.mandataire.nom}
+                            subtitle="Mandataire"
+                            avatarClass="bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                            to={`/app/tiers/${mission.mandataire.id}`}
+                          />
+                        )}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/50 mt-3 leading-relaxed">
+                      Propriétaire/mandataire se modifient sur la <Link to={`/app/patrimoine/lots/${mission.lot.id}`} onClick={onClose} className="text-primary hover:underline">fiche lot</Link>. Locataires gérés via les EDL.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/20" />
+
+                {/* ── Bien ── */}
+                <div
+                  ref={(el) => { sectionRefs.current.bien = el }}
+                  data-section="bien"
+                >
+                  <SectionHeading Icon={House}>Lot &amp; Bâtiment</SectionHeading>
+                  <div className="space-y-1">
+                    <Link to={`/app/patrimoine/lots/${mission.lot.id}`}
+                      className="group flex items-center gap-3 p-3 -mx-3 rounded-xl hover:bg-accent/40 transition-colors">
+                      <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
+                        <House className="h-4 w-4 text-blue-500 dark:text-blue-400" weight="duotone" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold truncate group-hover:text-primary transition-colors">{mission.lot.designation}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {typeBienLabels[mission.lot.type_bien] || mission.lot.type_bien}
+                          {mission.lot.etage   && ` · Étage ${mission.lot.etage}`}
+                          {mission.lot.surface && ` · ${mission.lot.surface} m²`}
+                        </p>
+                      </div>
+                      <CaretRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-primary transition-colors shrink-0" />
+                    </Link>
+
+                    <Link to={`/app/patrimoine/batiments/${mission.lot.batiment.id}`}
+                      className="group flex items-center gap-3 p-3 -mx-3 rounded-xl hover:bg-accent/40 transition-colors">
+                      <div className="h-10 w-10 rounded-xl bg-violet-50 dark:bg-violet-950/60 flex items-center justify-center shrink-0">
+                        <BuildingOffice className="h-4 w-4 text-violet-500 dark:text-violet-400" weight="duotone" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold truncate group-hover:text-primary transition-colors">{mission.lot.batiment.designation}</p>
+                        {mission.lot.adresse && (
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3 shrink-0" weight="duotone" />
+                            {formatAddress(mission.lot.adresse)}
+                          </p>
+                        )}
+                      </div>
+                      <CaretRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-primary transition-colors shrink-0" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="h-px bg-border/20" />
+
+                {/* ── Documents ── */}
+                <div
+                  ref={(el) => { sectionRefs.current.documents = el }}
+                  data-section="documents"
+                  className="space-y-5"
+                >
+                  {/* EDL */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <SectionHeading Icon={FileText}>Documents EDL</SectionHeading>
+                      {mission.edls.length > 0 && (
+                        <span className="text-[10px] text-muted-foreground -mt-3">
+                          {mission.edls.length} doc{mission.edls.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                    {mission.edls.length === 0 ? (
+                      <div className="flex items-center gap-2.5 py-2 text-muted-foreground/35">
+                        <FileText className="h-4 w-4 shrink-0" />
+                        <p className="text-[12px] italic">Aucun EDL associé</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {mission.edls.map((edl) => {
+                          const isSigne       = edl.statut === 'signe'
+                          const isInfructueux = edl.statut === 'infructueux'
+                          const cardBg = isSigne       ? 'bg-emerald-50/70 border-emerald-100/80 dark:bg-emerald-950/20 dark:border-emerald-900/40'
+                                       : isInfructueux ? 'bg-red-50/70 border-red-100/80 dark:bg-red-950/20 dark:border-red-900/40'
+                                       : 'bg-sky-50/70 border-sky-100/80 dark:bg-sky-950/20 dark:border-sky-900/40'
+                          const statusColor = isSigne ? 'text-emerald-600 dark:text-emerald-400'
+                                           : isInfructueux ? 'text-red-500' : 'text-sky-500'
+                          const statusDotBg = isSigne ? 'bg-emerald-500' : isInfructueux ? 'bg-red-500' : 'bg-sky-400'
+                          return (
+                            <div key={edl.id} className={cn('rounded-2xl border overflow-hidden', cardBg)}>
+                              {/* Header */}
+                              <div className="flex items-center justify-between px-4 pt-3.5 pb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full', sensColors[edl.sens])}>
+                                    {sensLabels[edl.sens]}
+                                  </span>
+                                  <span className="text-[13px] font-semibold text-foreground">
+                                    {edl.type === 'inventaire' ? 'Inventaire' : 'État des lieux'}
+                                  </span>
+                                </div>
+                                <div className={cn('flex items-center gap-1.5 text-[11px] font-semibold', statusColor)}>
+                                  <span className={cn('h-1.5 w-1.5 rounded-full', statusDotBg)} />
+                                  {statutEdlLabels[edl.statut] || edl.statut}
+                                </div>
+                              </div>
+
+                              {/* Locataires */}
+                              {edl.locataires.length > 0 && (
+                                <div className="px-4 pb-2.5 flex flex-wrap gap-1">
+                                  {edl.locataires.map((l) => (
+                                    <span key={l.tiers_id} className={cn(
+                                      'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                                      l.role_locataire === 'entrant'
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                    )}>
+                                      {l.prenom ? `${l.prenom} ${l.nom}` : l.nom}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Document links */}
+                              <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+                                {([
+                                  { url: edl.url_pdf,       Icon: FilePdf, label: 'PDF',       color: 'text-red-500'    },
+                                  { url: edl.url_web,       Icon: Globe,   label: 'Web',       color: 'text-blue-500'   },
+                                  { url: edl.url_pdf_legal, Icon: Scales,  label: 'PDF légal', color: 'text-violet-500' },
+                                  { url: edl.url_web_legal, Icon: Globe,   label: 'Web légal', color: 'text-violet-500' },
+                                ] as const).map(({ url, Icon: LIcon, label, color }) => url ? (
+                                  <a key={label} href={url} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2.5 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-white/60 hover:border-border/30 shadow-xs transition-all">
+                                    <LIcon className={cn('h-3.5 w-3.5 shrink-0', color)} weight="duotone" />
+                                    <span className="text-foreground/70">{label}</span>
+                                  </a>
+                                ) : (
+                                  <span key={label} className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg bg-white/30 border border-white/20 text-muted-foreground/30 cursor-not-allowed select-none">
+                                    <LIcon className="h-3.5 w-3.5 shrink-0" />{label}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add EDL */}
+                  {!isLocked && (
+                    <div className="mt-1">
+                      {!showAddEdl ? (
+                        <button
+                          onClick={() => setShowAddEdl(true)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-border/40 text-[11px] font-semibold text-muted-foreground/50 hover:text-primary hover:border-primary/40 transition-colors"
+                        >
+                          <Plus className="h-3 w-3" /> Ajouter un EDL
+                        </button>
+                      ) : (
+                        <div className="rounded-xl border border-border/25 bg-white px-3 py-3 space-y-2.5">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select value={addEdlSens} onValueChange={(v) => setAddEdlSens(v as SensEDL)}>
+                              <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="entree">Entrée</SelectItem>
+                                <SelectItem value="sortie">Sortie</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Select value={addEdlType} onValueChange={(v) => setAddEdlType(v as TypeEDL)}>
+                              <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="edl">EDL</SelectItem>
+                                <SelectItem value="inventaire">Inventaire</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" className="flex-1 h-8 text-[11px]" onClick={handleAddEdl} disabled={addEdlSaving}>
+                              {addEdlSaving ? '…' : 'Ajouter'}
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={() => setShowAddEdl(false)}>
+                              Annuler
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  {mission.proprietaires.length === 0 && !mission.mandataire && mission.edls.every(e => e.locataires.length === 0) && (
-                    <div className="py-4 text-center">
-                      <p className="text-[12px] text-muted-foreground/40 italic">Aucun tiers lié</p>
+
+                  {/* Clés */}
+                  {mission.cles.length > 0 && (
+                    <div>
+                      <SectionHeading Icon={Key}>Clés</SectionHeading>
+                      <div className="divide-y divide-border/20">
+                        {mission.cles.map((cle) => (
+                          <div key={cle.id} className="flex items-center justify-between py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <Key className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" weight="duotone" />
+                              <span className="text-[13px] font-medium">{typeCleLabels[cle.type_cle] || cle.type_cle}</span>
+                              {cle.quantite > 1 && <span className="text-[11px] text-muted-foreground">×{cle.quantite}</span>}
+                              {cle.lieu_depot && <span className="text-[11px] text-muted-foreground">· {cle.lieu_depot}</span>}
+                            </div>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
+                              {statutCleLabels[cle.statut] || cle.statut}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-              </Section>
 
-              {/* ── Commentaire ── */}
-              <Section icon={ChatText} title="Commentaire">
-                <div className="space-y-2.5">
-                  <Textarea value={commentaire} onChange={(e) => setCommentaire(e.target.value)} placeholder="Ajouter un commentaire..." rows={3} className="resize-none" />
-                  {commentaire !== (mission.commentaire || '') && (
-                    <Button size="sm" variant="outline" onClick={handleSaveComment} disabled={saving} className="w-full h-9">
-                      {saving ? 'Enregistrement...' : 'Enregistrer le commentaire'}
-                    </Button>
-                  )}
+                <div className="h-px bg-border/20" />
+
+                {/* ── Commentaire (no tab, always at bottom) ── */}
+                <div>
+                  <SectionHeading Icon={ChatText}>Commentaire</SectionHeading>
+                  <div className="space-y-2.5">
+                    <Textarea
+                      value={commentaire}
+                      onChange={(e) => setCommentaire(e.target.value)}
+                      placeholder="Ajouter un commentaire…"
+                      rows={4}
+                      className={cn(
+                        'resize-none text-[13px] w-full rounded-xl shadow-xs',
+                        'bg-white border border-border/60',
+                        'hover:border-border/90',
+                        'focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
+                        'transition-colors',
+                      )}
+                    />
+                    {commentaire !== (mission.commentaire || '') && (
+                      <Button size="sm" variant="outline" onClick={handleSaveComment} disabled={saving} className="w-full h-9 text-[12px]">
+                        {saving ? 'Enregistrement…' : 'Enregistrer la note'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </Section>
 
-              {/* ── Footer ── */}
-              <div className="pt-2 pb-4">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-between text-[13px] font-semibold rounded-xl"
-                  onClick={() => { onClose(); navigate(`/app/missions/${mission.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference || 'Mission' }] } }) }}
-                >
-                  Ouvrir la fiche complète
-                  <ArrowSquareOut className="h-4 w-4" />
-                </Button>
+                {/* Bottom padding */}
+                <div className="h-2" />
               </div>
-
             </div>
-          </div>
+
+            {/* ═══ STICKY FOOTER ═══ */}
+            <div className="shrink-0 border-t border-border/25 px-6 py-4" style={{ backgroundColor: '#fafafa' }}>
+              <Button
+                variant="outline"
+                className="w-full h-10 justify-between text-[13px] font-semibold rounded-xl"
+                onClick={() => {
+                  onClose()
+                  navigate(`/app/missions/${mission.id}`, {
+                    state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference || 'Mission' }] }
+                  })
+                }}
+              >
+                Ouvrir la fiche complète
+                <ArrowSquareOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
         )}
       </SheetContent>
     </Sheet>

@@ -193,18 +193,20 @@ export function MissionCalendar(props: Props) {
     return map
   }, [visibleMissions])
 
-  // Fetch indisponibilites (week view only, non-blocking on error)
-  const indispoQuery = useIndisponibilites(mode === 'week' ? { date_from: dateFrom, date_to: dateTo } : undefined)
+  // Fetch indisponibilites sur la plage visible (semaine ou mois)
+  const indispoQuery = useIndisponibilites({ date_from: dateFrom, date_to: dateTo })
   const indisposRaw = indispoQuery.data
   const indisposByDay = useMemo(() => {
     const map: Record<string, IndisponibiliteTechnicien[]> = {}
-    if (!showIndispos || !Array.isArray(indisposRaw) || mode !== 'week') return map
+    if (!showIndispos || !Array.isArray(indisposRaw)) return map
+    // Domaine de jours à alimenter selon le mode courant
+    const days = mode === 'week' ? weekDays : monthDays
     for (const ind of indisposRaw) {
       try {
         const startStr = ind.date_debut?.split('T')[0]
         const endStr = ind.date_fin?.split('T')[0]
         if (!startStr || !endStr) continue
-        for (const day of weekDays) {
+        for (const day of days) {
           const dayStr = toDateStr(day)
           if (dayStr >= startStr && dayStr <= endStr) {
             if (!map[dayStr]) map[dayStr] = []
@@ -214,7 +216,7 @@ export function MissionCalendar(props: Props) {
       } catch { /* skip malformed */ }
     }
     return map
-  }, [indisposRaw, weekDays, mode, showIndispos])
+  }, [indisposRaw, weekDays, monthDays, mode, showIndispos])
 
   // Mission count for the visible range
   const totalVisible = visibleMissions.length
@@ -292,29 +294,27 @@ export function MissionCalendar(props: Props) {
             <span className={`w-1.5 h-1.5 rounded-full ${showMissions ? 'bg-sky-500' : 'bg-muted-foreground/40'}`} />
             Missions
           </button>
-          {mode === 'week' && (
-            <button
-              type="button"
-              onClick={() => setShowIndispos(v => !v)}
-              aria-pressed={showIndispos}
-              title={showIndispos ? 'Masquer les indisponibilités' : 'Afficher les indisponibilités'}
-              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${
-                showIndispos
-                  ? 'bg-muted/60 text-foreground/75 border-border/60'
-                  : 'bg-muted/20 text-muted-foreground/60 border-border/40 line-through decoration-1'
-              }`}
-            >
-              <span
-                className="w-3 h-2 rounded-sm border border-border/60 shrink-0"
-                style={{
-                  backgroundImage: showIndispos
-                    ? 'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)'
-                    : undefined,
-                }}
-              />
-              Indispos
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowIndispos(v => !v)}
+            aria-pressed={showIndispos}
+            title={showIndispos ? 'Masquer les indisponibilités' : 'Afficher les indisponibilités'}
+            className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${
+              showIndispos
+                ? 'bg-muted/60 text-foreground/75 border-border/60'
+                : 'bg-muted/20 text-muted-foreground/60 border-border/40 line-through decoration-1'
+            }`}
+          >
+            <span
+              className="w-3 h-2 rounded-sm border border-border/60 shrink-0"
+              style={{
+                backgroundImage: showIndispos
+                  ? 'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)'
+                  : undefined,
+              }}
+            />
+            Indispos
+          </button>
         </div>
 
         {/* Mode toggle */}
@@ -433,15 +433,24 @@ export function MissionCalendar(props: Props) {
             {monthDays.map((day, i) => {
               const key = toDateStr(day)
               const dayMissions = missionsByDay[key] || []
+              const dayIndispos = indisposByDay[key] || []
               const isToday = isSameDay(day, today)
               const isCurrentMonth = day.getMonth() === monthDate.getMonth()
               const isLastCol = (i + 1) % 7 !== 0
               const isNotLastRow = i < 35
 
+              // Fond rayé subtil quand au moins une indispo couvre le jour entier
+              const hasFullDayIndispo = dayIndispos.some(ind => ind.est_journee_entiere)
+              const cellBg = isToday
+                ? 'bg-primary/[0.03]'
+                : hasFullDayIndispo
+                  ? '[background-image:repeating-linear-gradient(135deg,transparent_0px,transparent_4px,rgba(107,114,128,0.07)_4px,rgba(107,114,128,0.07)_6px)]'
+                  : ''
+
               return (
                 <div
                   key={`${key}-${i}`}
-                  className={`min-h-[100px] p-1 ${isLastCol ? 'border-r border-border/15' : ''} ${isNotLastRow ? 'border-b border-border/15' : ''} ${!isCurrentMonth ? 'opacity-30' : ''} ${isToday ? 'bg-primary/[0.03]' : ''}`}
+                  className={`min-h-[100px] p-1 ${isLastCol ? 'border-r border-border/15' : ''} ${isNotLastRow ? 'border-b border-border/15' : ''} ${!isCurrentMonth ? 'opacity-30' : ''} ${cellBg}`}
                 >
                   <div className={`text-[11px] font-bold mb-1 px-1 ${isToday ? 'text-primary' : 'text-muted-foreground/50'}`}>
                     {isToday ? (
@@ -455,6 +464,28 @@ export function MissionCalendar(props: Props) {
                     ))}
                     {dayMissions.length > 3 && (
                       <div className="text-[9px] font-semibold text-muted-foreground/50 px-1">+{dayMissions.length - 3} autres</div>
+                    )}
+                    {/* Indisponibilités — rendu compact adapté aux cellules mois */}
+                    {dayIndispos.slice(0, 2).map(ind => {
+                      const name = ind.user_prenom || ind.user_nom
+                        ? `${ind.user_prenom ?? ''} ${ind.user_nom ?? ''}`.trim()
+                        : 'Indispo'
+                      const label = ind.motif ? `${name} · ${ind.motif}` : name
+                      return (
+                        <button
+                          key={ind.id}
+                          type="button"
+                          onClick={() => setEditingIndispoId(ind.parent_id || ind.id)}
+                          title={`Indisponibilité${ind.motif ? ` — ${ind.motif}` : ''}`}
+                          className="w-full flex items-center gap-1 px-1 py-0.5 rounded text-[9px] font-medium text-muted-foreground hover:bg-muted/60 transition-colors [background-image:repeating-linear-gradient(135deg,transparent_0px,transparent_2px,rgba(0,0,0,0.06)_2px,rgba(0,0,0,0.06)_3px)]"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
+                          <span className="truncate">{label}</span>
+                        </button>
+                      )
+                    })}
+                    {dayIndispos.length > 2 && (
+                      <div className="text-[9px] font-semibold text-muted-foreground/40 px-1">+{dayIndispos.length - 2} indispos</div>
                     )}
                   </div>
                 </div>

@@ -1,17 +1,18 @@
 import { useNavigate } from 'react-router-dom'
-import { CaretRight } from '@phosphor-icons/react'
+import { CaretRight, Clock } from '@phosphor-icons/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { useMissions } from '../../missions/api'
 import {
-  missionStatutLabels,
-  missionStatutColors,
+  statutAffichageLabels,
+  statutAffichageColors,
   sensLabels,
   sensColors,
   getPendingActions,
+  getStatutAffichage,
 } from '../../missions/types'
-import { formatDate } from 'src/lib/formatters'
+import { formatDate, formatTime } from 'src/lib/formatters'
 
 interface DayMissionsModalProps {
   date: string
@@ -101,11 +102,21 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
                     {mission.lot_designation}
                     {mission.adresse && ` — ${mission.adresse}`}
                   </div>
-                  {techName && (
-                    <div className="text-xs text-muted-foreground/70 mt-0.5">
-                      {techName}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground/70 mt-0.5">
+                    {mission.heure_debut ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5 shrink-0" />
+                        {formatTime(mission.heure_debut)}
+                        {mission.heure_fin ? `–${formatTime(mission.heure_fin)}` : ''}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5 shrink-0" />
+                        Journée entière
+                      </span>
+                    )}
+                    {techName && <span>· {techName}</span>}
+                  </div>
                   {/* Pending action tags */}
                   {pendingActions.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1.5">
@@ -124,11 +135,13 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
 
                 {/* Right: status badge + chevron */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium ${missionStatutColors[mission.statut]}`}
-                  >
-                    {missionStatutLabels[mission.statut]}
-                  </span>
+                  {(() => { const a = getStatutAffichage(mission); return (
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}
+                    >
+                      {statutAffichageLabels[a]}
+                    </span>
+                  ) })()}
                   <CaretRight className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </button>

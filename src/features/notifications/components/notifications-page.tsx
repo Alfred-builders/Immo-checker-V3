@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCircle, XCircle, CalendarX, UserCheck, UserMinus, Envelope, Key, Warning, ClipboardText, Trash, CheckCircle as CheckAll } from '@phosphor-icons/react'
+import { Bell, SealCheck, FileX, CalendarPlus, CalendarX, ThumbsUp, ThumbsDown, EnvelopeOpen, ClockCountdown, LockKey, UserCircleMinus, Trophy, Trash, CheckCircle as CheckAll } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { formatRelative } from 'src/lib/formatters'
@@ -8,17 +8,17 @@ import type { Notification } from '../api'
 import { useNotificationsList, useMarkAllAsRead, useMarkAsRead, useDismissNotification } from '../api'
 
 const ICON_MAP: Record<string, typeof Bell> = {
-  edl_signed: CheckCircle,
-  edl_infructueux: Warning,
-  mission_created: ClipboardText,
+  edl_signed: SealCheck,
+  edl_infructueux: FileX,
+  mission_created: CalendarPlus,
   mission_cancelled: CalendarX,
-  mission_completed: CheckCircle,
-  technicien_accepted: UserCheck,
-  technicien_refused: UserMinus,
-  invitation_accepted: Envelope,
-  invitation_expired: XCircle,
-  password_changed: Key,
-  user_deactivated: UserMinus,
+  mission_completed: Trophy,
+  technicien_accepted: ThumbsUp,
+  technicien_refused: ThumbsDown,
+  invitation_accepted: EnvelopeOpen,
+  invitation_expired: ClockCountdown,
+  password_changed: LockKey,
+  user_deactivated: UserCircleMinus,
 }
 const COLOR_MAP: Record<string, string> = {
   edl_signed: 'text-emerald-600 bg-emerald-50',
@@ -127,7 +127,7 @@ function Row({ n }: { n: Notification }) {
   return (
     <div className={`group flex items-start gap-3 px-6 py-4 hover:bg-accent/30 transition-colors ${n.est_lu ? '' : 'bg-primary/[0.03]'}`}>
       <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${colorCls}`}>
-        <Icon size={18} weight="bold" />
+        <Icon size={20} weight="duotone" />
       </div>
       <button onClick={handleClick} className="flex-1 min-w-0 text-left">
         <div className="flex items-start gap-2">

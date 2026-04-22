@@ -2,11 +2,10 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ClipboardText, CalendarBlank, MapPin, WarningCircle, User } from '@phosphor-icons/react'
 import { formatDate, formatTime } from 'src/lib/formatters'
-import type { Mission, MissionStatut } from '../types'
+import type { Mission } from '../types'
 import {
-  missionStatutLabels,
   sensLabels, sensColors,
-  getStatutDerive, getPendingActions,
+  getStatutAffichage, getPendingActions, hasPendingActions,
 } from '../types'
 
 interface Props {
@@ -19,28 +18,50 @@ interface Props {
   }
 }
 
-const COLUMNS: MissionStatut[] = ['planifiee', 'assignee', 'terminee', 'annulee']
+// 4 colonnes Kanban basées sur les statuts d'affichage groupés :
+//   a_traiter = toutes les actions en attente (a_assigner, invitation_envoyee, refusee, rdv_a_confirmer, reportee)
+//   prete     = mission prête (tech accepté + RDV confirmé)
+//   terminee  = EDL signés
+//   annulee   = annulée
+type KanbanColumnKey = 'a_traiter' | 'prete' | 'terminee' | 'annulee'
 
-const columnStyles: Record<MissionStatut, { dot: string; headerBg: string; headerText: string }> = {
-  planifiee: { dot: 'bg-sky-500', headerBg: 'bg-sky-50 dark:bg-sky-950/40', headerText: 'text-sky-700 dark:text-sky-300' },
-  assignee: { dot: 'bg-amber-500', headerBg: 'bg-amber-50 dark:bg-amber-950/40', headerText: 'text-amber-700 dark:text-amber-300' },
-  terminee: { dot: 'bg-green-500', headerBg: 'bg-green-50 dark:bg-green-950/40', headerText: 'text-green-700 dark:text-green-300' },
+const COLUMNS: KanbanColumnKey[] = ['a_traiter', 'prete', 'terminee', 'annulee']
+
+const columnLabels: Record<KanbanColumnKey, string> = {
+  a_traiter: 'À traiter',
+  prete: 'Prête',
+  terminee: 'Terminée',
+  annulee: 'Annulée',
+}
+
+const columnStyles: Record<KanbanColumnKey, { dot: string; headerBg: string; headerText: string }> = {
+  a_traiter: { dot: 'bg-orange-500', headerBg: 'bg-orange-50 dark:bg-orange-950/40', headerText: 'text-orange-700 dark:text-orange-300' },
+  prete: { dot: 'bg-emerald-500', headerBg: 'bg-emerald-50 dark:bg-emerald-950/40', headerText: 'text-emerald-700 dark:text-emerald-300' },
+  terminee: { dot: 'bg-muted-foreground/60', headerBg: 'bg-muted/50', headerText: 'text-muted-foreground' },
   annulee: { dot: 'bg-red-400', headerBg: 'bg-red-50 dark:bg-red-950/40', headerText: 'text-red-700 dark:text-red-300' },
 }
 
-const cardAccent: Record<MissionStatut, string> = {
-  planifiee: 'hover:border-sky-200 dark:hover:border-sky-800',
-  assignee: 'hover:border-amber-200 dark:hover:border-amber-800',
-  terminee: 'hover:border-green-200 dark:hover:border-green-800',
+const cardAccent: Record<KanbanColumnKey, string> = {
+  a_traiter: 'hover:border-orange-200 dark:hover:border-orange-800',
+  prete: 'hover:border-emerald-200 dark:hover:border-emerald-800',
+  terminee: 'hover:border-muted-foreground/30',
   annulee: 'hover:border-red-200 dark:hover:border-red-800',
+}
+
+function columnOf(mission: Mission): KanbanColumnKey {
+  const a = getStatutAffichage(mission)
+  if (a === 'annulee') return 'annulee'
+  if (a === 'terminee') return 'terminee'
+  if (a === 'prete') return 'prete'
+  return 'a_traiter'
 }
 
 export function MissionKanban({ missions }: Props) {
   const navigate = useNavigate()
 
   const grouped = useMemo(() => {
-    const groups: Record<MissionStatut, Mission[]> = { planifiee: [], assignee: [], terminee: [], annulee: [] }
-    for (const m of missions) groups[m.statut].push(m)
+    const groups: Record<KanbanColumnKey, Mission[]> = { a_traiter: [], prete: [], terminee: [], annulee: [] }
+    for (const m of missions) groups[columnOf(m)].push(m)
     for (const key of COLUMNS) groups[key].sort((a, b) => new Date(a.date_planifiee).getTime() - new Date(b.date_planifiee).getTime())
     return groups
   }, [missions])
@@ -72,7 +93,7 @@ export function MissionKanban({ missions }: Props) {
 }
 
 function KanbanColumn({ statut, missions, onCardClick }: {
-  statut: MissionStatut; missions: Mission[]; onCardClick: (id: string, ref?: string) => void
+  statut: KanbanColumnKey; missions: Mission[]; onCardClick: (id: string, ref?: string) => void
 }) {
   const style = columnStyles[statut]
 
@@ -82,7 +103,7 @@ function KanbanColumn({ statut, missions, onCardClick }: {
       <div className={`flex items-center justify-between px-3 py-2 rounded-xl mb-2 ${style.headerBg}`}>
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${style.dot}`} />
-          <span className={`text-[12px] font-bold ${style.headerText}`}>{missionStatutLabels[statut]}</span>
+          <span className={`text-[12px] font-bold ${style.headerText}`}>{columnLabels[statut]}</span>
         </div>
         <span className={`text-[11px] font-bold ${style.headerText} opacity-60`}>{missions.length}</span>
       </div>
@@ -106,14 +127,12 @@ function KanbanColumn({ statut, missions, onCardClick }: {
   )
 }
 
-function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: MissionStatut; onClick: () => void }) {
+function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: KanbanColumnKey; onClick: () => void }) {
   const pendingActions = getPendingActions(mission)
-  const hasPending = pendingActions.length > 0
+  const hasPending = hasPendingActions(mission)
   const techName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
-  const accent = hasPending && statut === 'planifiee'
-    ? 'hover:border-orange-200 dark:hover:border-orange-800'
-    : cardAccent[statut]
+  const accent = cardAccent[statut]
 
   return (
     <div

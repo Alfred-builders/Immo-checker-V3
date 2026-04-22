@@ -27,7 +27,7 @@ export interface SearchMissionResult {
   id: string
   reference: string
   date_planifiee: string | null
-  statut: 'planifiee' | 'assignee' | 'terminee' | 'annulee'
+  statut: 'planifiee' | 'terminee' | 'annulee'
   lot_designation: string
 }
 

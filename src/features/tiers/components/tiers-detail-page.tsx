@@ -19,6 +19,7 @@ import { CreateTiersModal } from './create-tiers-modal'
 import { api } from 'src/lib/api-client'
 import { toast } from 'sonner'
 import { formatDate } from '../../../lib/formatters'
+import { getStatutAffichage, statutAffichageColors, statutAffichageLabels } from '../../missions/types'
 
 /* ── Fonction labels ── */
 const FONCTION_OPTIONS = [
@@ -851,16 +852,9 @@ function LotsMandataireSection({ tiersId, tiersName }: { tiersId: string; tiersN
   )
 }
 
-/* ── US-806/807/809: Missions linked to tiers ── */
-const missionStatutColors: Record<string, string> = {
-  planifiee: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  assignee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  terminee: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-  annulee: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
-}
-const missionStatutLabels: Record<string, string> = {
-  planifiee: 'Planifiée', assignee: 'Assignée', terminee: 'Terminée', annulee: 'Annulée',
-}
+/* ── US-806/807/809: Missions linked to tiers ──
+ * Utilise le statut d'affichage dérivé (source unique, 8 valeurs) plutôt que mission.statut brut.
+ */
 
 function MissionsSection({ tiersId }: { tiersId: string }) {
   const { data: missions, isLoading } = useTiersMissions(tiersId)
@@ -887,9 +881,11 @@ function MissionsSection({ tiersId }: { tiersId: string }) {
             <div className="text-muted-foreground text-[13px]">
               {m.date_planifiee ? formatDate(m.date_planifiee) : '--'}
             </div>
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${missionStatutColors[m.statut] || ''}`}>
-              {missionStatutLabels[m.statut] || m.statut}
-            </span>
+            {(() => { const a = getStatutAffichage(m); return (
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>
+                {statutAffichageLabels[a]}
+              </span>
+            ) })()}
           </div>
         ))}
       </div>

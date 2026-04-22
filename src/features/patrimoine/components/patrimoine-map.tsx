@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { SpinnerGap } from '@phosphor-icons/react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Batiment } from '../types'
@@ -61,6 +62,7 @@ export function PatrimoineMap({ batiments }: Props) {
   const popupRef = useRef<mapboxgl.Popup | null>(null)
   const navigate = useNavigate()
   const [mapStyle, setMapStyle] = useState<MapStyleId>('light')
+  const [mapReady, setMapReady] = useState(false)
 
   // Keep navigate stable in a ref so we can use it in map event handlers
   const navigateRef = useRef(navigate)
@@ -154,6 +156,10 @@ export function PatrimoineMap({ batiments }: Props) {
       center: [2.3522, 48.8566],
       zoom: 11,
     })
+
+    // State map (le ref n'entraîne pas de re-render, on utilise un state pour l'overlay)
+    map.on('load', () => setMapReady(true))
+    map.on('error', (e) => { console.error('[patrimoine-map]', e.error); setMapReady(true) })
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     map.addControl(new mapboxgl.FullscreenControl(), 'top-right')
@@ -310,7 +316,7 @@ export function PatrimoineMap({ batiments }: Props) {
       if (lastHoverCoords) pinPopup(lastHoverCoords, lastHoverHtml)
     }
 
-    // Cluster click: zoom or show multi-building popup
+    // Cluster click: épingle le popup multi-bâtiments par défaut. Shift+click = zoom.
     map.on('click', CLUSTER_LAYER, (e) => {
       const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER] })
       if (!features.length) return
@@ -318,20 +324,22 @@ export function PatrimoineMap({ batiments }: Props) {
       const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource
       const geometry = features[0].geometry as GeoJSON.Point
       const coords = geometry.coordinates as [number, number]
+      const pointCount = features[0].properties?.point_count ?? 20
 
-      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return
-        if (zoom != null && zoom <= map.getZoom()) {
-          source.getClusterLeaves(clusterId, 20, 0, (err2, leaves) => {
-            if (err2 || !leaves?.length) return
-            const html = multiBatimentHtml(leaves)
-            lastHoverCoords = coords
-            lastHoverHtml = html
-            pinPopup(coords, html)
-          })
-        } else {
-          map.easeTo({ center: coords, zoom: zoom ?? 14 })
-        }
+      if (e.originalEvent.shiftKey) {
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err) return
+          map.easeTo({ center: coords, zoom: zoom ?? (map.getZoom() + 2) })
+        })
+        return
+      }
+
+      source.getClusterLeaves(clusterId, Math.min(pointCount, 50), 0, (err, leaves) => {
+        if (err || !leaves?.length) return
+        const html = multiBatimentHtml(leaves)
+        lastHoverCoords = coords
+        lastHoverHtml = html
+        pinPopup(coords, html)
       })
     })
 
@@ -381,9 +389,29 @@ export function PatrimoineMap({ batiments }: Props) {
       }
     })
 
-    // Cluster hover cursor
-    map.on('mouseenter', CLUSTER_LAYER, () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', CLUSTER_LAYER, () => { map.getCanvas().style.cursor = '' })
+    // Cluster hover : affiche le popup multi-bâtiments (non épinglé).
+    map.on('mouseenter', CLUSTER_LAYER, (e) => {
+      map.getCanvas().style.cursor = 'pointer'
+      if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null }
+      const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER] })
+      if (!features.length) return
+      const clusterId = features[0].properties?.cluster_id
+      const geometry = features[0].geometry as GeoJSON.Point
+      const coords = geometry.coordinates as [number, number]
+      const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource
+      const pointCount = features[0].properties?.point_count ?? 20
+      source.getClusterLeaves(clusterId, Math.min(pointCount, 50), 0, (err, leaves) => {
+        if (err || !leaves?.length) return
+        const html = multiBatimentHtml(leaves)
+        lastHoverCoords = coords
+        lastHoverHtml = html
+        showHoverPopup(coords, html)
+      })
+    })
+    map.on('mouseleave', CLUSTER_LAYER, () => {
+      map.getCanvas().style.cursor = ''
+      scheduleHidePopup()
+    })
 
     mapRef.current = map
 
@@ -394,6 +422,7 @@ export function PatrimoineMap({ batiments }: Props) {
       delete (window as any).__batMapPin__
       map.remove()
       mapRef.current = null
+      setMapReady(false)
     }
   }, [setupLayers])
 
@@ -459,6 +488,14 @@ export function PatrimoineMap({ batiments }: Props) {
     <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="relative">
         <div ref={mapContainer} className="h-[600px] w-full" />
+        {!mapReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/30 pointer-events-none transition-opacity duration-300">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <SpinnerGap className="h-4 w-4 animate-spin" />
+              Chargement de la carte...
+            </div>
+          </div>
+        )}
         <MapStyleSwitcher currentStyle={mapStyle} onChange={handleStyleChange} />
       </div>
       <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 text-xs text-muted-foreground border-t border-border/60">

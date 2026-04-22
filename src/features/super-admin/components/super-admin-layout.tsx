@@ -19,7 +19,8 @@ export function SuperAdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    // Bg "white-blue" neutre (slate-50/slate-900) — cohérent avec l'app utilisateur
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
       <aside className="w-60 shrink-0 bg-card border-r border-border/50 flex flex-col">
         <div className="h-14 px-4 flex items-center gap-2 border-b border-border/50">
           <div className="h-8 w-8 rounded-lg bg-destructive/15 flex items-center justify-center">

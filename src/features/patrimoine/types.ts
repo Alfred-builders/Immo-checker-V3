@@ -50,6 +50,7 @@ export interface Lot {
   designation: string
   reference_interne?: string | null
   type_bien: string
+  type_bien_precision?: string | null
   etage?: string | null
   emplacement_palier?: string | null
   surface?: number | null
@@ -64,6 +65,7 @@ export interface Lot {
 export interface LotDetail extends Lot {
   batiment_id: string
   batiment?: { id: string; designation: string; type: string }
+  // type_bien_precision déjà hérité de Lot — renseigné uniquement si type_bien = 'autre'
   dpe_classe?: string | null
   ges_classe?: string | null
   eau_chaude_type?: string | null

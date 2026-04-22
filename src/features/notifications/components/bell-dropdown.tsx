@@ -1,4 +1,4 @@
-import { Bell, CheckCircle, XCircle, Calendar, CalendarX, UserCheck, UserMinus, Envelope, Key, Warning, ClipboardText } from '@phosphor-icons/react'
+import { Bell, BellRinging, SealCheck, FileX, CalendarPlus, CalendarX, ThumbsUp, ThumbsDown, EnvelopeOpen, ClockCountdown, LockKey, UserCircleMinus, Trophy } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { Popover, PopoverTrigger, PopoverContent } from 'src/components/ui/popover'
 import { Button } from 'src/components/ui/button'
@@ -8,17 +8,17 @@ import type { Notification, NotificationType } from '../api'
 import { useRecentNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead } from '../api'
 
 const ICON_MAP: Record<string, typeof Bell> = {
-  edl_signed: CheckCircle,
-  edl_infructueux: Warning,
-  mission_created: ClipboardText,
+  edl_signed: SealCheck,
+  edl_infructueux: FileX,
+  mission_created: CalendarPlus,
   mission_cancelled: CalendarX,
-  mission_completed: CheckCircle,
-  technicien_accepted: UserCheck,
-  technicien_refused: UserMinus,
-  invitation_accepted: Envelope,
-  invitation_expired: XCircle,
-  password_changed: Key,
-  user_deactivated: UserMinus,
+  mission_completed: Trophy,
+  technicien_accepted: ThumbsUp,
+  technicien_refused: ThumbsDown,
+  invitation_accepted: EnvelopeOpen,
+  invitation_expired: ClockCountdown,
+  password_changed: LockKey,
+  user_deactivated: UserCircleMinus,
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -67,7 +67,7 @@ export function BellDropdown() {
           className="relative h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           aria-label="Notifications"
         >
-          <Bell size={18} />
+          {unreadCount > 0 ? <BellRinging size={18} weight="duotone" /> : <Bell size={18} weight="regular" />}
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
               {unreadCount > 99 ? '99+' : unreadCount}
@@ -138,7 +138,7 @@ function NotificationItem({ n, onClick }: { n: Notification; onClick: () => void
       className={`w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-accent/50 transition-colors ${n.est_lu ? '' : 'bg-primary/[0.03]'}`}
     >
       <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${colorCls}`}>
-        <Icon size={16} weight="bold" />
+        <Icon size={18} weight="duotone" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">

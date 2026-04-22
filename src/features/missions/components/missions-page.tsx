@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  MagnifyingGlass, Plus, List, GridFour, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown,
+  MagnifyingGlass, Plus, List, GridFour, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown, FileText,
 } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
@@ -24,10 +24,10 @@ import { MissionMap } from './mission-map'
 import { MissionCalendar } from './mission-calendar'
 import type { Mission, MissionStatut } from '../types'
 import {
-  missionStatutLabels, missionStatutColors,
+  statutAffichageLabels, statutAffichageColors,
   statutRdvLabels, statutInvitationLabels,
   sensLabels, sensColors,
-  getStatutDerive, getPendingActions,
+  getStatutAffichage, getPendingActions,
 } from '../types'
 
 const BATCH_SIZE = 30
@@ -38,9 +38,12 @@ const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'date', label: 'Date', defaultVisible: true },
   { id: 'types', label: 'Type(s)', defaultVisible: true },
   { id: 'technicien', label: 'Technicien', defaultVisible: true },
+  { id: 'proprietaire', label: 'Propriétaire', defaultVisible: false },
+  { id: 'locataires', label: 'Locataire(s)', defaultVisible: false },
   { id: 'statut', label: 'Statut mission', defaultVisible: true },
   { id: 'statut_rdv', label: 'Statut RDV', defaultVisible: true },
   { id: 'invitation', label: 'Invitation', defaultVisible: false },
+  { id: 'documents', label: 'Documents', defaultVisible: true },
   { id: 'created_at', label: 'Créée le', defaultVisible: false },
 ]
 
@@ -50,7 +53,6 @@ const MISSION_FILTER_FIELDS: FilterField[] = [
   { id: 'technicien_nom', label: 'Technicien', type: 'text' },
   { id: 'statut', label: 'Statut', type: 'select', options: [
     { value: 'planifiee', label: 'Planifiée' },
-    { value: 'assignee', label: 'Assignée' },
     { value: 'terminee', label: 'Terminée' },
     { value: 'annulee', label: 'Annulée' },
   ]},
@@ -154,7 +156,9 @@ export function MissionsPage() {
   }, [missionsRaw, dynamicFilters])
   const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('missions_list', MISSION_COLUMNS)
   const { colWidths, onResizeStart, onResize } = useResizableColumns({
-    reference: 120, lot: 220, date: 110, types: 130, technicien: 140, statut: 110, statut_rdv: 90, invitation: 90, created_at: 90,
+    reference: 120, lot: 220, date: 110, types: 130, technicien: 140,
+    proprietaire: 150, locataires: 170,
+    statut: 110, statut_rdv: 90, invitation: 90, documents: 90, created_at: 90,
   })
 
   // Reset display count on filter changes
@@ -302,7 +306,6 @@ export function MissionsPage() {
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
             <SelectItem value="planifiee">Planifiée</SelectItem>
-            <SelectItem value="assignee">Assignée</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
@@ -359,9 +362,12 @@ export function MissionsPage() {
                 {isCol('date') && <MissionTh col="date" label="Date" w={colWidths.date} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="date" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('types') && <MissionTh col="" label="Type(s)" w={colWidths.types} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="types" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('technicien') && <MissionTh col="technicien" label="Technicien" w={colWidths.technicien} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="technicien" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('proprietaire') && <MissionTh col="" label="Propriétaire" w={colWidths.proprietaire} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="proprietaire" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('locataires') && <MissionTh col="" label="Locataire(s)" w={colWidths.locataires} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="locataires" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('statut') && <MissionTh col="statut" label="Statut" w={colWidths.statut} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('statut_rdv') && <MissionTh col="statut_rdv" label="RDV" w={colWidths.statut_rdv} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut_rdv" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('invitation') && <MissionTh col="" label="Invitation" w={colWidths.invitation} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="invitation" onResizeStart={onResizeStart} onResize={onResize} />}
+                {isCol('documents') && <MissionTh col="" label="Docs" w={colWidths.documents} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="documents" onResizeStart={onResizeStart} onResize={onResize} />}
                 {isCol('created_at') && <MissionTh col="created_at" label="Créée le" w={colWidths.created_at} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="created_at" onResizeStart={onResizeStart} onResize={onResize} last />}
               </tr>
             </thead>
@@ -369,13 +375,13 @@ export function MissionsPage() {
               {/* Loading */}
               {isLoading && [1,2,3,4,5,6].map(i => (
                 <tr key={i} className="border-b border-border/20">
-                  <td className="px-2 py-3" /><td colSpan={9} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
+                  <td className="px-2 py-3" /><td colSpan={12} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
                 </tr>
               ))}
 
               {/* Empty */}
               {!isLoading && missions.length === 0 && (
-                <tr><td colSpan={10} className="py-20 text-center">
+                <tr><td colSpan={13} className="py-20 text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
                     <ClipboardText className="h-6 w-6 text-muted-foreground/50" />
                   </div>
@@ -412,9 +418,12 @@ export function MissionsPage() {
                     {isCol('date') && <td className="px-3 py-3 text-[13px] text-muted-foreground">{formatDate(mission.date_planifiee)}{mission.heure_debut && <div className="text-xs text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}</td>}
                     {isCol('types') && <td className="px-3 py-3"><div className="flex flex-wrap gap-1">{mission.edl_types.map(t => <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>{t === 'entree' || t === 'sortie' ? sensLabels[t as 'entree' | 'sortie'] : 'Inv.'}</span>)}</div></td>}
                     {isCol('technicien') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate">{techName || <span className="text-muted-foreground/30">—</span>}</td>}
-                    {isCol('statut') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${missionStatutColors[mission.statut]}`}>{missionStatutLabels[mission.statut]}</span></td>}
+                    {isCol('proprietaire') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.proprietaire_nom || ''}>{mission.proprietaire_nom || <span className="text-muted-foreground/30">—</span>}</td>}
+                    {isCol('locataires') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.locataires_noms?.join(', ') || ''}>{mission.locataires_noms && mission.locataires_noms.length > 0 ? mission.locataires_noms.join(', ') : <span className="text-muted-foreground/30">—</span>}</td>}
+                    {isCol('statut') && (() => { const a = getStatutAffichage(mission); return <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span></td> })()}
                     {isCol('statut_rdv') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutRdvLabels[mission.statut_rdv]}</span></td>}
                     {isCol('invitation') && <td className="px-3 py-3">{mission.technicien ? <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
+                    {isCol('documents') && <td className="px-3 py-3">{mission.has_signed_document ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" title="Au moins un EDL signé disponible"><FileText className="h-3 w-3" weight="fill" /> Dispo</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
                     {isCol('created_at') && <td className="px-3 py-3 text-[13px] text-muted-foreground/50">{formatDate(mission.created_at)}</td>}
                   </tr>
                 )

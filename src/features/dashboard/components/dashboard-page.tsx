@@ -29,7 +29,12 @@ import { OnboardingChecklistCard } from '../../onboarding/components/onboarding-
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { cn } from 'src/lib/cn'
 import type { Mission, MissionStatut } from '../../missions/types'
-import { missionStatutLabels, missionStatutColors, sensLabels, sensColors, getPendingActions } from '../../missions/types'
+import {
+  missionStatutLabels, missionStatutColors,
+  statutAffichageLabels, statutAffichageColors,
+  sensLabels, sensColors,
+  getPendingActions, getStatutAffichage,
+} from '../../missions/types'
 
 // ── Chart configs (data comes from API) ──
 const chartConfig: ChartConfig = {
@@ -49,9 +54,8 @@ const monthlyTrendConfig: ChartConfig = {
 const statutChartConfig: ChartConfig = {
   count:     { label: 'Missions' },
   planifiee: { label: 'Planifiée', color: 'var(--chart-1)' },
-  assignee:  { label: 'Assignée',  color: 'var(--chart-2)' },
-  terminee:  { label: 'Terminée',  color: 'var(--chart-3)' },
-  annulee:   { label: 'Annulée',   color: 'var(--chart-4)' },
+  terminee:  { label: 'Terminée',  color: 'var(--chart-2)' },
+  annulee:   { label: 'Annulée',   color: 'var(--chart-3)' },
 }
 
 type DashTab = 'overview' | 'analytics'
@@ -105,7 +109,7 @@ export function DashboardPage() {
   const pendingMissions = missions.filter(m => getPendingActions(m).length > 0)
 
   // ── Interactive pie — répartition statuts (all missions, not just page 1) ──
-  const STATUT_ORDER = ['planifiee', 'assignee', 'terminee', 'annulee'] as MissionStatut[]
+  const STATUT_ORDER = ['planifiee', 'terminee', 'annulee'] as MissionStatut[]
   const statutPieData = STATUT_ORDER.map((s) => ({
     statut: s,
     count: activityData?.statuts?.[s] ?? missions.filter((m) => m.statut === s).length,
@@ -149,10 +153,10 @@ export function DashboardPage() {
       // Actions en attente — same logic as pending_actions SQL (statut actif + action requise)
       case 'pending':
         return pendingMissions
-      // À venir 7 jours — statut IN ('planifiee','assignee') AND date_planifiee BETWEEN today AND today+7
+      // À venir 7 jours — statut = 'planifiee' AND date_planifiee BETWEEN today AND today+7
       case 'upcoming':
         return missions.filter(m =>
-          (m.statut === 'planifiee' || m.statut === 'assignee') &&
+          m.statut === 'planifiee' &&
           m.date_planifiee >= today &&
           m.date_planifiee <= in7days
         )
@@ -172,7 +176,7 @@ export function DashboardPage() {
         if (metricFilter === 'a_assigner') return !m.technicien
         if (metricFilter === 'invitation') return m.technicien?.statut_invitation !== 'accepte'
         if (metricFilter === 'rdv') return m.statut_rdv === 'a_confirmer'
-        if (metricFilter === 'planifiee' || metricFilter === 'assignee' || metricFilter === 'terminee') return m.statut === metricFilter
+        if (metricFilter === 'planifiee' || metricFilter === 'terminee') return m.statut === metricFilter
         return true
       })
 
@@ -193,7 +197,6 @@ export function DashboardPage() {
     upcoming: [
       { value: 'all', label: 'Toutes' },
       { value: 'planifiee', label: 'Planifiées' },
-      { value: 'assignee', label: 'Assignées' },
     ],
     completed: [
       { value: 'all', label: 'Toutes' },
@@ -344,9 +347,11 @@ export function DashboardPage() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${missionStatutColors[m.statut]}`}>
-                                    {missionStatutLabels[m.statut]}
-                                  </span>
+                                  {(() => { const a = getStatutAffichage(m); return (
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statutAffichageColors[a]}`}>
+                                      {statutAffichageLabels[a]}
+                                    </span>
+                                  ) })()}
                                 </td>
                                 {metricSheet === 'pending' && (
                                   <td className="px-4 py-3">
@@ -792,7 +797,7 @@ function MissionsTable({ missions, navigate }: { missions: Mission[]; navigate: 
                 ))}
               </div>
             </td>
-            <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${missionStatutColors[m.statut]}`}>{missionStatutLabels[m.statut]}</span></td>
+            <td className="px-3 py-3">{(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}</td>
             <td className="px-3 py-3 text-muted-foreground">{m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : '—'}</td>
           </tr>
         ))}

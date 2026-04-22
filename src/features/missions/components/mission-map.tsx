@@ -5,9 +5,9 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Mission } from '../types'
 import {
-  getStatutDerive,
-  statutDeriveMarkerColors,
-  missionStatutLabels,
+  getStatutAffichage,
+  statutAffichageMarkerColors,
+  statutAffichageLabels,
   statutRdvLabels,
   sensLabels,
 } from '../types'
@@ -36,8 +36,8 @@ function buildGeoJSON(missions: Mission[]): GeoJSON.FeatureCollection {
     const lng = (m as any).longitude
     if (!lat || !lng) continue
 
-    const statutDerive = getStatutDerive(m)
-    const color = statutDeriveMarkerColors[statutDerive]
+    const affichage = getStatutAffichage(m)
+    const color = statutAffichageMarkerColors[affichage]
 
     features.push({
       type: 'Feature',
@@ -51,6 +51,7 @@ function buildGeoJSON(missions: Mission[]): GeoJSON.FeatureCollection {
         date_planifiee: m.date_planifiee,
         heure_debut: m.heure_debut || '',
         statut: m.statut,
+        statut_affichage: affichage,
         statut_rdv: m.statut_rdv,
         technicien_nom: m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : '',
         edl_types: JSON.stringify(m.edl_types),
@@ -69,6 +70,7 @@ export function MissionMap({ missions }: Props) {
   const navigateRef = useRef(navigate)
   navigateRef.current = navigate
   const [mapStyle, setMapStyle] = useState<MapStyleId>('light')
+  const [mapReady, setMapReady] = useState(false)
 
   const geoMissions = missions.filter(m => (m as any).latitude && (m as any).longitude)
 
@@ -154,6 +156,10 @@ export function MissionMap({ missions }: Props) {
       zoom: 11,
     })
 
+    // setMapReady ne déclenche un re-render que via state — cf overlay de chargement
+    map.on('load', () => setMapReady(true))
+    map.on('error', (e) => { console.error('[map]', e.error); setMapReady(true) })
+
     map.addControl(new mapboxgl.NavigationControl(), 'top-right')
     map.addControl(new mapboxgl.FullscreenControl(), 'top-right')
     map.addControl(
@@ -172,8 +178,8 @@ export function MissionMap({ missions }: Props) {
     // Status tab config
     const statusTabs = [
       { key: 'all', label: 'Tout', color: '#6b7280' },
-      { key: 'planifiee', label: 'Planifiée', color: '#3b82f6' },
-      { key: 'assignee', label: 'Assignée', color: '#10b981' },
+      { key: 'a_traiter', label: 'À traiter', color: '#f97316' },
+      { key: 'prete', label: 'Prête', color: '#10b981' },
       { key: 'terminee', label: 'Terminée', color: '#9ca3af' },
       { key: 'annulee', label: 'Annulée', color: '#ef4444' },
     ]
@@ -192,7 +198,7 @@ export function MissionMap({ missions }: Props) {
     function singleMissionHtml(props: any) {
       const dateStr = props?.date_planifiee ? formatDate(props.date_planifiee) : ''
       const timeStr = props?.heure_debut ? ` a ${formatTime(props.heure_debut)}` : ''
-      const statusLabel = props?.statut ? missionStatutLabels[props.statut as keyof typeof missionStatutLabels] : ''
+      const statusLabel = props?.statut_affichage ? statutAffichageLabels[props.statut_affichage as keyof typeof statutAffichageLabels] : ''
       const techStr = props?.technicien_nom || 'Non assigne'
       const color = props?.color ?? '#9ca3af'
       return `
@@ -220,10 +226,10 @@ export function MissionMap({ missions }: Props) {
     function missionRowHtml(p: any) {
       const dateStr = p?.date_planifiee ? formatDate(p.date_planifiee) : ''
       const timeStr = p?.heure_debut ? ` a ${formatTime(p.heure_debut)}` : ''
-      const statusLabel = p?.statut ? missionStatutLabels[p.statut as keyof typeof missionStatutLabels] : ''
+      const statusLabel = p?.statut_affichage ? statutAffichageLabels[p.statut_affichage as keyof typeof statutAffichageLabels] : ''
       const color = p?.color ?? '#9ca3af'
       return `
-        <div class="immo-mission-row" data-statut="${p?.statut ?? ''}" onclick="window.__missionMapNav__('${p?.id}','${p?.reference ?? ''}')" style="display: flex; align-items: center; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
+        <div class="immo-mission-row" data-tab="${(() => { const a = p?.statut_affichage ?? ''; return (a === 'terminee' || a === 'annulee' || a === 'prete') ? a : 'a_traiter' })()}" onclick="window.__missionMapNav__('${p?.id}','${p?.reference ?? ''}')" style="display: flex; align-items: center; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
           <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -241,11 +247,12 @@ export function MissionMap({ missions }: Props) {
       const first = sorted[0].properties
       const addrStr = first?.adresse ?? first?.batiment_designation ?? ''
 
-      // Count per status for tab badges
+      // Count per tab — regrouper les 5 statuts d'affichage "en attente" dans a_traiter
       const counts: Record<string, number> = { all: sorted.length }
       for (const f of sorted) {
-        const s = f.properties?.statut ?? ''
-        counts[s] = (counts[s] || 0) + 1
+        const a = f.properties?.statut_affichage ?? ''
+        const tab = (a === 'terminee' || a === 'annulee' || a === 'prete') ? a : 'a_traiter'
+        counts[tab] = (counts[tab] || 0) + 1
       }
 
       // Tabs: only show tabs that have missions
@@ -370,11 +377,12 @@ export function MissionMap({ missions }: Props) {
       // Show/hide rows
       popup.querySelectorAll('.immo-mission-row').forEach((row) => {
         const el = row as HTMLElement
-        el.style.display = (tabKey === 'all' || el.dataset.statut === tabKey) ? 'flex' : 'none'
+        el.style.display = (tabKey === 'all' || el.dataset.tab === tabKey) ? 'flex' : 'none'
       })
     }
 
-    // Cluster click: zoom in, or pin multi-mission popup if same location
+    // Cluster click: épingle le popup multi-missions (identique au hover mais persistant).
+    // Le bouton zoom reste disponible via shift+click comme raccourci avancé.
     map.on('click', CLUSTER_LAYER, (e) => {
       const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER] })
       if (!features.length) return
@@ -382,20 +390,24 @@ export function MissionMap({ missions }: Props) {
       const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource
       const geometry = features[0].geometry as GeoJSON.Point
       const coords = geometry.coordinates as [number, number]
+      const pointCount = features[0].properties?.point_count ?? 20
 
-      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return
-        if (zoom != null && zoom <= map.getZoom()) {
-          source.getClusterLeaves(clusterId, 20, 0, (err2, leaves) => {
-            if (err2 || !leaves?.length) return
-            const html = multiMissionHtml(leaves)
-            lastHoverCoords = coords
-            lastHoverHtml = html
-            pinPopup(coords, html)
-          })
-        } else {
-          map.easeTo({ center: coords, zoom: zoom ?? 14 })
-        }
+      // Shift+click → zoom (raccourci pour les power-users)
+      if (e.originalEvent.shiftKey) {
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err) return
+          map.easeTo({ center: coords, zoom: zoom ?? (map.getZoom() + 2) })
+        })
+        return
+      }
+
+      // Click normal → épingle le popup multi-missions
+      source.getClusterLeaves(clusterId, Math.min(pointCount, 50), 0, (err, leaves) => {
+        if (err || !leaves?.length) return
+        const html = multiMissionHtml(leaves)
+        lastHoverCoords = coords
+        lastHoverHtml = html
+        pinPopup(coords, html)
       })
     })
 
@@ -445,9 +457,31 @@ export function MissionMap({ missions }: Props) {
       }
     })
 
-    // Hover cursors for clusters
-    map.on('mouseenter', CLUSTER_LAYER, () => { map.getCanvas().style.cursor = 'pointer' })
-    map.on('mouseleave', CLUSTER_LAYER, () => { map.getCanvas().style.cursor = '' })
+    // Hover cluster : fetch les leaves et affiche le popup multi-missions (non épinglé).
+    // Même UX qu'un point unique multi-missions. Clic = épinglage (handler plus haut).
+    map.on('mouseenter', CLUSTER_LAYER, (e) => {
+      map.getCanvas().style.cursor = 'pointer'
+      if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null }
+      const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER] })
+      if (!features.length) return
+      const clusterId = features[0].properties?.cluster_id
+      const geometry = features[0].geometry as GeoJSON.Point
+      const coords = geometry.coordinates as [number, number]
+      const source = map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource
+      const pointCount = features[0].properties?.point_count ?? 20
+      // Cap à 50 pour éviter un popup trop long dans un gros cluster
+      source.getClusterLeaves(clusterId, Math.min(pointCount, 50), 0, (err, leaves) => {
+        if (err || !leaves?.length) return
+        const html = multiMissionHtml(leaves)
+        lastHoverCoords = coords
+        lastHoverHtml = html
+        showHoverPopup(coords, html)
+      })
+    })
+    map.on('mouseleave', CLUSTER_LAYER, () => {
+      map.getCanvas().style.cursor = ''
+      scheduleHidePopup()
+    })
 
     mapRef.current = map
 
@@ -459,6 +493,7 @@ export function MissionMap({ missions }: Props) {
       delete (window as any).__missionMapTab__
       map.remove()
       mapRef.current = null
+      setMapReady(false)
     }
   }, [setupLayers])
 
@@ -519,8 +554,8 @@ export function MissionMap({ missions }: Props) {
     <div className="bg-card rounded-2xl border-0 shadow-elevation-raised overflow-hidden">
       <div className="relative">
         <div ref={mapContainer} className="h-[600px] w-full" />
-        {!mapRef.current && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+        {!mapReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/30 pointer-events-none transition-opacity duration-300">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <SpinnerGap className="h-4 w-4 animate-spin" />
               Chargement de la carte...

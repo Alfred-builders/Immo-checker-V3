@@ -21,11 +21,11 @@ import { formatDate, formatTime } from 'src/lib/formatters'
 import { toast } from 'sonner'
 import type { MissionDetail, CleMission, StatutRdv, StatutCle, SensEDL, TypeEDL } from '../types'
 import {
-  missionStatutLabels, missionStatutColors,
+  statutAffichageLabels, statutAffichageColors,
   statutRdvLabels, statutInvitationLabels,
   sensLabels, sensColors,
   typeCleLabels, statutCleLabels, statutCleColors,
-  getStatutDerive, getPendingActions,
+  getStatutAffichage, getPendingActions,
 } from '../types'
 
 /* ── Revalidation Dialog ── */
@@ -96,12 +96,33 @@ export function MissionDetailPage() {
   const [addCleLieu, setAddCleLieu] = useState('')
   const [addCleSaving, setAddCleSaving] = useState(false)
 
-  const [formData, setFormData] = useState({ date_planifiee: '', heure_debut: '', heure_fin: '', statut_rdv: '' as string, commentaire: '' })
+  const [formData, setFormData] = useState({ date_planifiee: '', heure_debut: '', heure_fin: '', statut_rdv: '' as string })
+  const [commentaireLocal, setCommentaireLocal] = useState('')
+  const [commentaireDirty, setCommentaireDirty] = useState(false)
+  const [savingComment, setSavingComment] = useState(false)
+
+  // Sticky header — détection via IntersectionObserver sur un sentinel placé juste au-dessus.
+  const heroSentinelRef = useRef<HTMLDivElement>(null)
+  const [heroStuck, setHeroStuck] = useState(false)
+  useEffect(() => {
+    const el = heroSentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => setHeroStuck(!entry.isIntersecting),
+      { rootMargin: '-57px 0px 0px 0px', threshold: 0 } // 56px = topbar h-14
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   const missionId = mission?.id
   useEffect(() => {
-    if (mission && !editing) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' })
+    if (mission && !editing) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' })
   }, [missionId, editing])
+
+  useEffect(() => {
+    if (mission) { setCommentaireLocal(mission.commentaire || ''); setCommentaireDirty(false) }
+  }, [missionId])
 
   const isTerminated = mission?.statut === 'terminee'
   const isCancelled = mission?.statut === 'annulee'
@@ -114,11 +135,21 @@ export function MissionDetailPage() {
     if (!mission) return
     setSaving(true)
     try {
-      await updateMission.mutateAsync({ id: mission.id, ...(isTerminated ? {} : { date_planifiee: formData.date_planifiee, heure_debut: formData.heure_debut || undefined, heure_fin: formData.heure_fin || undefined, statut_rdv: formData.statut_rdv as StatutRdv }), commentaire: formData.commentaire })
+      await updateMission.mutateAsync({ id: mission.id, date_planifiee: formData.date_planifiee, heure_debut: formData.heure_debut || undefined, heure_fin: formData.heure_fin || undefined, statut_rdv: formData.statut_rdv as StatutRdv })
       if (revalidate && mission.technicien) await updateInvitation.mutateAsync({ missionId: mission.id, statut_invitation: 'en_attente' })
-      toast.success('Mission mise à jour'); setEditing(false); setShowRevalidation(false)
+      toast.success('Planning mis à jour'); setEditing(false); setShowRevalidation(false)
     } catch (err: any) { toast.error(err.message || 'Erreur lors de la mise à jour') }
     finally { setSaving(false) }
+  }
+
+  async function handleSaveComment() {
+    if (!mission) return
+    setSavingComment(true)
+    try {
+      await updateMission.mutateAsync({ id: mission.id, commentaire: commentaireLocal })
+      setCommentaireDirty(false); toast.success('Commentaire enregistré')
+    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    finally { setSavingComment(false) }
   }
 
   async function handleSave() {
@@ -131,6 +162,14 @@ export function MissionDetailPage() {
     if (!mission) return
     try { await assignTech.mutateAsync({ missionId: mission.id, user_id: userId }); toast.success('Technicien assigné') }
     catch (err: any) { toast.error(err.message || 'Erreur lors de l\'assignation') }
+  }
+
+  async function handleManualInvitation(statut: 'accepte' | 'refuse') {
+    if (!mission) return
+    try {
+      await updateInvitation.mutateAsync({ missionId: mission.id, statut_invitation: statut })
+      toast.success(statut === 'accepte' ? 'Invitation confirmée manuellement' : 'Invitation marquée comme refusée')
+    } catch (err: any) { toast.error(err.message || 'Erreur lors de la mise à jour') }
   }
 
   async function handleUpdateCleStatut(cle: CleMission, newStatut: StatutCle) {
@@ -176,7 +215,7 @@ export function MissionDetailPage() {
 
   const edlBrouillonCount = mission?.edls.filter(e => e.statut === 'brouillon').length ?? 0
 
-  const hasEdits = mission && (formData.date_planifiee !== (mission.date_planifiee || '') || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || '') || formData.commentaire !== (mission.commentaire || ''))
+  const hasEdits = mission && (formData.date_planifiee !== (mission.date_planifiee || '') || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || ''))
 
   useEffect(() => {
     if (!editing || !hasEdits) return
@@ -221,14 +260,18 @@ export function MissionDetailPage() {
         </div>
       )}
 
-      {/* ═══ HERO HEADER ═══ */}
-      <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+      {/* ═══ HERO HEADER — sticky ═══ */}
+      {/* Sentinel pour détecter le "stuck" via IntersectionObserver (ratio < 1 = collé) */}
+      <div ref={heroSentinelRef} className="h-0 -mb-4" aria-hidden="true" />
+      <div
+        className={`sticky top-14 z-10 bg-card rounded-2xl border border-border/40 overflow-hidden transition-shadow duration-300 ease-out ${heroStuck ? 'shadow-elevation-floating bg-card/95 backdrop-blur-md' : 'shadow-elevation-raised'}`}
+      >
         <div className="px-7 py-6">
           <div className="flex items-start justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{mission.reference}</h1>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${missionStatutColors[mission.statut]}`}>{missionStatutLabels[mission.statut]}</span>
+                {(() => { const a = getStatutAffichage(mission); return <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>RDV: {statutRdvLabels[mission.statut_rdv]}</span>
                 {mission.edl_types.map((type) => (
                   <span key={type} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
@@ -236,7 +279,21 @@ export function MissionDetailPage() {
                   </span>
                 ))}
               </div>
-              <p className="text-sm text-foreground font-medium">{mission.lot_designation}<span className="text-muted-foreground font-normal"> — {mission.lot.batiment.designation}</span></p>
+              <p className="text-sm font-medium">
+                <Link
+                  to={`/app/patrimoine/lots/${mission.lot.id}`}
+                  className="text-foreground hover:text-primary hover:underline transition-colors"
+                >
+                  {mission.lot_designation}
+                </Link>
+                <span className="text-muted-foreground font-normal"> — </span>
+                <Link
+                  to={`/app/patrimoine/batiments/${mission.lot.batiment.id}`}
+                  className="text-muted-foreground font-normal hover:text-primary hover:underline transition-colors"
+                >
+                  {mission.lot.batiment.designation}
+                </Link>
+              </p>
               <div className="flex items-center gap-5 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{formatDate(mission.date_planifiee)}</span>
                 {mission.heure_debut && <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{formatTime(mission.heure_debut)}{mission.heure_fin ? ` - ${formatTime(mission.heure_fin)}` : ''}</span>}
@@ -245,7 +302,7 @@ export function MissionDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {!isCancelled && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> {isTerminated ? 'Modifier le commentaire' : 'Modifier'}</Button>}
+              {!isCancelled && !isTerminated && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>}
               {!isLocked && !editing && <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setShowCancel(true)}><Prohibit className="h-3.5 w-3.5" /> Annuler</Button>}
             </div>
           </div>
@@ -302,10 +359,15 @@ export function MissionDetailPage() {
         <CardBlock title="Chronologie de la mission" icon={FlowArrow}>
             <div className="relative pl-7">
               <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border/60 rounded-full" />
-              <TimelineEvent color="bg-primary" ring="ring-primary/20" title="Mission créée" desc={`${formatDate(mission.created_at)} · par ${mission.created_by_nom || 'Admin'}`} />
-              {/* Group EDLs by locataire+sens to avoid visual duplicates (edl + inventaire for same person) */}
+              <TimelineEvent
+                color="bg-primary"
+                title="Mission créée"
+                desc={`par ${mission.created_by_nom || 'Admin'}`}
+                timestamp={mission.created_at}
+              />
+              {/* Group EDLs by locataire+sens (pour éviter les doublons edl+inventaire d'un même locataire) */}
               {(() => {
-                const groups = new Map<string, { sens: string; types: string[]; locNames: string[] }>()
+                const groups = new Map<string, { sens: string; types: string[]; locNames: string[]; earliest?: string | null }>()
                 for (const edl of mission.edls) {
                   const locKey = edl.locataires.length > 0
                     ? edl.locataires.map(l => l.tiers_id).sort().join(',')
@@ -314,32 +376,59 @@ export function MissionDetailPage() {
                   const existing = groups.get(key)
                   if (existing) {
                     if (!existing.types.includes(edl.type)) existing.types.push(edl.type)
+                    // Garde le created_at le plus ancien pour dater le groupe
+                    if (edl.created_at && (!existing.earliest || edl.created_at < existing.earliest)) {
+                      existing.earliest = edl.created_at
+                    }
                   } else {
                     groups.set(key, {
                       sens: edl.sens,
                       types: [edl.type],
                       locNames: edl.locataires.map(l => l.prenom ? `${l.prenom} ${l.nom}` : l.nom),
+                      earliest: edl.created_at ?? null,
                     })
                   }
                 }
                 return Array.from(groups.entries()).map(([key, g]) => {
                   const typeLabel = g.types.map(t => t === 'inventaire' ? 'Inventaire' : 'EDL').join(' + ')
                   return (
-                    <TimelineEvent key={key} color={g.sens === 'entree' ? 'bg-blue-500' : 'bg-orange-400'} ring={g.sens === 'entree' ? 'ring-blue-500/20' : 'ring-orange-400/20'} title={`${typeLabel} ${sensLabels[g.sens as 'entree' | 'sortie']} ajouté`} desc={g.locNames.length > 0 ? `Locataire : ${g.locNames.join(', ')}` : ''} />
+                    <TimelineEvent
+                      key={key}
+                      color={g.sens === 'entree' ? 'bg-blue-500' : 'bg-orange-400'}
+                      title={`${typeLabel} ${sensLabels[g.sens as 'entree' | 'sortie']} ajouté`}
+                      desc={g.locNames.length > 0 ? `Locataire : ${g.locNames.join(', ')}` : undefined}
+                      timestamp={g.earliest}
+                    />
                   )
                 })
               })()}
               {mission.technicien ? (
-                <TimelineEvent color={mission.technicien.statut_invitation === 'accepte' ? 'bg-green-500' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-400' : 'bg-amber-400'} ring={mission.technicien.statut_invitation === 'accepte' ? 'ring-green-500/20' : mission.technicien.statut_invitation === 'refuse' ? 'ring-red-400/20' : 'ring-amber-400/20'} title={`Technicien : ${techName}`} desc={`Invitation ${statutInvitationLabels[mission.technicien.statut_invitation].toLowerCase()}`} />
+                <TimelineEvent
+                  color={mission.technicien.statut_invitation === 'accepte' ? 'bg-green-500' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-400' : 'bg-amber-400'}
+                  title={`Technicien : ${techName}`}
+                  desc={`Invitation ${statutInvitationLabels[mission.technicien.statut_invitation].toLowerCase()}`}
+                  timestamp={mission.technicien.invitation_updated_at || mission.technicien.assigned_at}
+                />
               ) : (
-                <TimelineEvent color="bg-muted-foreground/20" ring="ring-muted/40" title="En attente d'assignation" desc="Aucun technicien assigné" muted />
+                <TimelineEvent color="bg-muted-foreground/20" title="En attente d'assignation" desc="Aucun technicien assigné" muted />
               )}
-              <TimelineEvent color={mission.statut_rdv === 'confirme' ? 'bg-green-500' : mission.statut_rdv === 'reporte' ? 'bg-red-400' : 'bg-muted-foreground/20'} ring={mission.statut_rdv === 'confirme' ? 'ring-green-500/20' : mission.statut_rdv === 'reporte' ? 'ring-red-400/20' : 'ring-muted/40'} title={`RDV ${statutRdvLabels[mission.statut_rdv].toLowerCase()}`} desc={`Date : ${formatDate(mission.date_planifiee)}`} muted={mission.statut_rdv === 'a_confirmer'} />
+              <TimelineEvent
+                color={mission.statut_rdv === 'confirme' ? 'bg-green-500' : mission.statut_rdv === 'reporte' ? 'bg-red-400' : 'bg-muted-foreground/20'}
+                title={`RDV ${statutRdvLabels[mission.statut_rdv].toLowerCase()}`}
+                desc={`Date : ${formatDate(mission.date_planifiee)}${mission.heure_debut ? ` à ${formatTime(mission.heure_debut)}` : ''}`}
+                muted={mission.statut_rdv === 'a_confirmer'}
+              />
               {mission.edls.filter(e => e.statut === 'signe').map((edl) => (
-                <TimelineEvent key={`signed-${edl.id}`} color="bg-green-500" ring="ring-green-500/20" title={`${edl.type === 'inventaire' ? 'Inventaire' : 'EDL'} ${sensLabels[edl.sens]} signé`} desc="Document légal finalisé" />
+                <TimelineEvent
+                  key={`signed-${edl.id}`}
+                  color="bg-green-500"
+                  title={`${edl.type === 'inventaire' ? 'Inventaire' : 'EDL'} ${sensLabels[edl.sens]} signé`}
+                  desc="Document légal finalisé"
+                  timestamp={edl.date_signature}
+                />
               ))}
-              {isTerminated && <TimelineEvent color="bg-green-500" ring="ring-green-500/20" title="Mission terminée" desc="Tous les EDL signés — auto-terminaison" last />}
-              {isCancelled && <TimelineEvent color="bg-red-500" ring="ring-red-500/20" title="Mission annulée" desc={mission.motif_annulation || 'Motif non renseigné'} last />}
+              {isTerminated && <TimelineEvent color="bg-green-500" title="Mission terminée" desc="Tous les EDL signés — auto-terminaison" last />}
+              {isCancelled && <TimelineEvent color="bg-red-500" title="Mission annulée" desc={mission.motif_annulation || 'Motif non renseigné'} last />}
             </div>
           </CardBlock>
       </div>
@@ -357,11 +446,37 @@ export function MissionDetailPage() {
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span>
               </div>
-              {editing && !isLocked && (
+              {mission.technicien.statut_invitation === 'en_attente' && !isLocked && (
+                <div className="flex items-center gap-2 flex-wrap pl-[58px]">
+                  <span className="text-[11px] text-muted-foreground/70 italic">
+                    Confirmation orale reçue (tél, WhatsApp…) ?
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={updateInvitation.isPending}
+                      onClick={() => handleManualInvitation('accepte')}
+                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                    >
+                      ✓ Confirmer
+                    </button>
+                    <button
+                      type="button"
+                      disabled={updateInvitation.isPending}
+                      onClick={() => handleManualInvitation('refuse')}
+                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                    >
+                      ✗ Refuser
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Picker de changement visible uniquement en mode édition */}
+              {!isLocked && editing && (
                 <TechPicker
                   technicians={technicians}
                   onSelect={handleAssignTechnician}
-                  placeholder="Changer de technicien..."
+                  placeholder="Changer de technicien…"
                   className="w-full"
                   date={formData.date_planifiee || (mission.date_planifiee || '').slice(0, 10)}
                   excludeMissionId={mission.id}
@@ -374,7 +489,8 @@ export function MissionDetailPage() {
                 <div className="h-11 w-11 rounded-xl bg-muted/50 flex items-center justify-center"><UserPlus className="h-5 w-5 text-muted-foreground/40" /></div>
                 <p className="text-[14px] text-muted-foreground/50 italic">Aucun technicien assigné</p>
               </div>
-              {!isLocked && (
+              {/* Picker d'assignation visible uniquement en mode édition */}
+              {!isLocked && editing && (
                 <TechPicker
                   technicians={technicians}
                   onSelect={handleAssignTechnician}
@@ -391,7 +507,15 @@ export function MissionDetailPage() {
         <CardBlock title="Parties" icon={UsersThree}>
           <div className="space-y-0 divide-y divide-border/30">
             {mission.proprietaires.map((p) => (
-              <PersonRow key={p.id} id={p.id} nom={p.nom} prenom={p.prenom} color="sky" role="Propriétaire" />
+              <PersonRow
+                key={p.id}
+                id={p.id}
+                nom={p.type_personne === 'morale' && (p as any).raison_sociale ? (p as any).raison_sociale : p.nom}
+                prenom={p.type_personne === 'morale' ? undefined : p.prenom}
+                color="sky"
+                role="Propriétaire"
+                subtitle={p.type_personne === 'morale' ? 'Personne morale' : 'Personne physique'}
+              />
             ))}
             {(() => {
               // Deduplicate locataires across EDLs (same person may be linked to edl + inventaire)
@@ -402,14 +526,34 @@ export function MissionDetailPage() {
                 seen.add(key)
                 return true
               }).map(loc => (
-                <PersonRow key={`${loc.tiers_id}-${loc.role_locataire}`} id={loc.tiers_id} nom={loc.nom} prenom={loc.prenom} color={loc.role_locataire === 'entrant' ? 'green' : 'orange'} role={loc.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'} />
+                <PersonRow
+                  key={`${loc.tiers_id}-${loc.role_locataire}`}
+                  id={loc.tiers_id}
+                  nom={loc.type_personne === 'morale' && loc.raison_sociale ? loc.raison_sociale : loc.nom}
+                  prenom={loc.type_personne === 'morale' ? undefined : loc.prenom}
+                  color={loc.role_locataire === 'entrant' ? 'green' : 'orange'}
+                  role={loc.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'}
+                  subtitle={loc.type_personne === 'morale' ? 'Personne morale' : 'Personne physique'}
+                />
               )))
             })()}
-            {mission.mandataire && <PersonRow id={mission.mandataire.id} nom={mission.mandataire.raison_sociale || mission.mandataire.nom} color="violet" role="Mandataire" />}
+            {mission.mandataire && (
+              <PersonRow
+                id={mission.mandataire.id}
+                nom={mission.mandataire.raison_sociale || mission.mandataire.nom}
+                prenom={mission.mandataire.raison_sociale ? undefined : mission.mandataire.prenom}
+                color="violet"
+                role="Mandataire"
+                subtitle={mission.mandataire.raison_sociale ? 'Personne morale' : 'Personne physique'}
+              />
+            )}
             {mission.proprietaires.length === 0 && !mission.mandataire && mission.edls.every(e => e.locataires.length === 0) && (
               <p className="text-sm text-muted-foreground/40 italic py-2">Aucun tiers lié</p>
             )}
           </div>
+          <p className="text-[11px] text-muted-foreground/50 mt-3 pt-3 border-t border-border/30">
+            Pour modifier le propriétaire ou le mandataire, éditer le <Link to={`/app/patrimoine/lots/${mission.lot.id}`} className="text-primary hover:underline">lot</Link>. Les locataires sont gérés depuis les EDL.
+          </p>
         </CardBlock>
       </div>
 
@@ -438,13 +582,20 @@ export function MissionDetailPage() {
           </CardBlock>
 
           <CardBlock title="Commentaire" icon={ChatText} subtitle="(toujours éditable)">
-            {editing ? (
-              <Textarea value={formData.commentaire} onChange={(e) => setFormData(prev => ({ ...prev, commentaire: e.target.value }))} placeholder="Notes, instructions..." rows={3} className="text-sm" />
-            ) : mission.commentaire ? (
-              <div className="rounded-xl bg-muted/20 p-4 text-[14px] text-foreground/80 whitespace-pre-wrap leading-relaxed">{mission.commentaire}</div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-border/40 bg-muted/10 p-4 text-[14px] text-muted-foreground/30 italic">Ajouter un commentaire...</div>
-            )}
+            <div className="space-y-2.5">
+              <Textarea
+                value={commentaireLocal}
+                onChange={(e) => { setCommentaireLocal(e.target.value); setCommentaireDirty(true) }}
+                placeholder="Notes, instructions..."
+                rows={3}
+                className="text-sm resize-none"
+              />
+              {commentaireDirty && (
+                <Button size="sm" variant="outline" onClick={handleSaveComment} disabled={savingComment} className="w-full h-9 text-[12px]">
+                  {savingComment ? 'Enregistrement…' : 'Enregistrer le commentaire'}
+                </Button>
+              )}
+            </div>
           </CardBlock>
         </div>
 
@@ -663,7 +814,7 @@ export function MissionDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '', commentaire: mission.commentaire || '' }) }} saving={saving} />
+      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }} saving={saving} />
     </div>
   )
 }
@@ -698,13 +849,28 @@ function FieldRow({ label, children }: { label: string; children: React.ReactNod
 }
 
 /* ═══ Timeline Event ═══ */
-function TimelineEvent({ color, ring, title, desc, muted, last }: { color: string; ring: string; title: string; desc: string; muted?: boolean; last?: boolean }) {
+// Formate un timestamp ISO en "12 avr. 2026 à 14h30" (fr-FR).
+function formatTimelineStamp(iso: string): string {
+  try {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    const date = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+    const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    return `${date} à ${time}`
+  } catch { return '' }
+}
+function TimelineEvent({ color, title, desc, timestamp, muted, last }: {
+  color: string; ring?: string; title: string; desc?: string
+  timestamp?: string | null; muted?: boolean; last?: boolean
+}) {
+  const stamp = timestamp ? formatTimelineStamp(timestamp) : null
   return (
     <div className={`relative ${last ? 'pb-0' : 'pb-6'}`}>
       <div className={`absolute -left-[20px] top-[4px] w-3.5 h-3.5 rounded-full ${color} ring-[2.5px] ring-card shadow-sm`} style={{ boxShadow: `0 0 0 3px var(--card)` }} />
       <div className={muted ? 'opacity-35' : ''}>
         <p className="text-[14px] font-semibold text-foreground">{title}</p>
-        <p className="text-[12px] text-muted-foreground mt-1">{desc}</p>
+        {stamp && <p className="text-[11px] text-muted-foreground/70 mt-0.5 font-mono">{stamp}</p>}
+        {desc && <p className="text-[12px] text-muted-foreground mt-1">{desc}</p>}
       </div>
     </div>
   )
@@ -718,14 +884,17 @@ const avatarColors: Record<string, string> = {
   violet: 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
 }
 
-function PersonRow({ id, nom, prenom, color, role }: { id: string; nom: string; prenom?: string; color: string; role: string }) {
+function PersonRow({ id, nom, prenom, color, role, subtitle }: { id: string; nom: string; prenom?: string; color: string; role: string; subtitle?: string | null }) {
   const initial = (prenom?.[0] || nom[0]).toUpperCase()
   const displayName = prenom ? `${prenom} ${nom}` : nom
   return (
     <div className="flex items-center gap-3 py-3">
       <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center text-[12px] font-bold shrink-0 ${avatarColors[color]}`}>{initial}</div>
-      <Link to={`/app/tiers/${id}`} className="text-[14px] text-primary hover:underline font-medium flex-1 truncate">{displayName}</Link>
-      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${avatarColors[color]}`}>{role}</span>
+      <div className="flex-1 min-w-0">
+        <Link to={`/app/tiers/${id}`} className="text-[14px] text-primary hover:underline font-medium block truncate">{displayName}</Link>
+        {subtitle && <p className="text-[11px] text-muted-foreground/70 truncate">{subtitle}</p>}
+      </div>
+      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold shrink-0 ${avatarColors[color]}`}>{role}</span>
     </div>
   )
 }

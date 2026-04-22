@@ -578,8 +578,13 @@ function LotSubRows({ batimentId, batimentName }: { batimentId: string; batiment
               <span className="font-medium text-foreground/80 group-hover:text-primary truncate transition-colors duration-200">{lot.designation}</span>
             </div>
             <div>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${typeColors[lot.type_bien] || typeColors.autre}`}>
-                {lot.type_bien.replace('_', ' ')}
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${typeColors[lot.type_bien] || typeColors.autre}`}
+                title={lot.type_bien === 'autre' && lot.type_bien_precision ? lot.type_bien_precision : undefined}
+              >
+                {lot.type_bien === 'autre' && lot.type_bien_precision
+                  ? lot.type_bien_precision
+                  : lot.type_bien.replace('_', ' ')}
               </span>
             </div>
             <div className="text-muted-foreground/50">{lot.etage || <span className="text-muted-foreground/25">--</span>}</div>
