@@ -228,34 +228,21 @@ export function DashboardPage() {
           <MissionDrawer missionId={drawerMissionId} open={!!drawerMissionId} onClose={() => setDrawerMissionId(null)} />
 
           <Dialog open={showCreateChoice} onOpenChange={setShowCreateChoice}>
-            <DialogContent className="max-w-sm p-6">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-4">Créer</p>
-              <div className="flex flex-col gap-2.5">
-                <button
-                  onClick={() => handleCreateChoice('mission')}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left group"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                    <CalendarBlank className="h-5 w-5 text-primary" weight="duotone" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Nouvelle mission</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Planifier un EDL sur un lot</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleCreateChoice('indispo')}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left group"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-muted transition-colors">
-                    <Clock className="h-5 w-5 text-muted-foreground" weight="duotone" />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-foreground">Indisponibilité technicien</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Bloquer un créneau pour un technicien</p>
-                  </div>
-                </button>
-              </div>
+            <DialogContent className="max-w-[260px] p-3 gap-1.5">
+              <button
+                onClick={() => handleCreateChoice('mission')}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-primary/[0.06] transition-colors text-left group"
+              >
+                <CalendarBlank className="h-4 w-4 text-primary shrink-0" weight="duotone" />
+                <span className="text-[13px] font-medium text-foreground">Nouvelle mission</span>
+              </button>
+              <button
+                onClick={() => handleCreateChoice('indispo')}
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+              >
+                <Clock className="h-4 w-4 text-muted-foreground shrink-0" weight="duotone" />
+                <span className="text-[13px] font-medium text-foreground">Indisponibilité technicien</span>
+              </button>
             </DialogContent>
           </Dialog>
 
