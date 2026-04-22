@@ -228,21 +228,16 @@ export function DashboardPage() {
           <MissionDrawer missionId={drawerMissionId} open={!!drawerMissionId} onClose={() => setDrawerMissionId(null)} />
 
           <Dialog open={showCreateChoice} onOpenChange={setShowCreateChoice}>
-            <DialogContent className="max-w-[260px] p-3 gap-1.5">
-              <button
-                onClick={() => handleCreateChoice('mission')}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-primary/[0.06] transition-colors text-left group"
-              >
-                <CalendarBlank className="h-4 w-4 text-primary shrink-0" weight="duotone" />
-                <span className="text-[13px] font-medium text-foreground">Nouvelle mission</span>
-              </button>
-              <button
-                onClick={() => handleCreateChoice('indispo')}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-              >
-                <Clock className="h-4 w-4 text-muted-foreground shrink-0" weight="duotone" />
-                <span className="text-[13px] font-medium text-foreground">Indisponibilité technicien</span>
-              </button>
+            <DialogContent className="max-w-xs">
+              <DialogHeader><DialogTitle>Nouvelle entrée</DialogTitle></DialogHeader>
+              <div className="flex flex-col gap-2">
+                <Button onClick={() => handleCreateChoice('mission')} className="justify-start">
+                  <CalendarBlank className="h-4 w-4" /> Nouvelle mission
+                </Button>
+                <Button variant="outline" onClick={() => handleCreateChoice('indispo')} className="justify-start">
+                  <Clock className="h-4 w-4" /> Indisponibilité technicien
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
 
