@@ -11,11 +11,30 @@ import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
-import type { Mission, IndisponibiliteTechnicien, MissionStatut } from '../types'
+import type { Mission, IndisponibiliteTechnicien } from '../types'
 import {
   sensLabels, sensColors,
   getPendingActions,
 } from '../types'
+
+// ── Statut calendrier (5 valeurs dérivées, cf US-838) ──
+// Mappe les 3 axes (statut + statut_rdv + statut_invitation) sur une seule
+// dimension visuelle utilisée par la carte, la légende et le filtre.
+type StatutCalendrier = 'planifiee' | 'en_attente' | 'confirmee' | 'terminee' | 'annulee'
+
+function getStatutCalendrier(m: Mission): StatutCalendrier {
+  if (m.statut === 'terminee') return 'terminee'
+  if (m.statut === 'annulee') return 'annulee'
+  // statut = planifiee : distinguer En attente / Confirmée / Planifiée
+  const hasPendingAction =
+    !m.technicien ||
+    m.technicien.statut_invitation !== 'accepte' ||
+    m.statut_rdv === 'a_confirmer' ||
+    m.statut_rdv === 'reporte'
+  if (hasPendingAction) return 'en_attente'
+  if (m.statut_rdv === 'confirme') return 'confirmee'
+  return 'planifiee'
+}
 
 /* ── Constants ── */
 
@@ -24,21 +43,27 @@ const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Jui
 
 type CalendarMode = 'week' | 'month'
 
-// Couleurs de fond pastel par statut mission brut (3 valeurs).
-const statutCardColors: Record<MissionStatut, string> = {
+// Couleurs de fond pastel par statut calendrier (5 valeurs, cf US-838).
+const statutCardColors: Record<StatutCalendrier, string> = {
   planifiee: 'bg-sky-50 border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800',
+  en_attente: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  confirmee: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
   terminee: 'bg-muted/30 border-border/30',
   annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
-const statutDotColors: Record<MissionStatut, string> = {
+const statutDotColors: Record<StatutCalendrier, string> = {
   planifiee: 'bg-sky-500',
+  en_attente: 'bg-orange-500',
+  confirmee: 'bg-emerald-500',
   terminee: 'bg-muted-foreground/30',
   annulee: 'bg-red-400',
 }
 
 const legendItems = [
   { label: 'Planifiée', color: 'bg-sky-500' },
+  { label: 'En attente', color: 'bg-orange-500' },
+  { label: 'Confirmée', color: 'bg-emerald-500' },
   { label: 'Terminée', color: 'bg-muted-foreground/30' },
   { label: 'Annulée', color: 'bg-red-400' },
 ]
@@ -107,8 +132,7 @@ export function MissionCalendar(props: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutMissionFilter, setStatutMissionFilter] = useState<'all' | 'planifiee' | 'terminee' | 'annulee'>('all')
-  const [statutRdvFilter, setStatutRdvFilter] = useState<'all' | 'a_confirmer' | 'confirme' | 'reporte'>('all')
+  const [statutFilter, setStatutFilter] = useState<'all' | StatutCalendrier>('all')
   const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
   const today = new Date()
 
@@ -152,12 +176,9 @@ export function MissionCalendar(props: Props) {
   const allMissions = weekMissionsData?.data ?? []
 
   const visibleMissions = useMemo(() => {
-    return allMissions.filter(m => {
-      if (statutMissionFilter !== 'all' && m.statut !== statutMissionFilter) return false
-      if (statutRdvFilter !== 'all' && m.statut_rdv !== statutRdvFilter) return false
-      return true
-    })
-  }, [allMissions, statutMissionFilter, statutRdvFilter])
+    if (statutFilter === 'all') return allMissions
+    return allMissions.filter(m => getStatutCalendrier(m) === statutFilter)
+  }, [allMissions, statutFilter])
 
   // Group missions by day
   const missionsByDay = useMemo(() => {
@@ -246,23 +267,15 @@ export function MissionCalendar(props: Props) {
           className="w-[170px]"
         />
 
-        <Select value={statutMissionFilter} onValueChange={(v) => setStatutMissionFilter(v as typeof statutMissionFilter)}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Statut mission" /></SelectTrigger>
+        <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as typeof statutFilter)}>
+          <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="all">Tous</SelectItem>
             <SelectItem value="planifiee">Planifiée</SelectItem>
+            <SelectItem value="en_attente">En attente</SelectItem>
+            <SelectItem value="confirmee">Confirmée</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={statutRdvFilter} onValueChange={(v) => setStatutRdvFilter(v as typeof statutRdvFilter)}>
-          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Statut RDV" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous RDV</SelectItem>
-            <SelectItem value="a_confirmer">À confirmer</SelectItem>
-            <SelectItem value="confirme">Confirmé</SelectItem>
-            <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
 
@@ -280,18 +293,16 @@ export function MissionCalendar(props: Props) {
               <span className="text-[10px] text-muted-foreground/50 font-medium">{l.label}</span>
             </div>
           ))}
-          {mode === 'week' && (
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-4 h-2.5 rounded-sm border border-border/60"
-                style={{
-                  backgroundImage:
-                    'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)',
-                }}
-              />
-              <span className="text-[10px] text-muted-foreground/50 font-medium">Indisponible</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-4 h-2.5 rounded-sm border border-border/60"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)',
+              }}
+            />
+            <span className="text-[10px] text-muted-foreground/50 font-medium">Indisponible</span>
+          </div>
         </div>
       </div>
 
@@ -429,8 +440,9 @@ export function MissionCalendar(props: Props) {
 /* ── Week Card (detailed) ── */
 function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
   const compact = false
-  const cardColor = statutCardColors[mission.statut]
-  const dotColor = statutDotColors[mission.statut]
+  const statut = getStatutCalendrier(mission)
+  const cardColor = statutCardColors[statut]
+  const dotColor = statutDotColors[statut]
   const pendingActions = getPendingActions(mission)
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
@@ -490,7 +502,7 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
 
 /* ── Month Card (compact) ── */
 function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
-  const dotColor = statutDotColors[mission.statut]
+  const dotColor = statutDotColors[getStatutCalendrier(mission)]
 
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
