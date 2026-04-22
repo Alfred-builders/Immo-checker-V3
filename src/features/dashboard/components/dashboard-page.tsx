@@ -478,8 +478,14 @@ export function DashboardPage() {
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
                               <div className="flex-1 min-w-0">
-                                <div className="text-[12px] font-semibold truncate">{m.reference}</div>
-                                <div className="text-[10px] text-muted-foreground truncate">{m.lot_designation}</div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="text-[12px] font-semibold truncate">{m.reference}</div>
+                                  <div className="flex flex-wrap gap-1 justify-end shrink-0">
+                                    {actions.map((a, i) => (
+                                      <span key={i} className="px-1.5 py-0 rounded-full text-[8px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
+                                    ))}
+                                  </div>
+                                </div>
                                 {(m.adresse || m.batiment_designation) && (
                                   <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 truncate mt-0.5">
                                     <MapPin className="h-2.5 w-2.5 shrink-0" />
@@ -495,11 +501,6 @@ export function DashboardPage() {
                                     </span>
                                   </div>
                                 )}
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {actions.map((a, i) => (
-                                    <span key={i} className="px-1.5 py-0 rounded-full text-[8px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
-                                  ))}
-                                </div>
                               </div>
                             </div>
                           )
