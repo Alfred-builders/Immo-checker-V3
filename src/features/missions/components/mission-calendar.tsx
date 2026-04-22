@@ -17,23 +17,21 @@ import {
   getPendingActions,
 } from '../types'
 
-// ── Statut calendrier (5 valeurs dérivées, cf US-838) ──
+// ── Statut calendrier (4 valeurs dérivées) ──
 // Mappe les 3 axes (statut + statut_rdv + statut_invitation) sur une seule
 // dimension visuelle utilisée par la carte, la légende et le filtre.
-type StatutCalendrier = 'planifiee' | 'en_attente' | 'confirmee' | 'terminee' | 'annulee'
+// Aligné avec le Kanban Missions pour un vocabulaire unique dans l'app.
+type StatutCalendrier = 'a_traiter' | 'prete' | 'terminee' | 'annulee'
 
 function getStatutCalendrier(m: Mission): StatutCalendrier {
   if (m.statut === 'terminee') return 'terminee'
   if (m.statut === 'annulee') return 'annulee'
-  // statut = planifiee : distinguer En attente / Confirmée / Planifiée
   const hasPendingAction =
     !m.technicien ||
     m.technicien.statut_invitation !== 'accepte' ||
     m.statut_rdv === 'a_confirmer' ||
     m.statut_rdv === 'reporte'
-  if (hasPendingAction) return 'en_attente'
-  if (m.statut_rdv === 'confirme') return 'confirmee'
-  return 'planifiee'
+  return hasPendingAction ? 'a_traiter' : 'prete'
 }
 
 /* ── Constants ── */
@@ -43,27 +41,24 @@ const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Jui
 
 type CalendarMode = 'week' | 'month'
 
-// Couleurs de fond pastel par statut calendrier (5 valeurs, cf US-838).
+// Couleurs de fond pastel par statut calendrier (4 valeurs, aligné Kanban).
 const statutCardColors: Record<StatutCalendrier, string> = {
-  planifiee: 'bg-sky-50 border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800',
-  en_attente: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  confirmee: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
+  a_traiter: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
   terminee: 'bg-muted/30 border-border/30',
   annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
 const statutDotColors: Record<StatutCalendrier, string> = {
-  planifiee: 'bg-sky-500',
-  en_attente: 'bg-orange-500',
-  confirmee: 'bg-emerald-500',
+  a_traiter: 'bg-orange-500',
+  prete: 'bg-emerald-500',
   terminee: 'bg-muted-foreground/30',
   annulee: 'bg-red-400',
 }
 
 const legendItems = [
-  { label: 'Planifiée', color: 'bg-sky-500' },
-  { label: 'En attente', color: 'bg-orange-500' },
-  { label: 'Confirmée', color: 'bg-emerald-500' },
+  { label: 'À traiter', color: 'bg-orange-500' },
+  { label: 'Prête', color: 'bg-emerald-500' },
   { label: 'Terminée', color: 'bg-muted-foreground/30' },
   { label: 'Annulée', color: 'bg-red-400' },
 ]
@@ -133,6 +128,8 @@ export function MissionCalendar(props: Props) {
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
   const [statutFilter, setStatutFilter] = useState<'all' | StatutCalendrier>('all')
+  const [showMissions, setShowMissions] = useState(true)
+  const [showIndispos, setShowIndispos] = useState(true)
   const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
   const today = new Date()
 
@@ -176,9 +173,10 @@ export function MissionCalendar(props: Props) {
   const allMissions = weekMissionsData?.data ?? []
 
   const visibleMissions = useMemo(() => {
+    if (!showMissions) return []
     if (statutFilter === 'all') return allMissions
     return allMissions.filter(m => getStatutCalendrier(m) === statutFilter)
-  }, [allMissions, statutFilter])
+  }, [allMissions, statutFilter, showMissions])
 
   // Group missions by day
   const missionsByDay = useMemo(() => {
@@ -200,7 +198,7 @@ export function MissionCalendar(props: Props) {
   const indisposRaw = indispoQuery.data
   const indisposByDay = useMemo(() => {
     const map: Record<string, IndisponibiliteTechnicien[]> = {}
-    if (!Array.isArray(indisposRaw) || mode !== 'week') return map
+    if (!showIndispos || !Array.isArray(indisposRaw) || mode !== 'week') return map
     for (const ind of indisposRaw) {
       try {
         const startStr = ind.date_debut?.split('T')[0]
@@ -216,7 +214,7 @@ export function MissionCalendar(props: Props) {
       } catch { /* skip malformed */ }
     }
     return map
-  }, [indisposRaw, weekDays, mode])
+  }, [indisposRaw, weekDays, mode, showIndispos])
 
   // Mission count for the visible range
   const totalVisible = visibleMissions.length
@@ -271,13 +269,53 @@ export function MissionCalendar(props: Props) {
           <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="planifiee">Planifiée</SelectItem>
-            <SelectItem value="en_attente">En attente</SelectItem>
-            <SelectItem value="confirmee">Confirmée</SelectItem>
+            <SelectItem value="a_traiter">À traiter</SelectItem>
+            <SelectItem value="prete">Prête</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Layer toggles: missions / indispos */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setShowMissions(v => !v)}
+            aria-pressed={showMissions}
+            title={showMissions ? 'Masquer les missions' : 'Afficher les missions'}
+            className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${
+              showMissions
+                ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800'
+                : 'bg-muted/30 text-muted-foreground/60 border-border/50 line-through decoration-1'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${showMissions ? 'bg-sky-500' : 'bg-muted-foreground/40'}`} />
+            Missions
+          </button>
+          {mode === 'week' && (
+            <button
+              type="button"
+              onClick={() => setShowIndispos(v => !v)}
+              aria-pressed={showIndispos}
+              title={showIndispos ? 'Masquer les indisponibilités' : 'Afficher les indisponibilités'}
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${
+                showIndispos
+                  ? 'bg-muted/60 text-foreground/75 border-border/60'
+                  : 'bg-muted/20 text-muted-foreground/60 border-border/40 line-through decoration-1'
+              }`}
+            >
+              <span
+                className="w-3 h-2 rounded-sm border border-border/60 shrink-0"
+                style={{
+                  backgroundImage: showIndispos
+                    ? 'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)'
+                    : undefined,
+                }}
+              />
+              Indispos
+            </button>
+          )}
+        </div>
 
         {/* Mode toggle */}
         {!hideModeSwitcher && <div className="flex items-center bg-muted/60 rounded-full p-0.5">

@@ -38,7 +38,7 @@ export const statutAffichageLabels: Record<StatutAffichage, string> = {
   refusee: 'Refusée — à réassigner',
   rdv_a_confirmer: 'RDV à confirmer',
   reportee: 'Reportée',
-  prete: 'Confirmée',
+  prete: 'Prête',
   terminee: 'Terminée',
   annulee: 'Annulée',
 }
@@ -204,6 +204,9 @@ export interface Mission {
   technicien: MissionTechnicien | null
   edl_types: string[] // ['entree', 'sortie', 'inventaire']
   has_pending_actions: boolean
+  proprietaire_nom?: string | null
+  locataires_noms?: string[]
+  has_signed_document?: boolean
   created_at: string
 }
 
