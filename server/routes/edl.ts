@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
 import { dispatchWebhook } from '../services/webhook-service.js'
+import { publishToRoles } from '../services/notification-service.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -154,6 +155,16 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
           setImmediate(() => dispatchWebhook(req.user!.workspaceId, 'mission.terminee', {
             mission_id: edl.mission_id,
           }))
+          // In-app notification — admin + gestionnaires
+          setImmediate(async () => {
+            const info = await query(`SELECT reference FROM mission WHERE id = $1`, [edl.mission_id])
+            await publishToRoles(req.user!.workspaceId, ['admin', 'gestionnaire'], {
+              type: 'mission_completed',
+              titre: 'Mission terminée',
+              message: `${info.rows[0]?.reference || edl.mission_id} — tous les EDL sont signés`,
+              lien: `/app/missions/${edl.mission_id}`,
+            })
+          })
         }
       }
 
@@ -165,21 +176,39 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
       client.release()
     }
 
-    // Dispatch edl.signe webhook
+    // Dispatch edl.signe webhook + in-app notification
     if (req.body.statut === 'signe') {
       dispatchWebhook(req.user!.workspaceId, 'edl.signe', {
         edl_id: req.params.id,
         mission_id: edl.mission_id,
         lot_id: edl.lot_id,
       })
+      setImmediate(async () => {
+        const info = await query(`SELECT reference FROM mission WHERE id = $1`, [edl.mission_id])
+        await publishToRoles(req.user!.workspaceId, ['admin', 'gestionnaire'], {
+          type: 'edl_signed',
+          titre: 'EDL signé',
+          message: `EDL ${edl.sens} signé pour ${info.rows[0]?.reference || edl.mission_id}`,
+          lien: `/app/missions/${edl.mission_id}`,
+        })
+      })
     }
 
-    // Dispatch edl.infructueux webhook
+    // Dispatch edl.infructueux webhook + in-app notification
     if (req.body.statut === 'infructueux') {
       dispatchWebhook(req.user!.workspaceId, 'edl.infructueux', {
         edl_id: req.params.id,
         mission_id: edl.mission_id,
         lot_id: edl.lot_id,
+      })
+      setImmediate(async () => {
+        const info = await query(`SELECT reference FROM mission WHERE id = $1`, [edl.mission_id])
+        await publishToRoles(req.user!.workspaceId, ['admin', 'gestionnaire'], {
+          type: 'edl_infructueux',
+          titre: 'EDL infructueux',
+          message: `EDL ${edl.sens} infructueux pour ${info.rows[0]?.reference || edl.mission_id}`,
+          lien: `/app/missions/${edl.mission_id}`,
+        })
       })
     }
 

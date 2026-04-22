@@ -14,7 +14,7 @@ router.use(requireRole('admin', 'gestionnaire'))
 router.get('/', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const { search, type_personne, role, archived, cursor, limit: rawLimit } = req.query
+    const { search, type_personne, role, archived, cursor, limit: rawLimit, sort } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 50, 100)
 
     let where = `t.workspace_id = $1 AND t.est_archive = $2`
@@ -49,6 +49,8 @@ router.get('/', async (req, res) => {
       paramIndex++
     }
 
+    const orderBy = sort === 'recent' ? 't.created_at DESC' : 't.nom ASC, t.prenom ASC'
+
     const sql = `
       SELECT t.*,
         (SELECT count(*) FROM lot_proprietaire lp WHERE lp.tiers_id = t.id)::int as nb_lots_proprio,
@@ -60,7 +62,7 @@ router.get('/', async (req, res) => {
         (SELECT COALESCE(tc.prenom || ' ' || tc.nom, tc.nom) FROM tiers_organisation toc JOIN tiers tc ON tc.id = toc.tiers_id WHERE toc.organisation_id = t.id AND toc.est_principal = true LIMIT 1) as contact_principal
       FROM tiers t
       WHERE ${where} ${roleJoin}
-      ORDER BY t.nom ASC, t.prenom ASC
+      ORDER BY ${orderBy}
       LIMIT $${paramIndex}
     `
     params.push(limit + 1)
@@ -225,7 +227,7 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
       const activeMissions = await query(
         `SELECT count(DISTINCT m.id)::int as cnt FROM mission m
          JOIN lot l ON l.id = m.lot_id
-         WHERE m.statut IN ('planifiee', 'assignee')
+         WHERE m.statut = 'planifiee'
            AND m.workspace_id = $1
            AND (l.mandataire_id = $2 OR EXISTS (SELECT 1 FROM lot_proprietaire lp WHERE lp.lot_id = l.id AND lp.tiers_id = $2))`,
         [workspaceId, tiersId]

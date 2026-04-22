@@ -7,6 +7,7 @@ import { sendSuccess, sendList, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
 import { dispatchWebhook } from '../services/webhook-service.js'
 import { sendEmailTechnicienAssigne } from '../services/email-service.js'
+import { publishToRoles } from '../services/notification-service.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -27,14 +28,14 @@ router.get('/stats', async (req, res) => {
         count(*) FILTER (WHERE m.statut NOT IN ('annulee'))::int as total,
         count(*) FILTER (WHERE m.date_planifiee = CURRENT_DATE AND m.statut NOT IN ('annulee'))::int as today,
         count(*) FILTER (
-          WHERE m.statut IN ('planifiee', 'assignee')
+          WHERE m.statut = 'planifiee'
           AND (
             NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
             OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
             OR m.statut_rdv = 'a_confirmer'
           )
         )::int as pending,
-        count(*) FILTER (WHERE m.date_planifiee > CURRENT_DATE AND m.statut IN ('planifiee', 'assignee'))::int as upcoming
+        count(*) FILTER (WHERE m.date_planifiee > CURRENT_DATE AND m.statut = 'planifiee')::int as upcoming
       FROM mission m
       WHERE m.workspace_id = $1 AND m.est_archive = false ${techScope}`,
       params
@@ -117,7 +118,7 @@ router.get('/', async (req, res) => {
     }
 
     if (pending_actions === 'true') {
-      where += ` AND m.statut IN ('planifiee', 'assignee') AND (
+      where += ` AND m.statut = 'planifiee' AND (
         NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
         OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
         OR m.statut_rdv = 'a_confirmer'
@@ -160,7 +161,18 @@ router.get('/', async (req, res) => {
          WHERE mt.mission_id = m.id) as techniciens,
         (SELECT json_agg(json_build_object(
           'id', ei.id, 'type', ei.type, 'sens', ei.sens, 'statut', ei.statut
-        )) FROM edl_inventaire ei WHERE ei.mission_id = m.id) as edls
+        )) FROM edl_inventaire ei WHERE ei.mission_id = m.id) as edls,
+        -- Stakeholders for list columns
+        (SELECT COALESCE(tp.prenom || ' ' || tp.nom, tp.raison_sociale, tp.nom)
+         FROM lot_proprietaire lp JOIN tiers tp ON tp.id = lp.tiers_id
+         WHERE lp.lot_id = l.id AND lp.est_principal = true LIMIT 1) as proprietaire_nom,
+        (SELECT json_agg(DISTINCT COALESCE(t2.prenom || ' ' || t2.nom, t2.raison_sociale, t2.nom))
+         FROM edl_locataire el
+         JOIN edl_inventaire ei2 ON ei2.id = el.edl_id
+         JOIN tiers t2 ON t2.id = el.tiers_id
+         WHERE ei2.mission_id = m.id) as locataires_noms,
+        EXISTS (SELECT 1 FROM edl_inventaire ei3
+                WHERE ei3.mission_id = m.id AND ei3.statut = 'signe') as has_signed_document
       FROM mission m
       JOIN lot l ON l.id = m.lot_id
       WHERE ${where}
@@ -180,7 +192,7 @@ router.get('/', async (req, res) => {
       const techniciens = row.techniciens ?? []
       const primaryTech = techniciens.find((t: any) => t.est_principal) ?? techniciens[0] ?? null
       const edlTypes = [...new Set(edls.flatMap((e: any) => [e.sens, ...(e.type === 'inventaire' ? ['inventaire'] : [])]))]
-      const hasPendingActions = (row.statut === 'planifiee' || row.statut === 'assignee') && (
+      const hasPendingActions = row.statut === 'planifiee' && (
         techniciens.length === 0 ||
         techniciens.some((t: any) => t.statut_invitation !== 'accepte') ||
         row.statut_rdv === 'a_confirmer'
@@ -208,6 +220,9 @@ router.get('/', async (req, res) => {
         technicien: primaryTech ? { user_id: primaryTech.user_id, nom: primaryTech.nom, prenom: primaryTech.prenom, statut_invitation: primaryTech.statut_invitation } : null,
         edl_types: edlTypes,
         has_pending_actions: hasPendingActions,
+        proprietaire_nom: row.proprietaire_nom ?? null,
+        locataires_noms: row.locataires_noms ?? [],
+        has_signed_document: !!row.has_signed_document,
         created_at: row.created_at,
       }
     })
@@ -266,7 +281,8 @@ router.get('/:id', async (req, res) => {
         (SELECT json_agg(json_build_object(
           'id', mt.id, 'user_id', u.id, 'nom', u.nom, 'prenom', u.prenom,
           'email', u.email, 'statut_invitation', mt.statut_invitation,
-          'est_principal', mt.est_principal
+          'est_principal', mt.est_principal,
+          'assigned_at', mt.created_at, 'invitation_updated_at', mt.updated_at
         )) FROM mission_technicien mt JOIN utilisateur u ON u.id = mt.user_id WHERE mt.mission_id = m.id) as techniciens,
         -- EDLs with their locataires
         (SELECT json_agg(json_build_object(
@@ -274,9 +290,11 @@ router.get('/:id', async (req, res) => {
           'date_realisation', ei.date_realisation, 'date_signature', ei.date_signature,
           'code_acces', ei.code_acces, 'commentaire_general', ei.commentaire_general,
           'pdf_url', ei.pdf_url, 'web_url', ei.web_url,
+          'pdf_url_legal', ei.pdf_url_legal, 'web_url_legal', ei.web_url_legal,
+          'created_at', ei.created_at,
           'locataires', (
             SELECT json_agg(json_build_object(
-              'id', t2.id, 'nom', t2.nom, 'prenom', t2.prenom,
+              'tiers_id', t2.id, 'nom', t2.nom, 'prenom', t2.prenom,
               'type_personne', t2.type_personne, 'raison_sociale', t2.raison_sociale,
               'email', t2.email, 'tel', t2.tel, 'role_locataire', el.role_locataire
             )) FROM edl_locataire el JOIN tiers t2 ON t2.id = el.tiers_id WHERE el.edl_id = ei.id
@@ -304,7 +322,7 @@ router.get('/:id', async (req, res) => {
     const techniciens = row.techniciens ?? []
     const primaryTech = techniciens.find((t: any) => t.est_principal) ?? techniciens[0] ?? null
     const edlTypes = [...new Set(edls.flatMap((e: any) => [e.sens, ...(e.type === 'inventaire' ? ['inventaire'] : [])]))]
-    const hasPendingActions = (row.statut === 'planifiee' || row.statut === 'assignee') && (
+    const hasPendingActions = row.statut === 'planifiee' && (
       techniciens.length === 0 ||
       techniciens.some((t: any) => t.statut_invitation !== 'accepte') ||
       row.statut_rdv === 'a_confirmer'
@@ -327,7 +345,7 @@ router.get('/:id', async (req, res) => {
       lot: { ...row.lot, batiment: row.batiment, adresse: row.adresse },
       techniciens,
       proprietaires: row.proprietaires ?? [],
-      edls: edls.map((e: any) => ({ ...e, locataires: e.locataires ?? [], url_pdf: e.pdf_url || null, url_web: e.web_url || null, url_pdf_legal: null, url_web_legal: null })),
+      edls: edls.map((e: any) => ({ ...e, locataires: e.locataires ?? [], url_pdf: e.pdf_url || null, url_web: e.web_url || null, url_pdf_legal: e.pdf_url_legal || null, url_web_legal: e.web_url_legal || null })),
       cles: row.cles ?? [],
       created_by_nom: creator ? `${creator.prenom} ${creator.nom}` : '',
     }
@@ -483,6 +501,14 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createMissionSch
       statut: mission.statut,
     }))
 
+    // In-app notification — admin + gestionnaires (excl. créateur)
+    setImmediate(() => publishToRoles(workspaceId, ['admin', 'gestionnaire'], {
+      type: 'mission_created',
+      titre: 'Nouvelle mission planifiée',
+      message: `${mission.reference} planifiée le ${mission.date_planifiee}`,
+      lien: `/app/missions/${mission.id}`,
+    }, userId))
+
     sendSuccess(res, mission, 201)
   } catch (error) {
     sendError(res, error)
@@ -624,6 +650,14 @@ router.post('/:id/cancel', requireRole('admin', 'gestionnaire', 'technicien'), v
       motif: req.body.motif,
     })
 
+    // In-app notification — admin + gestionnaires (excl. annulateur)
+    setImmediate(() => publishToRoles(workspaceId, ['admin', 'gestionnaire'], {
+      type: 'mission_cancelled',
+      titre: 'Mission annulée',
+      message: `${result.rows[0].reference} — ${req.body.motif}`,
+      lien: `/app/missions/${req.params.id}`,
+    }, req.user!.userId))
+
     sendSuccess(res, result.rows[0])
   } catch (error) {
     sendError(res, error)
@@ -717,26 +751,73 @@ router.patch('/:id/technician', validate(updateInvitationSchema), async (req, re
   try {
     const workspaceId = req.user!.workspaceId
     const userId = req.user!.userId
+    const role = req.user!.role
     const { statut_invitation } = req.body
 
-    // Update the technician's invitation for this mission
-    const result = await query(
-      `UPDATE mission_technicien SET statut_invitation = $1, updated_at = now()
-       WHERE mission_id = $2 AND user_id = $3
-       RETURNING *`,
-      [statut_invitation, req.params.id, userId]
+    // Vérifier que la mission existe et appartient au workspace
+    const missionCheck = await query(
+      `SELECT id FROM mission WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
     )
+    if (missionCheck.rows.length === 0) throw new NotFoundError('Mission')
 
+    // Deux cas :
+    //   1. Technicien qui accepte/refuse sa propre invitation → on filtre par son user_id
+    //   2. Admin/gestionnaire qui confirme oralement (téléphone, WhatsApp…) → on met à
+    //      jour le technicien principal de la mission. Cf ManualInvitationActions (drawer).
+    const isSelfAction = role === 'technicien'
+    let sql: string
+    let params: unknown[]
+
+    if (isSelfAction) {
+      sql = `UPDATE mission_technicien SET statut_invitation = $1, updated_at = now()
+             WHERE mission_id = $2 AND user_id = $3 RETURNING *`
+      params = [statut_invitation, req.params.id, userId]
+    } else {
+      // Admin/gestionnaire : cible la ligne principale (ou la seule ligne si non-principal).
+      sql = `UPDATE mission_technicien SET statut_invitation = $1, updated_at = now()
+             WHERE id = (
+               SELECT id FROM mission_technicien
+               WHERE mission_id = $2
+               ORDER BY est_principal DESC, created_at ASC
+               LIMIT 1
+             ) RETURNING *`
+      params = [statut_invitation, req.params.id]
+    }
+
+    const result = await query(sql, params)
     if (result.rows.length === 0) throw new NotFoundError('Assignation technicien')
 
-    // If accepted and mission is planifiee, transition to assignee
+    // La mission reste en 'planifiee' jusqu'à auto-terminaison (tous EDL signés).
+    // L'acceptation du technicien vit dans statut_invitation, pas dans mission.statut.
     if (statut_invitation === 'accepte') {
-      await query(
-        `UPDATE mission SET statut = 'assignee', updated_at = now()
-         WHERE id = $1 AND workspace_id = $2 AND statut = 'planifiee'`,
-        [req.params.id, workspaceId]
-      )
+      const techIdForWebhook = result.rows[0].user_id as string
+      setImmediate(() => dispatchWebhook(workspaceId, 'mission.assignee', {
+        mission_id: req.params.id,
+        technicien_id: techIdForWebhook,
+      }))
     }
+
+    // In-app notification — admin + gestionnaires
+    setImmediate(async () => {
+      const info = await query(
+        `SELECT m.reference, u.prenom, u.nom FROM mission m
+         JOIN utilisateur u ON u.id = $1
+         WHERE m.id = $2`,
+        [result.rows[0].user_id, req.params.id]
+      )
+      const row = info.rows[0]
+      if (!row) return
+      const techName = `${row.prenom || ''} ${row.nom || ''}`.trim() || 'Le technicien'
+      await publishToRoles(workspaceId, ['admin', 'gestionnaire'], {
+        type: statut_invitation === 'accepte' ? 'invitation_accepted' : 'technicien_refused',
+        titre: statut_invitation === 'accepte' ? 'Invitation acceptée' : 'Invitation refusée',
+        message: statut_invitation === 'accepte'
+          ? `${techName} a accepté la mission ${row.reference}`
+          : `${techName} a refusé la mission ${row.reference}`,
+        lien: `/app/missions/${req.params.id}`,
+      }, isSelfAction ? userId : undefined)
+    })
 
     sendSuccess(res, result.rows[0])
   } catch (error) {

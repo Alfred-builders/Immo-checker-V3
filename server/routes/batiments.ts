@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
         ) FROM adresse_batiment ab WHERE ab.batiment_id = b.id AND ab.type = 'principale' LIMIT 1) as adresse_principale,
         (SELECT count(*) FROM lot l WHERE l.batiment_id = b.id AND l.est_archive = false)::int as nb_lots,
         (SELECT max(m.date_planifiee) FROM mission m JOIN lot l ON l.id = m.lot_id WHERE l.batiment_id = b.id AND m.statut = 'terminee') as derniere_mission,
-        (SELECT count(*) FROM mission m JOIN lot l ON l.id = m.lot_id WHERE l.batiment_id = b.id AND m.statut IN ('planifiee', 'assignee') AND m.date_planifiee >= CURRENT_DATE)::int as missions_a_venir
+        (SELECT count(*) FROM mission m JOIN lot l ON l.id = m.lot_id WHERE l.batiment_id = b.id AND m.statut = 'planifiee' AND m.date_planifiee >= CURRENT_DATE)::int as missions_a_venir
       FROM batiment b
       WHERE ${where}
       ORDER BY b.designation ASC
@@ -216,7 +216,7 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
       // Check for active missions first
       const activeMissions = await query(
         `SELECT count(*) as cnt FROM mission m JOIN lot l ON l.id = m.lot_id
-         WHERE l.batiment_id = $1 AND m.workspace_id = $2 AND m.statut IN ('planifiee', 'assignee')`,
+         WHERE l.batiment_id = $1 AND m.workspace_id = $2 AND m.statut = 'planifiee'`,
         [req.params.id, workspaceId]
       )
       if (parseInt(activeMissions.rows[0].cnt) > 0) {

@@ -16,8 +16,6 @@ try {
   spec = { openapi: '3.0.3', info: { title: 'ImmoChecker API', version: '1.0' }, paths: {} }
 }
 
-// Lightweight cookie-JWT gate just for docs — scoped so swagger-ui assets
-// still load (they're served from this router too, but after the check).
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 
 function requireSessionJwt(req: Request, res: Response, next: () => void) {
@@ -37,7 +35,6 @@ function requireSessionJwt(req: Request, res: Response, next: () => void) {
 const router = Router()
 router.use(requireSessionJwt)
 
-// Raw OpenAPI spec — for Postman / Insomnia / integrators (US-603).
 router.get('/openapi.json', (_req, res) => {
   res.json(spec)
 })
@@ -47,12 +44,53 @@ router.get(
   '/',
   swaggerUi.setup(spec, {
     customSiteTitle: 'ImmoChecker API Docs',
-    customCss: '.swagger-ui .topbar { display: none }',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+
+      /* Fix d'alignement du mode Schema : verticalement haut + wrap */
+      .swagger-ui .model-box,
+      .swagger-ui .model {
+        font-size: 13px;
+      }
+      .swagger-ui .model .property.primitive,
+      .swagger-ui .model .prop-type {
+        white-space: normal;
+      }
+      .swagger-ui .model-box .model,
+      .swagger-ui .model-box table.model tbody tr td {
+        vertical-align: top;
+        padding-top: 4px;
+        padding-bottom: 4px;
+      }
+      .swagger-ui .model-box .model .property {
+        padding-top: 2px;
+        padding-bottom: 2px;
+      }
+
+      /* Bandeau d'avertissement dans le header */
+      .swagger-ui .info::after {
+        content: "⚠️  N'utilisez jamais une clé API de production dans le formulaire « Try it out » — le bouton envoie la requête depuis le navigateur.";
+        display: block;
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: #fff7e6;
+        border-left: 4px solid #f59f00;
+        border-radius: 4px;
+        color: #5c3b00;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+    `,
     swaggerOptions: {
-      defaultModelsExpandDepth: 2,
-      defaultModelExpandDepth: 5,
-      defaultModelRendering: 'model',
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2,
+      defaultModelRendering: 'example',
       docExpansion: 'list',
+      displayRequestDuration: true,
+      tryItOutEnabled: true,
+      persistAuthorization: true,
+      filter: true,
+      syntaxHighlight: { theme: 'agate' },
     },
   })
 )

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmoChecker — Flows & Connexions Utilisateurs</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --card: #21253a;
+    --border: #2e3349;
+    --accent-blue: #4f8ef7;
+    --accent-purple: #8b5cf6;
+    --accent-green: #22c55e;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-cyan: #06b6d4;
+    --accent-orange: #f97316;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --super-admin: #8b5cf6;
+    --admin: #4f8ef7;
+    --gestionnaire: #22c55e;
+    --technicien: #f59e0b;
+    --system: #06b6d4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .hero {
+    background: linear-gradient(135deg, #0f1117 0%, #1a1040 50%, #0f1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 48px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(79,142,247,0.08) 0%, transparent 60%),
+                radial-gradient(circle at 70% 50%, rgba(139,92,246,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-size: 32px; font-weight: 700;
+    background: linear-gradient(90deg, #4f8ef7, #8b5cf6);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .hero p { color: var(--text-dim); font-size: 15px; max-width: 600px; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px;
+    padding: 20px 48px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 40px 48px; display: flex; flex-direction: column; gap: 60px; }
+
+  /* ── SECTION TITLE ── */
+  .section-header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 28px;
+  }
+  .section-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 20px; font-weight: 700; }
+  .section-header p { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── FLOW CHAIN ── */
+  .flow-chain {
+    display: flex; align-items: flex-start; flex-wrap: wrap; gap: 0;
+  }
+  .flow-step {
+    display: flex; flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    min-width: 160px; max-width: 200px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .flow-step .actor {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 6px;
+    opacity: 0.85;
+  }
+  .flow-step .action {
+    font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4;
+  }
+  .flow-step .detail {
+    font-size: 11px; color: var(--text-dim); margin-top: 5px; line-height: 1.4;
+  }
+  .flow-step .badge {
+    display: inline-block; margin-top: 8px;
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    border-radius: 4px; letter-spacing: 0.05em;
+  }
+
+  .flow-arrow {
+    display: flex; align-items: center;
+    padding: 0 8px; margin-top: 30px;
+    color: var(--text-muted); font-size: 18px;
+    flex-shrink: 0;
+  }
+  .flow-arrow.down {
+    padding: 8px 0; margin-top: 0;
+    margin-left: 90px;
+    writing-mode: horizontal-tb;
+    display: block;
+  }
+
+  /* ── ACTOR LANE ── */
+  .actor-lane {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .lane-label {
+    padding: 20px 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    border-right: 1px solid var(--border);
+    text-align: center; gap: 8px;
+  }
+  .lane-label .role-badge {
+    font-size: 12px; font-weight: 700; padding: 4px 12px;
+    border-radius: 20px; letter-spacing: 0.06em;
+  }
+  .lane-label .role-desc { font-size: 11px; color: var(--text-dim); }
+  .lane-content {
+    padding: 20px; background: var(--surface);
+  }
+  .lane-content .step-list {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .step-row {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .step-number {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  }
+  .step-body .step-title { font-size: 13px; font-weight: 600; }
+  .step-body .step-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .step-body .step-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tag {
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    border-radius: 4px; letter-spacing: 0.04em;
+    background: rgba(255,255,255,0.06); color: var(--text-dim);
+  }
+
+  /* ── BIG FLOW DIAGRAM ── */
+  .mega-flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .mega-col {
+    display: flex; flex-direction: column;
+  }
+  .mega-col-header {
+    padding: 14px 16px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .mega-col-body {
+    padding: 16px;
+    background: var(--surface);
+    flex: 1;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .mega-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .mega-step .ms-title { font-size: 12px; font-weight: 600; }
+  .mega-step .ms-desc { font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
+  .mega-step .ms-result {
+    font-size: 10px; font-weight: 700; margin-top: 8px;
+    padding: 3px 8px; border-radius: 4px; display: inline-block;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── STATE MACHINE ── */
+  .state-machine {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+  }
+  .state-node {
+    border-radius: 10px; padding: 12px 18px;
+    text-align: center; font-weight: 600; font-size: 13px;
+    border: 2px solid;
+    min-width: 120px;
+  }
+  .state-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 12px; min-width: 80px;
+  }
+  .state-arrow .arrow-label {
+    font-size: 10px; color: var(--text-muted);
+    text-align: center; line-height: 1.3; margin-bottom: 3px;
+  }
+  .state-arrow .arrow-line { color: var(--text-muted); font-size: 20px; }
+
+  /* ── CONNECTION MAP ── */
+  .conn-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .conn-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .conn-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+  .conn-card ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .conn-card li {
+    font-size: 12px; color: var(--text-dim);
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .conn-card li::before { content: '→'; color: var(--accent-blue); flex-shrink: 0; }
+
+  /* ── TIMELINE ── */
+  .timeline {
+    position: relative;
+    padding-left: 32px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 9px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+  }
+  .tl-item {
+    position: relative;
+    padding-bottom: 28px;
+    padding-left: 8px;
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-dot {
+    position: absolute; left: -24px; top: 4px;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+  .tl-actor {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    margin-bottom: 4px;
+  }
+  .tl-action { font-size: 13px; font-weight: 600; }
+  .tl-desc { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  .tl-sub {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border-left: 2px solid var(--border);
+  }
+  .tl-sub li {
+    font-size: 11px; color: var(--text-dim); list-style: none;
+    padding: 2px 0;
+    display: flex; gap: 6px; align-items: flex-start;
+  }
+  .tl-sub li::before { content: '·'; flex-shrink: 0; }
+
+  /* ── DATA MODEL CARD ── */
+  .dm-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .dm-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .dm-card h5 {
+    font-size: 12px; font-weight: 700; margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+  }
+  .dm-card .dm-fields { display: flex; flex-direction: column; gap: 3px; }
+  .dm-card .dm-field {
+    font-size: 11px; color: var(--text-dim);
+    font-family: 'Courier New', monospace;
+  }
+  .dm-card .dm-field.pk { color: var(--accent-amber); }
+  .dm-card .dm-field.fk { color: var(--accent-blue); }
+  .dm-card .dm-field.enum { color: var(--accent-green); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 0 -48px;
+  }
+
+  /* ── COLORS ── */
+  .c-purple { color: var(--super-admin); }
+  .c-blue { color: var(--admin); }
+  .c-green { color: var(--gestionnaire); }
+  .c-amber { color: var(--technicien); }
+  .c-cyan { color: var(--system); }
+  .c-red { color: var(--accent-red); }
+  .c-orange { color: var(--accent-orange); }
+
+  .bg-purple { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.35); }
+  .bg-blue { background: rgba(79,142,247,0.15); border-color: rgba(79,142,247,0.35); }
+  .bg-green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); }
+  .bg-amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); }
+  .bg-cyan { background: rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.3); }
+  .bg-red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); }
+
+  .dot-purple { background: var(--super-admin); }
+  .dot-blue { background: var(--admin); }
+  .dot-green { background: var(--gestionnaire); }
+  .dot-amber { background: var(--technicien); }
+  .dot-cyan { background: var(--system); }
+  .dot-red { background: var(--accent-red); }
+
+  .tag-purple { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+  .tag-blue { background: rgba(79,142,247,0.2); color: #93c5fd; }
+  .tag-green { background: rgba(34,197,94,0.2); color: #86efac; }
+  .tag-amber { background: rgba(245,158,11,0.2); color: #fcd34d; }
+  .tag-cyan { background: rgba(6,182,212,0.2); color: #67e8f9; }
+  .tag-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+  .badge-purple { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+  .badge-blue { background: rgba(79,142,247,0.2); color: #93c5fd; }
+  .badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
+  .badge-amber { background: rgba(245,158,11,0.2); color: #fcd34d; }
+  .badge-cyan { background: rgba(6,182,212,0.2); color: #67e8f9; }
+  .badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+  .num-purple { background: rgba(139,92,246,0.25); color: #c4b5fd; }
+  .num-blue { background: rgba(79,142,247,0.25); color: #93c5fd; }
+  .num-green { background: rgba(34,197,94,0.2); color: #86efac; }
+  .num-amber { background: rgba(245,158,11,0.2); color: #fcd34d; }
+  .num-cyan { background: rgba(6,182,212,0.2); color: #67e8f9; }
+
+  .lane-purple { background: rgba(139,92,246,0.05); border-color: rgba(139,92,246,0.2); }
+  .lane-blue { background: rgba(79,142,247,0.05); border-color: rgba(79,142,247,0.2); }
+  .lane-green { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.15); }
+  .lane-amber { background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.15); }
+
+  .mega-purple { background: rgba(139,92,246,0.12); }
+  .mega-blue { background: rgba(79,142,247,0.12); }
+  .mega-green { background: rgba(34,197,94,0.08); }
+  .mega-amber { background: rgba(245,158,11,0.08); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1200px) {
+    .mega-flow { grid-template-columns: repeat(2, 1fr); }
+    .dm-grid { grid-template-columns: repeat(2, 1fr); }
+    .conn-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .hero, .main { padding: 24px 20px; }
+    .legend { padding: 16px 20px; }
+    .mega-flow { grid-template-columns: 1fr; }
+    .actor-lane { grid-template-columns: 1fr; }
+    .dm-grid { grid-template-columns: 1fr; }
+    .conn-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── CALLOUT ── */
+  .callout {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border-left: 3px solid;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 16px;
+  }
+  .callout strong { display: block; margin-bottom: 3px; font-size: 13px; }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 12px; }
+  th { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); background: var(--bg); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* TOC */
+  .toc {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    padding: 20px 48px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .toc a {
+    font-size: 12px; font-weight: 600; padding: 5px 12px;
+    border-radius: 20px; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim);
+    transition: all 0.15s;
+  }
+  .toc a:hover { color: var(--text); border-color: var(--accent-blue); }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>ImmoChecker — Flows & Connexions</h1>
+  <p>Cartographie complète des processus : rôles, actions, transitions d'état, et données clés de la plateforme.</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <a href="#section-roles">Rôles</a>
+  <a href="#section-onboarding">Onboarding</a>
+  <a href="#section-patrimoine">Patrimoine</a>
+  <a href="#section-tiers">Tiers</a>
+  <a href="#section-missions">Missions</a>
+  <a href="#section-edl">EDL</a>
+  <a href="#section-states">États</a>
+  <a href="#section-full">Flow complet</a>
+  <a href="#section-data">Données</a>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-purple"></div> Super Admin</div>
+  <div class="legend-item"><div class="legend-dot dot-blue"></div> Admin</div>
+  <div class="legend-item"><div class="legend-dot dot-green"></div> Gestionnaire</div>
+  <div class="legend-item"><div class="legend-dot dot-amber"></div> Technicien</div>
+  <div class="legend-item"><div class="legend-dot dot-cyan"></div> Système (auto)</div>
+  <div class="legend-item"><div class="legend-dot dot-red"></div> Locataire / Tiers</div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════ 1 - RÔLES ═══════════════════════════════════════ -->
+  <section id="section-roles">
+    <div class="section-header">
+      <div class="section-icon bg-purple" style="background:rgba(139,92,246,0.15);">👥</div>
+      <div>
+        <h2>1 — Rôles & Périmètres</h2>
+        <p>Qui peut faire quoi dans l'application</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Rôle</th>
+          <th>Portée</th>
+          <th>Accès back-office</th>
+          <th>Restrictions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="c-purple" style="font-weight:700;">Super Admin</span></td>
+          <td>Plateforme entière</td>
+          <td>Zone super-admin séparée (bannière rouge)</td>
+          <td>Ne peut pas retirer ses propres droits</td>
+        </tr>
+        <tr>
+          <td><span class="c-blue" style="font-weight:700;">Admin</span></td>
+          <td>Workspace</td>
+          <td>Tout : Paramètres, Parc, Tiers, Missions, Dashboard</td>
+          <td>Dernier admin non supprimable</td>
+        </tr>
+        <tr>
+          <td><span class="c-green" style="font-weight:700;">Gestionnaire</span></td>
+          <td>Workspace</td>
+          <td>Parc, Tiers, Missions, Dashboard (pas Paramètres)</td>
+          <td>Pas de gestion des rôles/invitations</td>
+        </tr>
+        <tr>
+          <td><span class="c-amber" style="font-weight:700;">Technicien</span></td>
+          <td>Ses missions uniquement</td>
+          <td>App mobile/tablette seulement</td>
+          <td>Pas d'accès webapp desktop</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+      <div class="callout" style="background:rgba(79,142,247,0.07);border-color:var(--admin);">
+        <strong class="c-blue">societe_edl</strong>
+        Tout visible : missions, techniciens, mandataires. Cas le plus complet.
+      </div>
+      <div class="callout" style="background:rgba(34,197,94,0.06);border-color:var(--gestionnaire);">
+        <strong class="c-green">bailleur</strong>
+        EDL sans mission possible. Pas de mandataire. Vue simplifiée.
+      </div>
+      <div class="callout" style="background:rgba(245,158,11,0.06);border-color:var(--technicien);">
+        <strong class="c-amber">agence</strong>
+        Onglet Mandataire masqué. Gestion interne uniquement.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 2 - ONBOARDING ═══════════════════════════════════════ -->
+  <section id="section-onboarding">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(139,92,246,0.15);">🚀</div>
+      <div>
+        <h2>2 — Onboarding : Super Admin → Admin → Équipe</h2>
+        <p>Création workspace, wizard onboarding, et invitation des utilisateurs</p>
+      </div>
+    </div>
+
+    <!-- Step 1: Super Admin -->
+    <div class="actor-lane lane-purple" style="margin-bottom:12px;">
+      <div class="lane-label" style="background:rgba(139,92,246,0.08);">
+        <div class="role-badge badge-purple">Super Admin</div>
+        <div class="role-desc">Zone /super-admin séparée</div>
+      </div>
+      <div class="lane-content">
+        <div class="step-list">
+          <div class="step-row">
+            <div class="step-number num-purple">1</div>
+            <div class="step-body">
+              <div class="step-title">Créer un workspace</div>
+              <div class="step-desc">Formulaire : nom + type (societe_edl / bailleur / agence) + email admin initial</div>
+              <div class="step-tags">
+                <span class="tag tag-purple">POST /super-admin/workspaces</span>
+                <span class="tag">Crée Workspace en DB</span>
+                <span class="tag tag-cyan">Email invitation admin envoyé via Resend</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-purple">2</div>
+            <div class="step-body">
+              <div class="step-title">Gérer les workspaces</div>
+              <div class="step-desc">Suspendre/réactiver, promouvoir/rétrograder super-admins, renvoyer invitations</div>
+              <div class="step-tags">
+                <span class="tag tag-red">statut = 'suspendu' bloque le login</span>
+                <span class="tag tag-cyan">Toute action tracée dans audit_log</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow down -->
+    <div style="text-align:center;color:var(--text-muted);font-size:24px;margin:4px 0 4px 80px;">↓ <span style="font-size:12px;vertical-align:middle;">Email d'invitation (token 7j)</span></div>
+
+    <!-- Step 2: Admin onboarding -->
+    <div class="actor-lane lane-blue" style="margin-bottom:12px;">
+      <div class="lane-label" style="background:rgba(79,142,247,0.08);">
+        <div class="role-badge badge-blue">Admin</div>
+        <div class="role-desc">1er admin du workspace</div>
+      </div>
+      <div class="lane-content">
+        <div class="step-list">
+          <div class="step-row">
+            <div class="step-number num-blue">1</div>
+            <div class="step-body">
+              <div class="step-title">Cliquer le lien d'invitation</div>
+              <div class="step-desc">Lien email → page inscription. Email pré-rempli non modifiable. Remplir nom, prénom, mot de passe (8+ chars, 1 maj, 1 chiffre).</div>
+              <div class="step-tags">
+                <span class="tag tag-cyan">JWT access 15-30min + refresh 7j (httpOnly cookie)</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">2</div>
+            <div class="step-body">
+              <div class="step-title">Wizard onboarding (5 steps — si 1er admin)</div>
+              <div class="step-desc">Bienvenue → Identité workspace → Branding (logo) → Équipe (inviter collègues) → Terminé</div>
+              <div class="step-tags">
+                <span class="tag">Skippable dès step 1</span>
+                <span class="tag">Relançable depuis Paramètres</span>
+                <span class="tag tag-cyan">onboarding_completed_at stocké par user</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">3</div>
+            <div class="step-body">
+              <div class="step-title">Configurer le workspace (Paramètres)</div>
+              <div class="step-desc">Nom, logo, type, adresse, SIRET, email, téléphone</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">4</div>
+            <div class="step-body">
+              <div class="step-title">Inviter gestionnaires & techniciens</div>
+              <div class="step-desc">Formulaire : email + rôle → Email envoyé → "En attente" dans le tableau users. Expiration 7 jours.</div>
+              <div class="step-tags">
+                <span class="tag tag-blue">Admin</span>
+                <span class="tag tag-green">Gestionnaire</span>
+                <span class="tag tag-amber">Technicien</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">5</div>
+            <div class="step-body">
+              <div class="step-title">Gérer les rôles</div>
+              <div class="step-desc">Modifier rôle par dropdown inline, désactiver/supprimer utilisateurs. Dernier admin non supprimable.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow down -->
+    <div style="text-align:center;color:var(--text-muted);font-size:24px;margin:4px 0 4px 80px;">↓ <span style="font-size:12px;vertical-align:middle;">Email d'invitation (token 7j)</span></div>
+
+    <!-- Step 3: Other users -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="actor-lane lane-green">
+        <div class="lane-label" style="background:rgba(34,197,94,0.06);">
+          <div class="role-badge badge-green">Gestionnaire</div>
+          <div class="role-desc">Accès back-office</div>
+        </div>
+        <div class="lane-content">
+          <div class="step-list">
+            <div class="step-row">
+              <div class="step-number num-green">1</div>
+              <div class="step-body">
+                <div class="step-title">Cliquer lien invitation</div>
+                <div class="step-desc">Création compte → Dashboard</div>
+              </div>
+            </div>
+            <div class="step-row">
+              <div class="step-number num-green">2</div>
+              <div class="step-body">
+                <div class="step-title">Accès opérationnel complet</div>
+                <div class="step-desc">Parc, Tiers, Missions, Dashboard. Pas de Paramètres.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="actor-lane lane-amber">
+        <div class="lane-label" style="background:rgba(245,158,11,0.06);">
+          <div class="role-badge badge-amber">Technicien</div>
+          <div class="role-desc">App mobile seulement</div>
+        </div>
+        <div class="lane-content">
+          <div class="step-list">
+            <div class="step-row">
+              <div class="step-number num-amber">1</div>
+              <div class="step-body">
+                <div class="step-title">Cliquer lien invitation</div>
+                <div class="step-desc">Compte créé. Accès app tablette uniquement.</div>
+              </div>
+            </div>
+            <div class="step-row">
+              <div class="step-number num-amber">2</div>
+              <div class="step-body">
+                <div class="step-title">Voir ses missions assignées</div>
+                <div class="step-desc">Accepter / Refuser les missions. Missions du jour en priorité.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 3 - PATRIMOINE ═══════════════════════════════════════ -->
+  <section id="section-patrimoine">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(79,142,247,0.15);">🏢</div>
+      <div>
+        <h2>3 — Construction du Patrimoine Immobilier</h2>
+        <p>Admin / Gestionnaire — EPIC 1</p>
+      </div>
+    </div>
+
+    <div class="actor-lane lane-blue">
+      <div class="lane-label" style="background:rgba(79,142,247,0.08);">
+        <div class="role-badge badge-blue">Admin</div>
+        <div style="margin-top:4px;"><div class="role-badge badge-green" style="margin-top:8px;">Gestionnaire</div></div>
+        <div class="role-desc" style="margin-top:8px;">Parc immobilier</div>
+      </div>
+      <div class="lane-content">
+        <div class="step-list">
+          <div class="step-row">
+            <div class="step-number num-blue">1</div>
+            <div class="step-body">
+              <div class="step-title">Créer un Bâtiment</div>
+              <div class="step-desc">Désignation, type (immeuble / maison / local / mixte), adresse(s), année construction, nb étages. Géocodage lat/lng pour vue carte.</div>
+              <div class="step-tags">
+                <span class="tag">Table Batiment</span>
+                <span class="tag">Table AdresseBatiment (multiple)</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">2</div>
+            <div class="step-body">
+              <div class="step-title">Créer les Lots rattachés</div>
+              <div class="step-desc">Type (appartement / maison / box / bureau / local), étage, surface, nb pièces, meublé, DPE, num_cave, num_parking, reference_libre.</div>
+              <div class="step-tags">
+                <span class="tag">Table Lot → Batiment</span>
+                <span class="tag">Raccourci "Nouvelle maison" = 1 Bâtiment + 1 Lot</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">3</div>
+            <div class="step-body">
+              <div class="step-title">Lier Propriétaire(s) au Lot</div>
+              <div class="step-desc">Via pivot LotProprietaire. Supporte l'indivision (N propriétaires). est_principal pour le principal.</div>
+              <div class="step-tags">
+                <span class="tag tag-blue">Tiers doit exister (EPIC 2)</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-blue">4</div>
+            <div class="step-body">
+              <div class="step-title">Lier un Mandataire au Lot</div>
+              <div class="step-desc">FK directe Lot.mandataire_id → Tiers. 1 seul mandataire par lot. Masqué si workspace type = "agence".</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="callout" style="background:rgba(6,182,212,0.06);border-color:var(--system);">
+        <strong class="c-cyan">Note : code_acces</strong>
+        Le code d'accès ne se trouve PAS sur le Lot. Il est sur EDL_Inventaire (change à chaque intervention).
+      </div>
+      <div class="callout" style="background:rgba(79,142,247,0.06);border-color:var(--admin);">
+        <strong class="c-blue">Navigation</strong>
+        Pas d'onglet Lots séparé. Lots accessibles uniquement via drill-down bâtiment ou recherche globale.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 4 - TIERS ═══════════════════════════════════════ -->
+  <section id="section-tiers">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(34,197,94,0.12);">🤝</div>
+      <div>
+        <h2>4 — Gestion des Tiers (Acteurs Externes)</h2>
+        <p>Admin / Gestionnaire — EPIC 2. Table unifiée, rôle porté par la relation.</p>
+      </div>
+    </div>
+
+    <div class="actor-lane lane-green">
+      <div class="lane-label" style="background:rgba(34,197,94,0.06);">
+        <div class="role-badge badge-blue">Admin</div>
+        <div style="margin-top:8px;"><div class="role-badge badge-green">Gestionnaire</div></div>
+        <div class="role-desc" style="margin-top:8px;">Table Tiers unifiée</div>
+      </div>
+      <div class="lane-content">
+        <div class="step-list">
+          <div class="step-row">
+            <div class="step-number num-green">1</div>
+            <div class="step-body">
+              <div class="step-title">Créer un Tiers</div>
+              <div class="step-desc">Choisir type_personne : physique (nom/prénom) ou morale (raison_sociale/SIREN). Adresse, tel, email.</div>
+              <div class="step-tags">
+                <span class="tag tag-green">Propriétaire</span>
+                <span class="tag tag-blue">Mandataire</span>
+                <span class="tag tag-red">Locataire</span>
+                <span class="tag">1 Tiers peut jouer N rôles</span>
+              </div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-green">2</div>
+            <div class="step-body">
+              <div class="step-title">Lier personne physique ↔ morale (optionnel)</div>
+              <div class="step-desc">Via pivot TiersOrganisation : contact principal d'une agence, fonction, est_principal. 1 contact → N organisations.</div>
+            </div>
+          </div>
+          <div class="step-row">
+            <div class="step-number num-green">3</div>
+            <div class="step-body">
+              <div class="step-title">Affecter les rôles patrimoniaux</div>
+              <div class="step-desc">Propriétaire → LotProprietaire (pivot) · Mandataire → Lot.mandataire_id (FK) · Locataire → EDLLocataire (pivot, lors de la mission)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <table>
+        <thead><tr><th>Vue Tiers</th><th>Colonnes par défaut</th><th>Restriction workspace</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Propriétaire</strong></td><td>Nom/Raison sociale, type PP/PM, email, tél, nb lots, dernière mission</td><td>—</td></tr>
+          <tr><td><strong>Locataire</strong></td><td>Nom/Raison sociale, email, tél, dernier lot, propriétaire, dernière mission</td><td>—</td></tr>
+          <tr><td><strong>Mandataire</strong></td><td>Raison sociale, contact principal, email, tél, nb lots en gestion</td><td>Masqué si type = "agence"</td></tr>
+          <tr><td><strong>Tous</strong></td><td>Nom/Raison sociale, type PP/PM, email, tél, dernière mission</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 5 - MISSIONS ═══════════════════════════════════════ -->
+  <section id="section-missions">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(245,158,11,0.12);">📋</div>
+      <div>
+        <h2>5 — Cycle de Vie d'une Mission</h2>
+        <p>Admin / Gestionnaire / Technicien — EPIC 13. 1 Mission = 1 Lot = N EDL possibles.</p>
+      </div>
+    </div>
+
+    <!-- State machine -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:16px;">Machine d'états — Mission.statut</div>
+      <div class="state-machine">
+        <div class="state-node bg-blue" style="border-color:var(--admin);">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Créée par</div>
+          <div class="c-blue">planifiee</div>
+        </div>
+        <div class="state-arrow">
+          <div class="arrow-label">Technicien accepte</div>
+          <div class="arrow-line">→</div>
+        </div>
+        <div class="state-node bg-green" style="border-color:var(--gestionnaire);">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Auto si assigné</div>
+          <div class="c-green">assignee</div>
+        </div>
+        <div class="state-arrow">
+          <div class="arrow-label">Tous EDL signés</div>
+          <div class="arrow-line">→</div>
+        </div>
+        <div class="state-node" style="background:rgba(6,182,212,0.12);border-color:var(--system);">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Auto-terminaison</div>
+          <div class="c-cyan">terminee</div>
+        </div>
+        <div style="margin:0 20px;color:var(--text-muted);font-size:12px;">ou</div>
+        <div class="state-node bg-red" style="border-color:var(--accent-red);">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Motif obligatoire</div>
+          <div class="c-red">annulee</div>
+        </div>
+      </div>
+      <div class="callout" style="background:rgba(239,68,68,0.07);border-color:var(--accent-red);margin-top:12px;">
+        <strong class="c-red">Règle critique</strong>
+        Mission <code>terminee</code> = IMPOSSIBLE à annuler. Les EDL signés sont des documents légaux irrévocables. Seuls commentaire + statut dépôt clés restent modifiables.
+      </div>
+    </div>
+
+    <!-- Mission flow -->
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot dot-blue"></div>
+        <div class="tl-actor c-blue">Admin / Gestionnaire</div>
+        <div class="tl-action">Créer la mission (modal)</div>
+        <div class="tl-desc">Depuis dashboard, page Missions, ou fiche bâtiment</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Lot (picker enrichi : nom + adresse + propriétaire + étage)</li>
+            <li>Sens : Entrée / Sortie / Entrée+Sortie simultanées</li>
+            <li>Avec inventaire (toggle)</li>
+            <li>Locataire(s) + Type de bail si 2+ locataires (Individuel / Collectif)</li>
+            <li>Date, heure début/fin</li>
+            <li>Technicien (dropdown, 1 en V1)</li>
+            <li>Commentaire (instructions terrain)</li>
+            <li>Référence auto-générée : M-2026-XXXX</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-cyan"></div>
+        <div class="tl-actor c-cyan">Système</div>
+        <div class="tl-action">Création automatique des EDL_Inventaire</div>
+        <div class="tl-desc">Selon le sens + bail individuel (N EDL) ou collectif (1 EDL + N locataires via pivot)</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Bail individuel → 1 EDL par locataire</li>
+            <li>Bail collectif → 1 EDL, N locataires dans EDLLocataire</li>
+            <li>Entrée+Sortie → EDL.sens distingue entrant/sortant</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-cyan"></div>
+        <div class="tl-actor c-cyan">Système</div>
+        <div class="tl-action">Envoi invitation au technicien</div>
+        <div class="tl-desc">MissionTechnicien.statut_invitation = en_attente. Email Resend envoyé.</div>
+        <div class="tl-sub">
+          <ul>
+            <li>statut_rdv = a_confirmer (en attente confirmation locataire)</li>
+            <li>Mission apparaît dans "Actions en attente" du dashboard admin</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-amber"></div>
+        <div class="tl-actor c-amber">Technicien</div>
+        <div class="tl-action">Accepter ou Refuser la mission</div>
+        <div class="tl-desc">Sur app mobile ou bureau</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Accepte → statut_invitation = accepte → Mission passe en "assignee"</li>
+            <li>Refuse → statut_invitation = refuse → Mission retourne dans "Actions en attente"</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-blue"></div>
+        <div class="tl-actor c-blue">Admin / Gestionnaire</div>
+        <div class="tl-action">Gérer les indisponibilités technicien (optionnel)</div>
+        <div class="tl-desc">Créneaux horaires, journée entière, récurrence Google Calendar (quotidien/hebdo/bimensuel/mensuel)</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Affiché en plages grisées dans le calendrier admin</li>
+            <li>CRUD depuis dashboard (bouton "+") ou app mobile technicien</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-amber"></div>
+        <div class="tl-actor c-amber">Technicien (terrain — App tablette)</div>
+        <div class="tl-action">Réaliser l'EDL sur tablette</div>
+        <div class="tl-desc">EPIC 5 — hors périmètre webapp. Saisie pièces, items, photos, relevés compteurs.</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Code accès saisi sur EDL_Inventaire (pas sur le lot)</li>
+            <li>Colocation : peut dupliquer l'EDL (changer locataire + ajuster pièces)</li>
+            <li>Documenter les clés : type, quantité, statut</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-red"></div>
+        <div class="tl-actor c-red">Locataire</div>
+        <div class="tl-action">Signer l'EDL</div>
+        <div class="tl-desc">Signature sur tablette. EDL.statut passe de brouillon → signe (document légal irrévocable).</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Ou statut → infructueux si EDL ne peut être réalisé</li>
+            <li>QR code de vérification d'authenticité généré</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-cyan"></div>
+        <div class="tl-actor c-cyan">Système (auto-terminaison)</div>
+        <div class="tl-action">Mission → terminee automatiquement</div>
+        <div class="tl-desc">Quand TOUS les EDL liés à la mission sont signés. Colocation = attend le dernier signataire.</div>
+        <div class="tl-sub">
+          <ul>
+            <li>Date/heure/technicien/statut RDV passent en lecture seule</li>
+            <li>PDF et liens web générés pour chaque EDL signé</li>
+            <li>Clés : statut "a_deposer" → "deposee" reste modifiable</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot dot-blue"></div>
+        <div class="tl-actor c-blue">Admin / Gestionnaire</div>
+        <div class="tl-action">Consulter la mission terminée</div>
+        <div class="tl-desc">Fiche mission : EDL signés, liens PDF/Web, timeline historique. Gestion dépôt clés.</div>
+        <div class="tl-sub">
+          <ul>
+            <li>4 liens par EDL signé : PDF, Web, PDF légal, Web légal</li>
+            <li>Statut dépôt clés : remise / a_deposer / deposee</li>
+            <li>Commentaire toujours modifiable</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 6 - EDL ═══════════════════════════════════════ -->
+  <section id="section-edl">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(6,182,212,0.12);">📄</div>
+      <div>
+        <h2>6 — États des Lieux & Clés</h2>
+        <p>EDL_Inventaire, CleMission, workflow colocation</p>
+      </div>
+    </div>
+
+    <!-- EDL state machine -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:16px;">Machine d'états — EDL_Inventaire.statut</div>
+      <div class="state-machine">
+        <div class="state-node bg-blue" style="border-color:var(--admin);">
+          <div class="c-blue">brouillon</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Saisie en cours</div>
+        </div>
+        <div class="state-arrow">
+          <div class="arrow-label">Locataire signe</div>
+          <div class="arrow-line">→</div>
+        </div>
+        <div class="state-node bg-green" style="border-color:var(--gestionnaire);">
+          <div class="c-green">signe</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Document légal</div>
+        </div>
+        <div style="margin:0 24px;color:var(--text-muted);font-size:12px;">ou</div>
+        <div class="state-node bg-red" style="border-color:var(--accent-red);">
+          <div class="c-red">infructueux</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">EDL impossible</div>
+        </div>
+      </div>
+      <div class="callout" style="background:rgba(34,197,94,0.06);border-color:var(--gestionnaire);margin-top:12px;">
+        <strong class="c-green">EDL signé = document légal irrévocable</strong>
+        Impossible de modifier un EDL signé. La mission ne peut plus être annulée. Le PDF légal est généré et stocké.
+      </div>
+    </div>
+
+    <!-- Colocation flow -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:16px;">Workflow Colocation (2+ locataires)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent-blue);text-transform:uppercase;margin-bottom:10px;">Bail individuel (défaut)</div>
+          <div class="tl-sub" style="background:var(--surface);">
+            <ul>
+              <li>N locataires → N EDL distincts</li>
+              <li>Chaque EDL lié à 1 locataire</li>
+              <li>Technicien : peut dupliquer EDL sur tablette</li>
+              <li>Même mission, EDL séparés</li>
+              <li>Auto-terminaison attend TOUS signés</li>
+              <li>N clés (CleMission.edl_id) séparées</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent-green);text-transform:uppercase;margin-bottom:10px;">Bail collectif (solidaire)</div>
+          <div class="tl-sub" style="background:var(--surface);">
+            <ul>
+              <li>N locataires → 1 seul EDL</li>
+              <li>N locataires liés via EDLLocataire (pivot)</li>
+              <li>Tous signent le même document</li>
+              <li>1 seule CleMission</li>
+              <li>Auto-terminaison dès cet EDL signé</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="callout" style="background:rgba(245,158,11,0.06);border-color:var(--technicien);margin-top:12px;">
+        <strong class="c-amber">Entrée + Sortie simultanées</strong>
+        Une mission peut contenir à la fois des EDL de sortie (ancien locataire) et d'entrée (nouveau locataire) sur le même lot. EDL.sens distingue les deux.
+      </div>
+    </div>
+
+    <!-- Clés -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px;">Workflow des Clés (CleMission)</div>
+      <div class="state-machine">
+        <div class="state-node bg-blue" style="border-color:var(--admin);min-width:100px;">
+          <div class="c-blue" style="font-size:12px;">remise</div>
+          <div style="font-size:10px;color:var(--text-muted);">Entrée, documentaire</div>
+        </div>
+        <div class="state-arrow"><div class="arrow-line">→</div></div>
+        <div class="state-node bg-amber" style="border-color:var(--technicien);min-width:100px;">
+          <div class="c-amber" style="font-size:12px;">a_deposer</div>
+          <div style="font-size:10px;color:var(--text-muted);">Sortie, à récupérer</div>
+        </div>
+        <div class="state-arrow"><div class="arrow-line">→</div></div>
+        <div class="state-node bg-green" style="border-color:var(--gestionnaire);min-width:100px;">
+          <div class="c-green" style="font-size:12px;">deposee</div>
+          <div style="font-size:10px;color:var(--text-muted);">Confirmé</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:12px;">
+        CleMission.edl_id (pas mission_id) — en colocation, chaque locataire a ses propres clés. Modifiable par technicien (mobile) ET admin (webapp) même après terminaison mission.
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 7 - ÉTATS ═══════════════════════════════════════ -->
+  <section id="section-states">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(6,182,212,0.12);">⚡</div>
+      <div>
+        <h2>7 — Tous les États & Transitions</h2>
+        <p>Récapitulatif des machines d'états critiques</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Entité</th>
+          <th>Champ</th>
+          <th>Valeurs possibles</th>
+          <th>Transitions clés</th>
+          <th>Acteur déclencheur</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Mission</strong></td>
+          <td><code>statut</code></td>
+          <td><span class="tag tag-blue">planifiee</span> <span class="tag tag-green">assignee</span> <span class="tag tag-cyan">terminee</span> <span class="tag tag-red">annulee</span></td>
+          <td>planifiee→assignee quand technicien accepte. assignee→terminee auto quand tous EDL signés. Annulation bloquée si terminée.</td>
+          <td>Technicien / Système</td>
+        </tr>
+        <tr>
+          <td><strong>Mission</strong></td>
+          <td><code>statut_rdv</code></td>
+          <td><span class="tag">a_confirmer</span> <span class="tag tag-green">confirme</span> <span class="tag tag-amber">reporte</span></td>
+          <td>Géré manuellement par admin depuis le drawer. Indépendant du statut mission.</td>
+          <td>Admin / Gestionnaire</td>
+        </tr>
+        <tr>
+          <td><strong>MissionTechnicien</strong></td>
+          <td><code>statut_invitation</code></td>
+          <td><span class="tag">en_attente</span> <span class="tag tag-green">accepte</span> <span class="tag tag-red">refuse</span></td>
+          <td>en_attente→accepte/refuse via action technicien. Refus → retour dans Actions en attente.</td>
+          <td>Technicien</td>
+        </tr>
+        <tr>
+          <td><strong>EDL_Inventaire</strong></td>
+          <td><code>statut</code></td>
+          <td><span class="tag tag-blue">brouillon</span> <span class="tag tag-green">signe</span> <span class="tag tag-red">infructueux</span></td>
+          <td>brouillon→signe (irrévocable, déclenche auto-terminaison mission). brouillon→infructueux si EDL impossible.</td>
+          <td>Locataire (signature)</td>
+        </tr>
+        <tr>
+          <td><strong>CleMission</strong></td>
+          <td><code>statut</code></td>
+          <td><span class="tag tag-blue">remise</span> <span class="tag tag-amber">a_deposer</span> <span class="tag tag-green">deposee</span></td>
+          <td>Modifiable même après terminaison mission. Géré par technicien (mobile) + admin (webapp).</td>
+          <td>Technicien / Admin</td>
+        </tr>
+        <tr>
+          <td><strong>Workspace</strong></td>
+          <td><code>statut</code></td>
+          <td><span class="tag tag-green">actif</span> <span class="tag tag-red">suspendu</span></td>
+          <td>Suspendu par super-admin → login bloqué pour tous les membres.</td>
+          <td>Super Admin</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 8 - FLOW COMPLET ═══════════════════════════════════════ -->
+  <section id="section-full">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(139,92,246,0.15);">🗺️</div>
+      <div>
+        <h2>8 — Flow Complet par Acteur</h2>
+        <p>Toutes les actions de bout en bout, par type d'utilisateur</p>
+      </div>
+    </div>
+
+    <div class="mega-flow">
+      <!-- Super Admin -->
+      <div class="mega-col">
+        <div class="mega-col-header mega-purple c-purple">Super Admin</div>
+        <div class="mega-col-body" style="background:rgba(139,92,246,0.04);">
+          <div class="mega-step">
+            <div class="ms-title">Initialisation</div>
+            <div class="ms-desc">Script SQL init-super-admin pour 1er super-admin</div>
+            <span class="ms-result badge-purple">is_super_admin = true</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Créer workspace</div>
+            <div class="ms-desc">Nom + type + email admin. Zone /super-admin séparée.</div>
+            <span class="ms-result badge-cyan">Email invitation admin</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Suspendre workspace</div>
+            <div class="ms-desc">statut = 'suspendu' → login bloqué immédiatement</div>
+            <span class="ms-result badge-red">Tous membres bloqués</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Audit log</div>
+            <div class="ms-desc">Toute action tracée dans audit_log. Consultable via /super-admin/audit-log</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Gérer super-admins</div>
+            <div class="ms-desc">Promouvoir / rétrograder. Impossible de retirer ses propres droits.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div class="mega-col">
+        <div class="mega-col-header mega-blue c-blue">Admin</div>
+        <div class="mega-col-body" style="background:rgba(79,142,247,0.04);">
+          <div class="mega-step">
+            <div class="ms-title">Accepter invitation</div>
+            <div class="ms-desc">Lien email → inscription (nom, prénom, mdp) → JWT</div>
+            <span class="ms-result badge-blue">Compte créé</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Wizard onboarding (5 steps)</div>
+            <div class="ms-desc">Identité → Branding → Équipe → Terminé. Skippable.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Paramétrer le workspace</div>
+            <div class="ms-desc">Infos, logo, type. Templates pièces. Catalogue items. Critères évaluation. Référentiels.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Inviter équipe</div>
+            <div class="ms-desc">Email + rôle → invitation 7j. Gestion rôles inline.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Créer parc immobilier</div>
+            <div class="ms-desc">Bâtiments → Lots → Propriétaires → Mandataires</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Créer les Tiers</div>
+            <div class="ms-desc">Propriétaires, locataires, mandataires. Liaisons PP↔PM.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Créer & gérer missions</div>
+            <div class="ms-desc">Lot + sens + locataires + technicien + date</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Suivre le dashboard</div>
+            <div class="ms-desc">Calendrier semaine, Actions en attente, stat cards. Drawer latéral.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Gérer clés & indispos</div>
+            <div class="ms-desc">Dépôt clés, indisponibilités technicien (récurrence)</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Consulter EDL signés</div>
+            <div class="ms-desc">Liens PDF/Web sur fiche mission. Historique complet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestionnaire -->
+      <div class="mega-col">
+        <div class="mega-col-header mega-green c-green">Gestionnaire</div>
+        <div class="mega-col-body" style="background:rgba(34,197,94,0.03);">
+          <div class="mega-step">
+            <div class="ms-title">Accepter invitation</div>
+            <div class="ms-desc">Même flow inscription que l'admin. Pas de wizard onboarding.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Accès opérationnel</div>
+            <div class="ms-desc">Dashboard, Missions, Parc, Tiers. Pas de Paramètres.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Gérer parc & tiers</div>
+            <div class="ms-desc">CRUD bâtiments, lots, tiers. Mêmes droits que l'admin sur ces ressources.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Créer & gérer missions</div>
+            <div class="ms-desc">Création, modification date/heure, commentaire, gestion RDV.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Suivre le planning</div>
+            <div class="ms-desc">Calendrier semaine, Kanban, vue carte, filtres rapides.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Gérer indisponibilités</div>
+            <div class="ms-desc">Créer/modifier/supprimer les plages indispo techniciens.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Consulter missions terminées</div>
+            <div class="ms-desc">EDL signés, clés, documents légaux. Lecture seule.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technicien -->
+      <div class="mega-col">
+        <div class="mega-col-header mega-amber c-amber">Technicien (tablette)</div>
+        <div class="mega-col-body" style="background:rgba(245,158,11,0.03);">
+          <div class="mega-step">
+            <div class="ms-title">Accepter invitation</div>
+            <div class="ms-desc">Compte créé. Accès exclusif app mobile/tablette.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Voir missions du jour</div>
+            <div class="ms-desc">Dashboard tablette (EPIC 5 / US-816). Missions assignées triées par date.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Accepter / Refuser mission</div>
+            <div class="ms-desc">statut_invitation → accepte (mission assignee) ou refuse (retour Actions en attente)</div>
+            <span class="ms-result badge-amber">Notifie admin/gestionnaire</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Déclarer indisponibilité</div>
+            <div class="ms-desc">Depuis app mobile. Créneaux + récurrence.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Réaliser l'EDL sur site</div>
+            <div class="ms-desc">Saisir pièces, items, photos, relevés. Code accès. EPIC 5 (hors webapp).</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Colocation : dupliquer EDL</div>
+            <div class="ms-desc">Copier structure+contenu+photos, changer locataire + ajuster pièces par colocataire.</div>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Faire signer le locataire</div>
+            <div class="ms-desc">Locataire signe sur tablette. EDL.statut → signe. Document légal irrévocable.</div>
+            <span class="ms-result badge-cyan">Auto-terminaison mission si dernier EDL</span>
+          </div>
+          <div class="mega-step">
+            <div class="ms-title">Gérer les clés</div>
+            <div class="ms-desc">Documenter remise/récupération. Lieu dépôt. Photos. Checklist "à déposer" sur dashboard.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ 9 - DATA MODEL ═══════════════════════════════════════ -->
+  <section id="section-data">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(6,182,212,0.12);">🗄️</div>
+      <div>
+        <h2>9 — Connexions entre Tables (Modèle Clé)</h2>
+        <p>Relations principales des 28 tables</p>
+      </div>
+    </div>
+
+    <div class="dm-grid">
+      <div class="dm-card">
+        <h5 class="c-purple">Workspace</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field enum">type: societe_edl | bailleur | agence</div>
+          <div class="dm-field enum">statut: actif | suspendu</div>
+          <div class="dm-field">nom, logo, siret, adresse...</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-blue">Utilisateur</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field">email, nom, prénom</div>
+          <div class="dm-field">is_super_admin</div>
+          <div class="dm-field">onboarding_completed_at</div>
+          <div class="dm-field">⚠️ PAS de workspace_id direct</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-blue">WorkspaceUser (pivot)</h5>
+        <div class="dm-fields">
+          <div class="dm-field fk">workspace_id → Workspace</div>
+          <div class="dm-field fk">user_id → Utilisateur</div>
+          <div class="dm-field enum">role: admin | gestionnaire | technicien</div>
+          <div class="dm-field">⚠️ PAS de tiers_id</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-green">Batiment</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field fk">workspace_id → Workspace</div>
+          <div class="dm-field enum">type: immeuble | maison | local | mixte</div>
+          <div class="dm-field">→ AdresseBatiment (lat/lng)</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-green">Lot</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field fk">batiment_id → Batiment</div>
+          <div class="dm-field fk">mandataire_id → Tiers</div>
+          <div class="dm-field enum">type_bien: appartement | maison | ...</div>
+          <div class="dm-field">num_cave, num_parking (stable)</div>
+          <div class="dm-field">⚠️ code_acces sur EDL</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-amber">Tiers</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field fk">workspace_id → Workspace</div>
+          <div class="dm-field enum">type_personne: physique | morale</div>
+          <div class="dm-field">Rôle = porté par la relation</div>
+          <div class="dm-field">→ LotProprietaire (pivot proprio)</div>
+          <div class="dm-field">→ EDLLocataire (pivot locataire)</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-amber">Mission</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field fk">lot_id → Lot (immuable)</div>
+          <div class="dm-field fk">created_by → Utilisateur</div>
+          <div class="dm-field enum">statut: planifiee | assignee | terminee | annulee</div>
+          <div class="dm-field enum">statut_rdv: a_confirmer | confirme | reporte</div>
+          <div class="dm-field">reference: M-2026-XXXX (auto)</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-amber">MissionTechnicien (pivot)</h5>
+        <div class="dm-fields">
+          <div class="dm-field fk">mission_id → Mission</div>
+          <div class="dm-field fk">user_id → Utilisateur</div>
+          <div class="dm-field">est_principal</div>
+          <div class="dm-field enum">statut_invitation: en_attente | accepte | refuse</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-cyan">EDL_Inventaire</h5>
+        <div class="dm-fields">
+          <div class="dm-field pk">id (UUID PK)</div>
+          <div class="dm-field fk">mission_id → Mission (nullable)</div>
+          <div class="dm-field fk">lot_id → Lot</div>
+          <div class="dm-field">code_acces (change par intervention)</div>
+          <div class="dm-field enum">sens: entree | sortie</div>
+          <div class="dm-field enum">statut: brouillon | signe | infructueux</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-cyan">EDLLocataire (pivot)</h5>
+        <div class="dm-fields">
+          <div class="dm-field fk">edl_id → EDL_Inventaire</div>
+          <div class="dm-field fk">tiers_id → Tiers</div>
+          <div class="dm-field enum">role_locataire: entrant | sortant</div>
+          <div class="dm-field">Supporte bail collectif colocation</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-amber">CleMission</h5>
+        <div class="dm-fields">
+          <div class="dm-field fk">edl_id → EDL_Inventaire</div>
+          <div class="dm-field">type_cle, quantite</div>
+          <div class="dm-field enum">statut: remise | a_deposer | deposee</div>
+          <div class="dm-field">lieu_depot, commentaire</div>
+          <div class="dm-field">⚠️ FK edl_id (pas mission_id)</div>
+        </div>
+      </div>
+      <div class="dm-card">
+        <h5 class="c-purple">IndisponibiliteTechnicien</h5>
+        <div class="dm-fields">
+          <div class="dm-field fk">user_id → Utilisateur</div>
+          <div class="dm-field fk">workspace_id → Workspace</div>
+          <div class="dm-field">date_debut, date_fin (TIMESTAMPTZ)</div>
+          <div class="dm-field">est_journee_entiere, motif</div>
+          <div class="dm-field">est_recurrent, recurrence_config (JSONB)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connections summary -->
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px;">Connexions transversales clés</div>
+      <div class="conn-grid">
+        <div class="conn-card">
+          <h4 class="c-blue">Super Admin → Workspace</h4>
+          <ul>
+            <li>Crée workspace (form + email admin)</li>
+            <li>Suspend/réactive workspace</li>
+            <li>Promeut/rétrograde super-admins</li>
+            <li>Renvoie invitations expirées</li>
+            <li>Lit l'audit log de toutes actions</li>
+          </ul>
+        </div>
+        <div class="conn-card">
+          <h4 class="c-blue">Admin → Workspace</h4>
+          <ul>
+            <li>Configure workspace (nom, logo, SIRET...)</li>
+            <li>Invite utilisateurs (email + rôle)</li>
+            <li>Modifie rôles via dropdown inline</li>
+            <li>Désactive/supprime utilisateurs</li>
+            <li>Configure templates, catalogue, critères</li>
+          </ul>
+        </div>
+        <div class="conn-card">
+          <h4 class="c-green">Admin/Gestionnaire → Patrimoine</h4>
+          <ul>
+            <li>CRUD Bâtiment avec adresses multiples</li>
+            <li>CRUD Lot rattaché à bâtiment</li>
+            <li>Lie propriétaires via LotProprietaire</li>
+            <li>Lie mandataire via Lot.mandataire_id</li>
+            <li>Accès lots via drill-down ou recherche</li>
+          </ul>
+        </div>
+        <div class="conn-card">
+          <h4 class="c-green">Admin/Gestionnaire → Tiers</h4>
+          <ul>
+            <li>CRUD Tiers (physique ou morale)</li>
+            <li>Lie personne physique à organisation</li>
+            <li>Affecte rôles via relations (pas attribut)</li>
+            <li>Historique complet tous lots d'un locataire</li>
+            <li>Contacts d'une personne morale</li>
+          </ul>
+        </div>
+        <div class="conn-card">
+          <h4 class="c-amber">Admin/Gestionnaire → Mission</h4>
+          <ul>
+            <li>Crée mission (lot immuable après création)</li>
+            <li>Assigne technicien (dropdown 1 seul)</li>
+            <li>Modifie date/heure/commentaire</li>
+            <li>Gère statut RDV (a_confirmer/confirme/reporte)</li>
+            <li>Annule si non terminée (motif obligatoire)</li>
+          </ul>
+        </div>
+        <div class="conn-card">
+          <h4 class="c-amber">Technicien → Mission/EDL</h4>
+          <ul>
+            <li>Accepte/refuse invitation mission</li>
+            <li>Déclare indisponibilités</li>
+            <li>Réalise EDL sur tablette (EPIC 5)</li>
+            <li>Fait signer le locataire (déclenche terminaison)</li>
+            <li>Gère statut clés (a_deposer / deposee)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ FOOTER NOTE ═══════════════════════════════════════ -->
+  <div class="callout" style="background:rgba(6,182,212,0.05);border-color:var(--system);">
+    <strong class="c-cyan">Périmètre webapp vs tablette</strong>
+    La webapp (back-office) descend jusqu'au niveau Mission / EDL_Inventaire. La saisie terrain (pièces, items, photos, relevés compteurs) est exclusivement réalisée sur l'app tablette (EPIC 5). Le back-office consulte les données terrain uniquement via les PDF/liens Web générés après signature.
+  </div>
+
+</div><!-- /main -->
+
+</body>
+</html>

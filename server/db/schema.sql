@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS lot (
   designation VARCHAR(255) NOT NULL,
   reference_interne VARCHAR(100),
   type_bien VARCHAR(30) NOT NULL CHECK (type_bien IN ('appartement', 'maison', 'studio', 'local_commercial', 'parking', 'cave', 'autre')),
+  type_bien_precision VARCHAR(100),
   nb_pieces VARCHAR(10) CHECK (nb_pieces IN ('studio', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'autre')),
   nb_pieces_precision VARCHAR(50),
   etage VARCHAR(20),
@@ -221,7 +222,7 @@ CREATE TABLE IF NOT EXISTS mission (
   date_planifiee DATE NOT NULL,
   heure_debut TIME,
   heure_fin TIME,
-  statut VARCHAR(15) NOT NULL DEFAULT 'planifiee' CHECK (statut IN ('planifiee', 'assignee', 'terminee', 'annulee')),
+  statut VARCHAR(15) NOT NULL DEFAULT 'planifiee' CHECK (statut IN ('planifiee', 'terminee', 'annulee')),
   statut_rdv VARCHAR(15) DEFAULT 'a_confirmer' CHECK (statut_rdv IN ('a_confirmer', 'confirme', 'reporte')),
   avec_inventaire BOOLEAN NOT NULL DEFAULT false,
   type_bail VARCHAR(15) CHECK (type_bail IN ('individuel', 'collectif')),
@@ -668,3 +669,21 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_super_admin
 -- ============================================================
 ALTER TABLE edl_inventaire ADD COLUMN IF NOT EXISTS pdf_url_legal TEXT;
 ALTER TABLE edl_inventaire ADD COLUMN IF NOT EXISTS web_url_legal TEXT;
+
+-- ============================================================
+-- MIGRATION: Suppression du statut 'assignee' (doublon)
+-- 'assignee' dupliquait mission_technicien.statut_invitation = 'accepte'.
+-- L'info reste dans le pivot. Le cycle de vie pur devient :
+--   planifiee → terminee (auto tous EDL signés) | annulee
+-- ============================================================
+UPDATE mission SET statut = 'planifiee' WHERE statut = 'assignee';
+ALTER TABLE mission DROP CONSTRAINT IF EXISTS mission_statut_check;
+ALTER TABLE mission ADD CONSTRAINT mission_statut_check
+  CHECK (statut IN ('planifiee', 'terminee', 'annulee'));
+
+-- ============================================================
+-- MIGRATION: type_bien_precision sur lot
+-- Quand type_bien = 'autre', permet de saisir une précision libre
+-- (ex: "Entrepôt", "Loft", "Box moto"…). Même pattern que nb_pieces_precision.
+-- ============================================================
+ALTER TABLE lot ADD COLUMN IF NOT EXISTS type_bien_precision VARCHAR(100);

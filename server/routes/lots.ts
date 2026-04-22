@@ -14,7 +14,7 @@ router.use(requireRole('admin', 'gestionnaire'))
 router.get('/', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const { search, limit: limitParam } = req.query
+    const { search, limit: limitParam, sort } = req.query
     const limit = Math.min(parseInt(limitParam as string) || 50, 100)
 
     let where = `l.workspace_id = $1 AND l.est_archive = false`
@@ -26,6 +26,8 @@ router.get('/', async (req, res) => {
       params.push(`%${search.trim()}%`)
       paramIndex++
     }
+
+    const orderBy = sort === 'recent' ? 'l.created_at DESC' : 'l.designation'
 
     const sql = `
       SELECT l.id, l.designation, l.type_bien, l.etage, l.surface, l.meuble,
@@ -39,7 +41,7 @@ router.get('/', async (req, res) => {
       JOIN batiment b ON b.id = l.batiment_id
       LEFT JOIN adresse_batiment ab ON ab.batiment_id = b.id AND ab.type = 'principale'
       WHERE ${where}
-      ORDER BY l.designation
+      ORDER BY ${orderBy}
       LIMIT $${paramIndex}
     `
     params.push(limit)
@@ -113,6 +115,7 @@ const createLotSchema = z.object({
   designation: z.string().min(1).max(255),
   reference_interne: z.string().max(100).optional(),
   type_bien: z.enum(['appartement', 'maison', 'studio', 'local_commercial', 'parking', 'cave', 'autre']),
+  type_bien_precision: z.string().max(100).optional(),
   nb_pieces: z.enum(['studio', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'autre']).optional(),
   etage: z.string().max(20).optional(),
   emplacement_palier: z.string().max(100).optional(),
@@ -131,12 +134,15 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createLotSchema)
     const workspaceId = req.user!.workspaceId
     const d = req.body
 
+    // Précision uniquement pertinente si type_bien = 'autre' (US-584)
+    const typeBienPrecision = d.type_bien === 'autre' ? (d.type_bien_precision ?? null) : null
+
     const result = await query(
-      `INSERT INTO lot (workspace_id, batiment_id, designation, reference_interne, type_bien,
+      `INSERT INTO lot (workspace_id, batiment_id, designation, reference_interne, type_bien, type_bien_precision,
         nb_pieces, etage, emplacement_palier, surface, meuble, dpe_classe, ges_classe,
         num_cave, num_parking, commentaire, mandataire_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-      [workspaceId, d.batiment_id, d.designation, d.reference_interne ?? null, d.type_bien,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+      [workspaceId, d.batiment_id, d.designation, d.reference_interne ?? null, d.type_bien, typeBienPrecision,
        d.nb_pieces ?? null, d.etage ?? null, d.emplacement_palier ?? null,
        d.surface ?? null, d.meuble ?? false, d.dpe_classe ?? null, d.ges_classe ?? null,
        d.num_cave ?? null, d.num_parking ?? null, d.commentaire ?? null, d.mandataire_id ?? null]
@@ -153,7 +159,7 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const allowedFields = [
-      'designation', 'reference_interne', 'type_bien', 'nb_pieces', 'etage',
+      'designation', 'reference_interne', 'type_bien', 'type_bien_precision', 'nb_pieces', 'etage',
       'emplacement_palier', 'surface', 'meuble', 'dpe_classe', 'ges_classe',
       'num_cave', 'num_parking', 'commentaire', 'mandataire_id', 'est_archive',
       'eau_chaude_type', 'eau_chaude_mode', 'chauffage_type', 'chauffage_mode'
@@ -170,6 +176,12 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
       }
     }
 
+    // Cohérence : si type_bien passe à une valeur ≠ 'autre', on vide type_bien_precision
+    if (req.body.type_bien !== undefined && req.body.type_bien !== 'autre'
+        && req.body.type_bien_precision === undefined) {
+      fields.push(`type_bien_precision = NULL`)
+    }
+
     if (fields.length === 0) {
       sendSuccess(res, { message: 'Aucune modification' })
       return
@@ -178,7 +190,7 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
     // Archive check: block if active missions
     if (req.body.est_archive === true) {
       const activeMissions = await query(
-        `SELECT count(*) as cnt FROM mission WHERE lot_id = $1 AND workspace_id = $2 AND statut IN ('planifiee', 'assignee')`,
+        `SELECT count(*) as cnt FROM mission WHERE lot_id = $1 AND workspace_id = $2 AND statut = 'planifiee'`,
         [req.params.id, workspaceId]
       )
       if (parseInt(activeMissions.rows[0].cnt) > 0) {

@@ -4,6 +4,7 @@ import { query } from '../db/index.js'
 import { verifyToken } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError, sendList } from '../utils/response.js'
+import { AppError, NotFoundError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -18,8 +19,7 @@ router.get('/', async (req, res) => {
   try {
     const parsed = listQuerySchema.safeParse(req.query)
     if (!parsed.success) {
-      sendError(res, { status: 400, message: 'Paramètres invalides', code: 'VALIDATION_ERROR' })
-      return
+      throw new AppError('Paramètres invalides', 'VALIDATION_ERROR', 400)
     }
     const { userId, workspaceId } = req.user!
     const unreadOnly = parsed.data.unread_only === 'true'
@@ -84,8 +84,7 @@ router.patch('/:id/read', async (req, res) => {
       [req.params.id, userId, workspaceId]
     )
     if (result.rows.length === 0) {
-      sendError(res, { status: 404, message: 'Notification introuvable', code: 'NOT_FOUND' })
-      return
+      throw new NotFoundError('Notification')
     }
     sendSuccess(res, result.rows[0])
   } catch (error) {

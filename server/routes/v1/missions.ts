@@ -178,7 +178,9 @@ router.post('/', requireWriteScope, async (req, res) => {
     const seq = String(parseInt(countResult.rows[0].count) + 1).padStart(4, '0')
     const reference = `M-${year}-${seq}`
 
-    const initialStatut = data.technicien_id ? 'assignee' : 'planifiee'
+    // Le technicien assigné vit dans mission_technicien.statut_invitation,
+    // pas dans mission.statut. Toute nouvelle mission démarre en 'planifiee'.
+    const initialStatut = 'planifiee'
 
     // Use transaction for mission + EDLs + optional technician assignment
     const { pool } = await import('../../db/index.js')

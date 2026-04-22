@@ -339,7 +339,11 @@ technicianConflictRouter.get('/:userId/conflicts', async (req, res) => {
     // Missions on the same day (not cancelled)
     const missions = await query(
       `SELECT m.id, m.reference, m.date_planifiee, m.heure_debut, m.heure_fin, m.statut,
-        json_build_object('id', l.id, 'designation', l.designation) as lot
+        json_build_object('id', l.id, 'designation', l.designation) as lot,
+        (SELECT concat_ws(', ', ab.rue, ab.code_postal || ' ' || ab.ville)
+         FROM adresse_batiment ab
+         WHERE ab.batiment_id = l.batiment_id AND ab.type = 'principale'
+         LIMIT 1) as adresse
        FROM mission m
        JOIN mission_technicien mt ON mt.mission_id = m.id
        JOIN lot l ON l.id = m.lot_id

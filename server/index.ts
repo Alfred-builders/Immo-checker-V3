@@ -122,8 +122,10 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   res.status(500).json({ error: 'Erreur interne', code: 'INTERNAL_ERROR' })
 })
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[server] ImmoChecker running on port ${PORT} (${process.env.NODE_ENV || 'production'})`)
-})
+if (!process.env.VITEST) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[server] ImmoChecker running on port ${PORT} (${process.env.NODE_ENV || 'production'})`)
+  })
+}
 
 export default app

@@ -12,19 +12,39 @@ info:
     Authorization: Bearer imk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ```
 
+    ## Permissions (scopes)
+    Chaque clé API a un scope :
+    - **`read`** — lecture seule (tous les `GET`)
+    - **`read_write`** — lecture + écriture (`POST`, `PATCH`, `DELETE`)
+
+    Une écriture avec une clé `read` renvoie un `403 FORBIDDEN_SCOPE`.
+
     ## Rate Limiting
-    100 requêtes par minute par clé API. Les headers de réponse indiquent les limites restantes.
+    100 requêtes par minute par clé API. Les headers `RateLimit-*` indiquent les limites restantes.
+    Dépassement → `429 RATE_LIMIT`.
 
     ## Pagination
     Toutes les listes sont paginées avec un curseur :
     ```
     GET /missions?limit=25&cursor=<id>
     ```
-    La réponse contient `meta.cursor` (prochain curseur) et `meta.has_more`.
+    La réponse contient `meta.cursor` (prochain curseur, `null` si fin de liste) et `meta.has_more`.
+    `limit` par défaut = 25, max = 100.
+
+    ## Webhooks
+    Les webhooks (`mission.creee`, `mission.annulee`, `edl.signe`, …) ne se configurent pas via cette
+    API publique mais depuis **Paramètres → API & Intégrations** (session admin). Pour la documentation
+    du payload et de la signature HMAC, consulter le panneau Webhooks dans le back-office.
+
+    ## ⚠️ Try it out
+    Le bouton « Try it out » envoie les requêtes **depuis votre navigateur**. N'utilisez jamais une
+    clé de production ici : privilégiez une clé de test ou `curl`/Postman depuis votre serveur.
 
 servers:
-  - url: /api/v1
-    description: ImmoChecker API v1
+  - url: https://immo-check-production.up.railway.app/api/v1
+    description: Production
+  - url: http://localhost:3001/api/v1
+    description: Local (dev)
 
 security:
   - BearerAuth: []
@@ -44,7 +64,7 @@ components:
         cursor:
           type: string
           nullable: true
-          description: Curseur pour la page suivante
+          description: Curseur pour la page suivante (`null` si fin de liste)
           example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         has_more:
           type: boolean
@@ -52,13 +72,19 @@ components:
 
     Error:
       type: object
+      required: [error, code]
       properties:
         error:
           type: string
+          description: Message humain en français
           example: "Ressource introuvable"
         code:
           type: string
+          description: Code machine stable (à utiliser en logique de branchement)
           example: "NOT_FOUND"
+        details:
+          description: Détails additionnels (ex. erreurs de validation)
+          nullable: true
 
     Lot:
       type: object
@@ -166,7 +192,7 @@ components:
           example: "11:30"
         statut:
           type: string
-          enum: [planifiee, assignee, terminee, annulee]
+          enum: [planifiee, terminee, annulee]
           example: "planifiee"
         statut_rdv:
           type: string
@@ -185,6 +211,98 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EDL'
+
+    CreateMissionInput:
+      type: object
+      required: [lot_id, sens, date_planifiee]
+      properties:
+        lot_id:
+          type: string
+          format: uuid
+          description: UUID du lot sur lequel planifier la mission
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        sens:
+          type: string
+          enum: [entree, sortie, entree_sortie]
+          description: "`entree_sortie` crée 2 EDL (un de chaque sens)"
+          example: "entree"
+        avec_inventaire:
+          type: boolean
+          default: false
+          description: Ajouter un EDL d'inventaire en plus des EDL classiques
+          example: false
+        date_planifiee:
+          type: string
+          format: date
+          example: "2026-04-18"
+        heure_debut:
+          type: string
+          nullable: true
+          example: "09:00"
+        heure_fin:
+          type: string
+          nullable: true
+          example: "11:00"
+        commentaire:
+          type: string
+          nullable: true
+          example: "Locataire prévenu, code interphone #1234B"
+        technicien_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Assigner un technicien immédiatement (optionnel). Le statut reste `planifiee` — l'acceptation du technicien est tracée dans `mission_technicien.statut_invitation`.
+          example: "5e8f9d3a-7b6c-4a1e-9f2d-3c4b5a6e7f8d"
+        locataires:
+          type: array
+          description: Liste de `tiers_id` locataires (colocation ou bail simple)
+          items:
+            type: string
+            format: uuid
+          example: ["e5f6a7b8-c1d2-4e5f-0a1b-2c3d4e5f6a7b"]
+        type_bail:
+          type: string
+          enum: [individuel, collectif]
+          default: individuel
+          description: "`individuel` = 1 EDL par locataire ; `collectif` = 1 EDL partagé par tous"
+          example: "individuel"
+
+    UpdateMissionInput:
+      type: object
+      description: |
+        Tous les champs sont optionnels. Si la mission est `terminee`, seul `commentaire` est
+        modifiable (les autres champs renvoient `403 MISSION_LOCKED`). Une mission `annulee`
+        n'est plus modifiable du tout.
+      properties:
+        date_planifiee:
+          type: string
+          format: date
+          example: "2026-04-19"
+        heure_debut:
+          type: string
+          nullable: true
+          example: "10:00"
+        heure_fin:
+          type: string
+          nullable: true
+          example: "12:00"
+        commentaire:
+          type: string
+          nullable: true
+          example: "Reporté à la demande du locataire"
+        statut_rdv:
+          type: string
+          enum: [a_confirmer, confirme, reporte]
+          example: "confirme"
+
+    CancelMissionInput:
+      type: object
+      required: [motif]
+      properties:
+        motif:
+          type: string
+          description: Motif d'annulation obligatoire (audit). Impossible si un EDL est signé.
+          example: "Demande du propriétaire"
 
     EDL:
       type: object
@@ -295,25 +413,79 @@ components:
                 nullable: true
                 example: "Agence principale"
 
+    PaginatedMissions:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Mission' }
+        meta: { $ref: '#/components/schemas/Meta' }
+
+    PaginatedEDL:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/EDL' }
+        meta: { $ref: '#/components/schemas/Meta' }
+
+    PaginatedLots:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Lot' }
+        meta: { $ref: '#/components/schemas/Meta' }
+
+    PaginatedBatiments:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Batiment' }
+        meta: { $ref: '#/components/schemas/Meta' }
+
   responses:
     Unauthorized:
       description: Clé API manquante ou invalide
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            missing:
+              summary: En-tête Authorization absent
+              value: { error: "Clé API requise", code: "UNAUTHORIZED" }
+            invalid:
+              summary: Clé inconnue ou révoquée
+              value: { error: "Clé API invalide", code: "INVALID_API_KEY" }
+
+    Forbidden:
+      description: Clé valide mais scope insuffisant (ex. `read` tentant un POST)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            readOnly:
+              value: { error: "Clé API en lecture seule", code: "FORBIDDEN_SCOPE" }
+
     NotFound:
       description: Ressource introuvable
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            default:
+              value: { error: "Mission introuvable", code: "NOT_FOUND" }
+
     RateLimit:
-      description: Trop de requêtes
+      description: Trop de requêtes (100/min par clé)
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            default:
+              value: { error: "Trop de requêtes", code: "RATE_LIMIT" }
+
     Validation422:
       description: Données invalides (champ manquant, format incorrect, valeur enum inconnue)
       content:
@@ -333,6 +505,14 @@ components:
                           items: { type: string }
                         message:
                           type: string
+          examples:
+            default:
+              value:
+                error: "Validation échouée"
+                code: "VALIDATION_ERROR"
+                details:
+                  - path: ["date_planifiee"]
+                    message: "Invalid date"
 
 paths:
   /missions:
@@ -345,106 +525,58 @@ paths:
           name: statut
           schema:
             type: string
-            enum: [planifiee, assignee, terminee, annulee]
+            enum: [planifiee, terminee, annulee]
         - in: query
           name: date_from
-          schema:
-            type: string
-            format: date
+          schema: { type: string, format: date }
         - in: query
           name: date_to
-          schema:
-            type: string
-            format: date
+          schema: { type: string, format: date }
         - in: query
           name: cursor
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: limit
-          schema:
-            type: integer
-            default: 25
-            maximum: 100
+          schema: { type: integer, default: 25, maximum: 100 }
       responses:
         '200':
           description: Liste paginée de missions
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Mission'
-                  meta:
-                    $ref: '#/components/schemas/Meta'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
-          $ref: '#/components/responses/RateLimit'
+              schema: { $ref: '#/components/schemas/PaginatedMissions' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimit' }
 
     post:
       summary: Créer une mission
       operationId: createMission
       tags: [Missions]
+      description: |
+        Crée une mission et ses EDL associés (1 par sens pour un bail simple, 1 par locataire
+        pour un bail `individuel`, 1 partagé pour un bail `collectif`).
+
+        **Exemple curl :**
+        ```bash
+        curl -X POST https://immo-check-production.up.railway.app/api/v1/missions \
+          -H "Authorization: Bearer imk_live_..." \
+          -H "Content-Type: application/json" \
+          -d '{"lot_id":"...","sens":"entree","date_planifiee":"2026-04-18"}'
+        ```
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [lot_id, sens, date_planifiee]
-              properties:
-                lot_id:
-                  type: string
-                  format: uuid
-                sens:
-                  type: string
-                  enum: [entree, sortie, entree_sortie]
-                avec_inventaire:
-                  type: boolean
-                  default: false
-                date_planifiee:
-                  type: string
-                  format: date
-                heure_debut:
-                  type: string
-                  example: "09:00"
-                heure_fin:
-                  type: string
-                  example: "11:00"
-                commentaire:
-                  type: string
-                technicien_id:
-                  type: string
-                  format: uuid
-                  description: Assigner un technicien immédiatement (optionnel)
-                locataires:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-                  description: Liste de tiers_id locataires (colocation)
-                type_bail:
-                  type: string
-                  enum: [individuel, collectif]
-                  default: individuel
-                  description: individuel = N EDL, collectif = 1 EDL partagé
+            schema: { $ref: '#/components/schemas/CreateMissionInput' }
       responses:
         '201':
           description: Mission créée
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Mission'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          description: Clé API en lecture seule
-        '422':
-          $ref: '#/components/responses/Validation422'
+              schema: { $ref: '#/components/schemas/Mission' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Validation422' }
+        '429': { $ref: '#/components/responses/RateLimit' }
 
   /missions/{id}:
     get:
@@ -455,20 +587,15 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Détail mission avec EDLs
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Mission'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/Mission' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
     patch:
       summary: Modifier une mission
@@ -478,46 +605,29 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                date_planifiee:
-                  type: string
-                  format: date
-                heure_debut:
-                  type: string
-                  nullable: true
-                heure_fin:
-                  type: string
-                  nullable: true
-                commentaire:
-                  type: string
-                  nullable: true
-                statut_rdv:
-                  type: string
-                  enum: [a_confirmer, confirme, reporte]
+            schema: { $ref: '#/components/schemas/UpdateMissionInput' }
       responses:
         '200':
           description: Mission mise à jour
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Mission'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { $ref: '#/components/schemas/Mission' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: Mission verrouillée (terminée ou annulée)
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/Validation422'
+          description: "Mission verrouillée (`terminee` → seul `commentaire` modifiable ; `annulee` → interdit)"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                locked:
+                  value: { error: "Mission terminée : seul le commentaire est modifiable", code: "MISSION_LOCKED" }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Validation422' }
 
     delete:
       summary: Annuler une mission
@@ -527,20 +637,12 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [motif]
-              properties:
-                motif:
-                  type: string
-                  description: Motif d'annulation obligatoire
+            schema: { $ref: '#/components/schemas/CancelMissionInput' }
       responses:
         '200':
           description: Mission annulée
@@ -549,14 +651,17 @@ paths:
               schema:
                 type: object
                 properties:
-                  cancelled:
-                    type: boolean
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                  cancelled: { type: boolean, example: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Impossible d'annuler une mission avec des EDL signés
-        '422':
-          $ref: '#/components/responses/Validation422'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                signedEdl:
+                  value: { error: "Impossible d'annuler : au moins un EDL est signé", code: "MISSION_LOCKED" }
+        '422': { $ref: '#/components/responses/Validation422' }
 
   /missions/{id}/edl-inventaires:
     get:
@@ -567,9 +672,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Liste des EDL de la mission
@@ -577,12 +680,9 @@ paths:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/EDL'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                items: { $ref: '#/components/schemas/EDL' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /edl-inventaires:
     get:
@@ -592,9 +692,7 @@ paths:
       parameters:
         - in: query
           name: mission_id
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
         - in: query
           name: statut
           schema:
@@ -602,30 +700,17 @@ paths:
             enum: [brouillon, signe, infructueux]
         - in: query
           name: cursor
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: limit
-          schema:
-            type: integer
-            default: 25
-            maximum: 100
+          schema: { type: integer, default: 25, maximum: 100 }
       responses:
         '200':
           description: Liste paginée d'EDL
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EDL'
-                  meta:
-                    $ref: '#/components/schemas/Meta'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { $ref: '#/components/schemas/PaginatedEDL' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /edl-inventaires/{id}:
     get:
@@ -636,20 +721,15 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: EDL avec locataires, clés et URLs PDF/web
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/EDL'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/EDL' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /edl-inventaires/{id}/pdf:
     get:
@@ -660,9 +740,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '302':
           description: |
@@ -670,13 +748,16 @@ paths:
             Suivre la redirection renvoie un `Content-Type: application/pdf`.
           headers:
             Location:
-              schema:
-                type: string
-                format: uri
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { type: string, format: uri }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '404':
-          description: EDL introuvable ou non signé (code `EDL_NOT_SIGNED`)
+          description: "EDL introuvable ou non signé (code `EDL_NOT_SIGNED`)"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                notSigned:
+                  value: { error: "EDL non signé", code: "EDL_NOT_SIGNED" }
 
   /lots:
     get:
@@ -686,37 +767,23 @@ paths:
       parameters:
         - in: query
           name: search
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: batiment_id
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
         - in: query
           name: cursor
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: limit
-          schema:
-            type: integer
-            default: 25
-            maximum: 100
+          schema: { type: integer, default: 25, maximum: 100 }
       responses:
         '200':
           description: Liste paginée de lots
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Lot'
-                  meta:
-                    $ref: '#/components/schemas/Meta'
+              schema: { $ref: '#/components/schemas/PaginatedLots' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /lots/{id}:
     get:
@@ -727,18 +794,15 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Lot
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Lot'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/Lot' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /lots/{id}/edl-inventaires:
     get:
@@ -749,9 +813,7 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
         - in: query
           name: statut
           schema:
@@ -759,32 +821,18 @@ paths:
             enum: [brouillon, signe, infructueux]
         - in: query
           name: cursor
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: limit
-          schema:
-            type: integer
-            default: 25
-            maximum: 100
+          schema: { type: integer, default: 25, maximum: 100 }
       responses:
         '200':
           description: Liste paginée des EDL du lot
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/EDL'
-                  meta:
-                    $ref: '#/components/schemas/Meta'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/PaginatedEDL' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /batiments:
     get:
@@ -794,32 +842,20 @@ paths:
       parameters:
         - in: query
           name: search
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: cursor
-          schema:
-            type: string
+          schema: { type: string }
         - in: query
           name: limit
-          schema:
-            type: integer
-            default: 25
-            maximum: 100
+          schema: { type: integer, default: 25, maximum: 100 }
       responses:
         '200':
           description: Liste paginée de bâtiments
           content:
             application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Batiment'
-                  meta:
-                    $ref: '#/components/schemas/Meta'
+              schema: { $ref: '#/components/schemas/PaginatedBatiments' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /batiments/{id}:
     get:
@@ -830,18 +866,15 @@ paths:
         - in: path
           name: id
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
       responses:
         '200':
           description: Bâtiment
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Batiment'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/Batiment' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 tags:
   - name: Missions
@@ -850,9 +883,3 @@ tags:
     description: Consulter les états des lieux et leurs documents
   - name: Référentiel
     description: Lots et bâtiments (lookup pour créer des missions)
-  - name: Webhooks
-    description: |
-      Configurer des webhooks pour recevoir les événements (`mission.creee`,
-      `mission.annulee`, `edl.signe`, …). La gestion se fait depuis
-      **Paramètres → API & Intégrations** (authentification session, pas clé API).
-      Voir `POST /api/webhooks` pour le schéma de payload.

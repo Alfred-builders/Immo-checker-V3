@@ -452,13 +452,13 @@ async function seed() {
     const todayStr = dateOffset(0)
 
     // ── Missions: Today ──
-    await createMission({ lotIdx: 0, date: todayStr, heure_debut: '09:00', heure_fin: '12:00', statut: 'assignee', statut_rdv: 'confirme', avec_inventaire: true, techUserId: techId, edlSens: 'sortie', commentaire: 'Changement de locataire - entrée + sortie', locataireIdx: 3, locataireRole: 'sortant' })
+    await createMission({ lotIdx: 0, date: todayStr, heure_debut: '09:00', heure_fin: '12:00', statut: 'planifiee', statut_rdv: 'confirme', avec_inventaire: true, techUserId: techId, edlSens: 'sortie', commentaire: 'Changement de locataire - entrée + sortie', locataireIdx: 3, locataireRole: 'sortant' })
     const todayMissions = [
-      { lotIdx: 5, h1: '08:30', h2: '10:00', statut: 'assignee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 4 },
-      { lotIdx: 9, h1: '10:30', h2: '12:00', statut: 'assignee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'entree', loc: 7 },
+      { lotIdx: 5, h1: '08:30', h2: '10:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 4 },
+      { lotIdx: 9, h1: '10:30', h2: '12:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'entree', loc: 7 },
       { lotIdx: 3, h1: '14:00', h2: '15:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
-      { lotIdx: 11, h1: '14:00', h2: '16:00', statut: 'assignee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 8 },
-      { lotIdx: 17, h1: '16:00', h2: '17:30', statut: 'assignee', rdv: 'confirme', inv: false, tech: techId, sens: 'sortie', loc: 5 },
+      { lotIdx: 11, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 8 },
+      { lotIdx: 17, h1: '16:00', h2: '17:30', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'sortie', loc: 5 },
     ]
     for (const tm of todayMissions) {
       const mRes = await client.query(
@@ -483,14 +483,14 @@ async function seed() {
 
     // ── Missions: This week (upcoming) ──
     const weekMissions = [
-      { lotIdx: 1, days: 1, h1: '09:00', h2: '11:00', statut: 'assignee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'sortie', loc: 3 },
-      { lotIdx: 6, days: 1, h1: '14:00', h2: '16:00', statut: 'assignee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 8 },
+      { lotIdx: 1, days: 1, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'sortie', loc: 3 },
+      { lotIdx: 6, days: 1, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 8 },
       { lotIdx: 2, days: 2, h1: '08:00', h2: '10:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'entree' },
-      { lotIdx: 12, days: 2, h1: '10:30', h2: '12:00', statut: 'assignee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'sortie', loc: 9 },
-      { lotIdx: 7, days: 3, h1: '09:00', h2: '11:00', statut: 'assignee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree', loc: 4 },
+      { lotIdx: 12, days: 2, h1: '10:30', h2: '12:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'sortie', loc: 9 },
+      { lotIdx: 7, days: 3, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree', loc: 4 },
       { lotIdx: 15, days: 3, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
       { lotIdx: 4, days: 4, h1: '08:30', h2: '10:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'sortie' },
-      { lotIdx: 13, days: 4, h1: '14:00', h2: '16:00', statut: 'assignee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 0 },
+      { lotIdx: 13, days: 4, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 0 },
     ]
     for (const wm of weekMissions) {
       const mRes = await client.query(
@@ -515,9 +515,9 @@ async function seed() {
 
     // ── Missions: Next 2 weeks ──
     const futureMissions = [
-      { lotIdx: 8, days: 5, h1: '09:30', h2: '11:30', statut: 'assignee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree' },
+      { lotIdx: 8, days: 5, h1: '09:30', h2: '11:30', statut: 'planifiee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree' },
       { lotIdx: 10, days: 5, h1: '14:00', h2: '15:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'entree' },
-      { lotIdx: 0, days: 7, h1: '14:00', h2: '16:00', statut: 'assignee', rdv: 'reporte', inv: false, tech: techId, sens: 'sortie', comment: 'Reporté à la demande du propriétaire' },
+      { lotIdx: 0, days: 7, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'reporte', inv: false, tech: techId, sens: 'sortie', comment: 'Reporté à la demande du propriétaire' },
       { lotIdx: 14, days: 7, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'entree' },
       { lotIdx: 16, days: 8, h1: '10:00', h2: '12:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
       { lotIdx: 19, days: 9, h1: '08:00', h2: '10:00', statut: 'planifiee', rdv: 'a_confirmer', inv: true, tech: null, sens: 'entree' },

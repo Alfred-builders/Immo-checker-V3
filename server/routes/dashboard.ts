@@ -20,7 +20,7 @@ router.get('/stats', async (req, res) => {
       `SELECT
         (SELECT count(*) FROM edl_inventaire WHERE workspace_id = $1 AND created_at >= $2)::int as edl_month,
         (SELECT count(*) FROM mission m
-         WHERE m.workspace_id = $1 AND m.statut IN ('planifiee', 'assignee')
+         WHERE m.workspace_id = $1 AND m.statut = 'planifiee'
            AND (
              NOT EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id)
              OR EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id AND mt.statut_invitation != 'accepte')
@@ -28,7 +28,7 @@ router.get('/stats', async (req, res) => {
            )
         )::int as pending_actions,
         (SELECT count(*) FROM mission
-         WHERE workspace_id = $1 AND statut IN ('planifiee', 'assignee')
+         WHERE workspace_id = $1 AND statut = 'planifiee'
            AND date_planifiee BETWEEN $3 AND $4
         )::int as upcoming_7d,
         (SELECT count(*) FROM mission
