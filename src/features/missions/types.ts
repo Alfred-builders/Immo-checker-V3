@@ -242,9 +242,9 @@ export function getStatutDerive(mission: Pick<Mission, 'statut' | 'statut_rdv' |
 export function getPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): string[] {
   if (mission.statut === 'terminee' || mission.statut === 'annulee') return []
   const actions: string[] = []
-  if (!mission.technicien) actions.push('A assigner')
+  if (!mission.technicien) actions.push('À assigner')
   else if (mission.technicien.statut_invitation === 'en_attente') actions.push('Invitation en attente')
-  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Invitation refusee')
-  if (mission.statut_rdv === 'a_confirmer') actions.push('RDV a confirmer')
+  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Invitation refusée')
+  if (mission.statut_rdv === 'a_confirmer') actions.push('RDV à confirmer')
   return actions
 }
