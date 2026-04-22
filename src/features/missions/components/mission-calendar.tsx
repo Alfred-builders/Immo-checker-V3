@@ -11,10 +11,10 @@ import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
-import type { Mission, IndisponibiliteTechnicien, StatutDerive } from '../types'
+import type { Mission, IndisponibiliteTechnicien, StatutAffichage } from '../types'
 import {
   sensLabels, sensColors,
-  getStatutDerive, getPendingActions,
+  getStatutAffichage, getPendingActions,
 } from '../types'
 
 /* ── Constants ── */
@@ -24,26 +24,33 @@ const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Jui
 
 type CalendarMode = 'week' | 'month'
 
-const statutCardColors: Record<string, string> = {
-  planifiee: 'bg-sky-50 border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800',
-  actions_en_attente: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  confirmee: 'bg-green-50 border-green-200/60 dark:bg-green-950/30 dark:border-green-800',
+// Couleurs de fond pastel par statut d'affichage (8 valeurs, cf types.ts).
+// Regroupées visuellement : "à traiter" = amber/orange, "prête" = vert, "terminée" = gris, "annulée" = rouge.
+const statutCardColors: Record<StatutAffichage, string> = {
+  a_assigner: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  invitation_envoyee: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
+  refusee: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  rdv_a_confirmer: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
+  reportee: 'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
+  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
   terminee: 'bg-muted/30 border-border/30',
   annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
-const statutDotColors: Record<string, string> = {
-  planifiee: 'bg-sky-500',
-  actions_en_attente: 'bg-orange-500',
-  confirmee: 'bg-green-500',
+const statutDotColors: Record<StatutAffichage, string> = {
+  a_assigner: 'bg-orange-500',
+  invitation_envoyee: 'bg-amber-500',
+  refusee: 'bg-orange-500',
+  rdv_a_confirmer: 'bg-amber-500',
+  reportee: 'bg-amber-500',
+  prete: 'bg-emerald-500',
   terminee: 'bg-muted-foreground/30',
   annulee: 'bg-red-400',
 }
 
 const legendItems = [
-  { label: 'Planifiée', color: 'bg-sky-500' },
-  { label: 'En attente', color: 'bg-orange-500' },
-  { label: 'Confirmée', color: 'bg-green-500' },
+  { label: 'À traiter', color: 'bg-orange-500' },
+  { label: 'Prête', color: 'bg-emerald-500' },
   { label: 'Terminée', color: 'bg-muted-foreground/30' },
   { label: 'Annulée', color: 'bg-red-400' },
 ]
@@ -112,7 +119,7 @@ export function MissionCalendar(props: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutFilter, setStatutFilter] = useState<StatutDerive | 'all'>('all')
+  const [statutFilter, setStatutFilter] = useState<'all' | 'a_traiter' | 'prete' | 'terminee' | 'annulee'>('all')
   const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
   const today = new Date()
 
@@ -157,7 +164,12 @@ export function MissionCalendar(props: Props) {
 
   const visibleMissions = useMemo(() => {
     if (statutFilter === 'all') return allMissions
-    return allMissions.filter(m => getStatutDerive(m) === statutFilter)
+    const aTraiterGroup: StatutAffichage[] = ['a_assigner', 'invitation_envoyee', 'refusee', 'rdv_a_confirmer', 'reportee']
+    return allMissions.filter(m => {
+      const s = getStatutAffichage(m)
+      if (statutFilter === 'a_traiter') return aTraiterGroup.includes(s)
+      return s === statutFilter
+    })
   }, [allMissions, statutFilter])
 
   // Group missions by day
@@ -247,13 +259,12 @@ export function MissionCalendar(props: Props) {
           className="w-[170px]"
         />
 
-        <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as StatutDerive | 'all')}>
-          <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+        <Select value={statutFilter} onValueChange={(v) => setStatutFilter(v as typeof statutFilter)}>
+          <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="planifiee">Planifiée</SelectItem>
-            <SelectItem value="actions_en_attente">Actions en attente</SelectItem>
-            <SelectItem value="confirmee">Confirmée</SelectItem>
+            <SelectItem value="a_traiter">À traiter</SelectItem>
+            <SelectItem value="prete">Prête</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
@@ -422,9 +433,9 @@ export function MissionCalendar(props: Props) {
 /* ── Week Card (detailed) ── */
 function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
   const compact = false
-  const statutDerive = getStatutDerive(mission)
-  const cardColor = statutCardColors[statutDerive] || statutCardColors.planifiee
-  const dotColor = statutDotColors[statutDerive] || statutDotColors.planifiee
+  const affichage = getStatutAffichage(mission)
+  const cardColor = statutCardColors[affichage]
+  const dotColor = statutDotColors[affichage]
   const pendingActions = getPendingActions(mission)
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
@@ -484,8 +495,8 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
 
 /* ── Month Card (compact) ── */
 function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
-  const statutDerive = getStatutDerive(mission)
-  const dotColor = statutDotColors[statutDerive] || statutDotColors.planifiee
+  const affichage = getStatutAffichage(mission)
+  const dotColor = statutDotColors[affichage]
 
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
