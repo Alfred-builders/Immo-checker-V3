@@ -60,8 +60,13 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const actionsRef = useRef<HTMLDivElement>(null)
   const { data: stats } = useDashboardStats()
-  const { data: missionsData } = useMissions({ limit: 50 })
+  const { data: missionsData } = useMissions({ limit: 100 })
   const missions = missionsData?.data ?? []
+
+  // Date windows — match exactly the SQL in GET /api/dashboard/stats
+  const today = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const firstOfMonth = useMemo(() => `${today.slice(0, 7)}-01`, [today])
+  const in7days = useMemo(() => new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0], [])
 
   // Tab
   const [tab, setTab] = useState<DashTab>('overview')
@@ -138,10 +143,22 @@ export function DashboardPage() {
   const metricMissionsRaw = (() => {
     if (!metricSheet) return []
     switch (metricSheet) {
-      case 'edl': return missions
-      case 'pending': return pendingMissions
-      case 'upcoming': return missions.filter(m => m.statut === 'planifiee' || m.statut === 'assignee')
-      case 'completed': return missions.filter(m => m.statut === 'terminee')
+      // EDL du mois — missions planifiées ce mois (proxy pour edl_inventaire.created_at >= firstOfMonth)
+      case 'edl':
+        return missions.filter(m => m.date_planifiee >= firstOfMonth)
+      // Actions en attente — same logic as pending_actions SQL (statut actif + action requise)
+      case 'pending':
+        return pendingMissions
+      // À venir 7 jours — statut IN ('planifiee','assignee') AND date_planifiee BETWEEN today AND today+7
+      case 'upcoming':
+        return missions.filter(m =>
+          (m.statut === 'planifiee' || m.statut === 'assignee') &&
+          m.date_planifiee >= today &&
+          m.date_planifiee <= in7days
+        )
+      // Taux de complétion — statut = 'terminee' AND date_planifiee >= firstOfMonth
+      case 'completed':
+        return missions.filter(m => m.statut === 'terminee' && m.date_planifiee >= firstOfMonth)
       default: return []
     }
   })()
@@ -211,15 +228,33 @@ export function DashboardPage() {
           <MissionDrawer missionId={drawerMissionId} open={!!drawerMissionId} onClose={() => setDrawerMissionId(null)} />
 
           <Dialog open={showCreateChoice} onOpenChange={setShowCreateChoice}>
-            <DialogContent className="max-w-xs">
-              <DialogHeader><DialogTitle>Nouvelle entrée</DialogTitle></DialogHeader>
-              <div className="flex flex-col gap-2">
-                <Button onClick={() => handleCreateChoice('mission')} className="justify-start">
-                  <CalendarBlank className="h-4 w-4" /> Nouvelle mission
-                </Button>
-                <Button variant="outline" onClick={() => handleCreateChoice('indispo')} className="justify-start">
-                  <Clock className="h-4 w-4" /> Indisponibilité technicien
-                </Button>
+            <DialogContent className="max-w-sm p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-4">Créer</p>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={() => handleCreateChoice('mission')}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                    <CalendarBlank className="h-5 w-5 text-primary" weight="duotone" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">Nouvelle mission</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Planifier un EDL sur un lot</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleCreateChoice('indispo')}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-muted transition-colors">
+                    <Clock className="h-5 w-5 text-muted-foreground" weight="duotone" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-foreground">Indisponibilité technicien</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Bloquer un créneau pour un technicien</p>
+                  </div>
+                </button>
               </div>
             </DialogContent>
           </Dialog>
@@ -287,7 +322,7 @@ export function DashboardPage() {
                                 onClick={() => { setMetricSheet(null); handleMissionClick(m.id) }}
                               >
                                 <td className="px-4 py-3">
-                                  <span className="font-mono text-[12px] font-bold text-foreground hover:text-primary transition-colors">{m.reference}</span>
+                                  <span className="font-mono text-[12px] font-medium text-muted-foreground">{m.reference}</span>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-medium text-foreground truncate max-w-[200px]">{m.lot_designation}</div>
