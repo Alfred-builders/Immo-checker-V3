@@ -1,4 +1,4 @@
-import { Bell, BellRinging, SealCheck, FileX, CalendarPlus, CalendarX, ThumbsUp, ThumbsDown, EnvelopeOpen, ClockCountdown, LockKey, UserCircleMinus, Trophy } from '@phosphor-icons/react'
+import { Bell, BellRinging, SealCheck, FileX, CalendarDots, CalendarX, UserCheck, UserMinus, EnvelopeSimple, Hourglass, ShieldCheck, UserCircleMinus, CheckCircle } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { Popover, PopoverTrigger, PopoverContent } from 'src/components/ui/popover'
 import { Button } from 'src/components/ui/button'
@@ -10,14 +10,14 @@ import { useRecentNotifications, useUnreadCount, useMarkAsRead, useMarkAllAsRead
 const ICON_MAP: Record<string, typeof Bell> = {
   edl_signed: SealCheck,
   edl_infructueux: FileX,
-  mission_created: CalendarPlus,
+  mission_created: CalendarDots,
   mission_cancelled: CalendarX,
-  mission_completed: Trophy,
-  technicien_accepted: ThumbsUp,
-  technicien_refused: ThumbsDown,
-  invitation_accepted: EnvelopeOpen,
-  invitation_expired: ClockCountdown,
-  password_changed: LockKey,
+  mission_completed: CheckCircle,
+  technicien_accepted: UserCheck,
+  technicien_refused: UserMinus,
+  invitation_accepted: EnvelopeSimple,
+  invitation_expired: Hourglass,
+  password_changed: ShieldCheck,
   user_deactivated: UserCircleMinus,
 }
 

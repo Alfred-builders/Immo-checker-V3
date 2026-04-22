@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, SealCheck, FileX, CalendarPlus, CalendarX, ThumbsUp, ThumbsDown, EnvelopeOpen, ClockCountdown, LockKey, UserCircleMinus, Trophy, Trash, CheckCircle as CheckAll } from '@phosphor-icons/react'
+import { Bell, SealCheck, FileX, CalendarDots, CalendarX, UserCheck, UserMinus, EnvelopeSimple, Hourglass, ShieldCheck, UserCircleMinus, CheckCircle, Trash, CheckCircle as CheckAll } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { formatRelative } from 'src/lib/formatters'
@@ -10,14 +10,14 @@ import { useNotificationsList, useMarkAllAsRead, useMarkAsRead, useDismissNotifi
 const ICON_MAP: Record<string, typeof Bell> = {
   edl_signed: SealCheck,
   edl_infructueux: FileX,
-  mission_created: CalendarPlus,
+  mission_created: CalendarDots,
   mission_cancelled: CalendarX,
-  mission_completed: Trophy,
-  technicien_accepted: ThumbsUp,
-  technicien_refused: ThumbsDown,
-  invitation_accepted: EnvelopeOpen,
-  invitation_expired: ClockCountdown,
-  password_changed: LockKey,
+  mission_completed: CheckCircle,
+  technicien_accepted: UserCheck,
+  technicien_refused: UserMinus,
+  invitation_accepted: EnvelopeSimple,
+  invitation_expired: Hourglass,
+  password_changed: ShieldCheck,
   user_deactivated: UserCircleMinus,
 }
 const COLOR_MAP: Record<string, string> = {
