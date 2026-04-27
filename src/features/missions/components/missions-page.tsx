@@ -22,13 +22,13 @@ import { CreateMissionModal } from './create-mission-modal'
 import { MissionKanban } from './mission-kanban'
 import { MissionMap } from './mission-map'
 import { MissionCalendar } from './mission-calendar'
-import type { Mission, MissionStatut } from '../types'
+import type { Mission, StatutMission } from '../types'
 import {
-  statutAffichageLabels, statutAffichageColors,
   statutRdvLabels, statutInvitationLabels,
   sensLabels, sensColors,
-  getStatutAffichage, getPendingActions,
+  getPendingActions,
 } from '../types'
+import { MissionStatusBadge } from './mission-status-badge'
 
 const BATCH_SIZE = 30
 
@@ -52,7 +52,8 @@ const MISSION_FILTER_FIELDS: FilterField[] = [
   { id: 'lot_designation', label: 'Lot', type: 'text' },
   { id: 'technicien_nom', label: 'Technicien', type: 'text' },
   { id: 'statut', label: 'Statut', type: 'select', options: [
-    { value: 'planifiee', label: 'Planifiée' },
+    { value: 'a_traiter', label: 'À traiter' },
+    { value: 'prete', label: 'Prête' },
     { value: 'terminee', label: 'Terminée' },
     { value: 'annulee', label: 'Annulée' },
   ]},
@@ -128,7 +129,7 @@ export function MissionsPage() {
 
   const { data: missionsData, isLoading } = useMissions({
     search: search || undefined,
-    statut: statutFilter !== 'all' ? (statutFilter as MissionStatut) : undefined,
+    statut_affichage: statutFilter !== 'all' ? (statutFilter as StatutMission) : undefined,
     statut_rdv: rdvFilter !== 'all' ? (rdvFilter as any) : undefined,
     technicien_id: techFilter !== 'all' ? techFilter : undefined,
     pending_actions: pendingFilter || undefined,
@@ -420,7 +421,7 @@ export function MissionsPage() {
                     {isCol('technicien') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate">{techName || <span className="text-muted-foreground/30">—</span>}</td>}
                     {isCol('proprietaire') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.proprietaire_nom || ''}>{mission.proprietaire_nom || <span className="text-muted-foreground/30">—</span>}</td>}
                     {isCol('locataires') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.locataires_noms?.join(', ') || ''}>{mission.locataires_noms && mission.locataires_noms.length > 0 ? mission.locataires_noms.join(', ') : <span className="text-muted-foreground/30">—</span>}</td>}
-                    {isCol('statut') && (() => { const a = getStatutAffichage(mission); return <td className="px-3 py-3"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span></td> })()}
+                    {isCol('statut') && <td className="px-3 py-3"><MissionStatusBadge mission={mission} variant="compact" /></td>}
                     {isCol('statut_rdv') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutRdvLabels[mission.statut_rdv]}</span></td>}
                     {isCol('invitation') && <td className="px-3 py-3">{mission.technicien ? <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
                     {isCol('documents') && <td className="px-3 py-3">{mission.has_signed_document ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" title="Au moins un EDL signé disponible"><FileText className="h-3 w-3" weight="fill" /> Dispo</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}

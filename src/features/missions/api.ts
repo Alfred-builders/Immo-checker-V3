@@ -3,7 +3,7 @@ import { api } from 'src/lib/api-client'
 import type {
   Mission, MissionDetail, MissionStats, EDLInventaire,
   CleMission, IndisponibiliteTechnicien, TechnicianConflicts,
-  MissionStatut, StatutRdv, TypeCle, StatutCle, SensEDL, TypeEDL,
+  MissionStatut, StatutMission, StatutRdv, TypeCle, StatutCle, SensEDL, TypeEDL,
 } from './types'
 
 // ── Missions CRUD ──
@@ -11,6 +11,7 @@ import type {
 interface ListMissionsParams {
   search?: string
   statut?: MissionStatut
+  statut_affichage?: StatutMission
   statut_rdv?: StatutRdv
   technicien_id?: string
   date_from?: string
@@ -33,6 +34,7 @@ export function useMissions(params: ListMissionsParams = {}) {
       const sp = new URLSearchParams()
       if (params.search) sp.set('search', params.search)
       if (params.statut) sp.set('statut', params.statut)
+      if (params.statut_affichage) sp.set('statut_affichage', params.statut_affichage)
       if (params.statut_rdv) sp.set('statut_rdv', params.statut_rdv)
       if (params.technicien_id) sp.set('technicien_id', params.technicien_id)
       if (params.date_from) sp.set('date_from', params.date_from)

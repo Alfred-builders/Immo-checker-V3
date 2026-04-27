@@ -5,13 +5,11 @@ import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { useMissions } from '../../missions/api'
 import {
-  statutAffichageLabels,
-  statutAffichageColors,
   sensLabels,
   sensColors,
   getPendingActions,
-  getStatutAffichage,
 } from '../../missions/types'
+import { MissionStatusBadge } from '../../missions/components/mission-status-badge'
 import { formatDate, formatTime } from 'src/lib/formatters'
 
 interface DayMissionsModalProps {
@@ -135,13 +133,7 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
 
                 {/* Right: status badge + chevron */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {(() => { const a = getStatutAffichage(mission); return (
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}
-                    >
-                      {statutAffichageLabels[a]}
-                    </span>
-                  ) })()}
+                  <MissionStatusBadge mission={mission} variant="compact" />
                   <CaretRight className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </button>

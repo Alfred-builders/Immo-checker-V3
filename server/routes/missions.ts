@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
     const userId = req.user!.userId
     const isTechnicien = req.user!.role === 'technicien'
     const {
-      search, statut, statut_rdv, technicien_id, date_from, date_to,
+      search, statut, statut_affichage, statut_rdv, technicien_id, date_from, date_to,
       pending_actions, lot_id, cursor, limit: rawLimit
     } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
@@ -69,11 +69,32 @@ router.get('/', async (req, res) => {
       paramIndex++
     }
 
-    // Default: exclude annulee unless explicitly filtered
+    // Filtre statut. 3 modes mutuellement exclusifs (priorité descendante) :
+    //   1. statut (3 valeurs brutes : planifiee/terminee/annulee) — usage legacy + intégrations
+    //   2. statut_affichage (4 valeurs UI : a_traiter/prete/terminee/annulee) — filtre tableau missions
+    //   3. par défaut : exclut annulee
     if (statut) {
       where += ` AND m.statut = $${paramIndex}`
       params.push(statut)
       paramIndex++
+    } else if (statut_affichage === 'terminee') {
+      where += ` AND m.statut = 'terminee'`
+    } else if (statut_affichage === 'annulee') {
+      where += ` AND m.statut = 'annulee'`
+    } else if (statut_affichage === 'prete') {
+      // Tout est OK : planifiée, RDV confirmé, technicien assigné qui a accepté.
+      where += ` AND m.statut = 'planifiee'
+        AND m.statut_rdv = 'confirme'
+        AND EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
+        AND NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')`
+    } else if (statut_affichage === 'a_traiter') {
+      // Action requise : pas de tech, OU au moins une invitation non acceptée, OU RDV à confirmer/reporté.
+      where += ` AND m.statut = 'planifiee'
+        AND (
+          NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
+          OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
+          OR m.statut_rdv IN ('a_confirmer', 'reporte')
+        )`
     } else {
       where += ` AND m.statut != 'annulee'`
     }

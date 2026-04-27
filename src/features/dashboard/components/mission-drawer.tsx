@@ -19,12 +19,12 @@ import {
   useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission,
 } from '../../missions/api'
 import {
-  statutAffichageLabels, statutAffichageColors,
   sensLabels, sensColors,
   statutRdvLabels, statutInvitationLabels,
-  getPendingActions, getStatutAffichage,
+  getPendingActions,
 } from '../../missions/types'
 import type { StatutRdv, SensEDL, TypeEDL } from '../../missions/types'
+import { MissionStatusBadge } from '../../missions/components/mission-status-badge'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { cn } from 'src/lib/cn'
 import { toast } from 'sonner'
@@ -37,17 +37,6 @@ const typeCleLabels: Record<string, string> = { cle_principale: 'Clé principale
 const statutCleLabels: Record<string, string> = { remise: 'Remise', a_deposer: 'À déposer', deposee: 'Déposée' }
 
 // ── Status colours ──
-
-const statusDot: Record<string, string> = {
-  a_assigner: 'bg-orange-500',
-  invitation_envoyee: 'bg-amber-500',
-  refusee: 'bg-orange-500',
-  rdv_a_confirmer: 'bg-amber-500',
-  reportee: 'bg-amber-500',
-  prete: 'bg-emerald-500',
-  terminee: 'bg-muted-foreground/60',
-  annulee: 'bg-red-500',
-}
 
 const STATUT_RDV_LABEL = {
   a_confirmer: 'À confirmer',
@@ -379,18 +368,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-1.5">Mission</p>
                     <h2 className="text-[22px] font-bold tracking-tight leading-none">{mission.reference}</h2>
                   </div>
-                  {(() => {
-                    const affichage = getStatutAffichage(mission)
-                    return (
-                      <div className={cn(
-                        'shrink-0 mt-0.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold border',
-                        statutAffichageColors[affichage],
-                      )}>
-                        <span className={cn('h-1.5 w-1.5 rounded-full', statusDot[affichage])} />
-                        {statutAffichageLabels[affichage]}
-                      </div>
-                    )
-                  })()}
+                  <MissionStatusBadge mission={mission} className="shrink-0 mt-0.5" />
                 </div>
 
                 {/* Meta chips */}

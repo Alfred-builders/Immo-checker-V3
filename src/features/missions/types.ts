@@ -12,8 +12,19 @@ export type TypeCle = 'cle_principale' | 'badge' | 'boite_aux_lettres' | 'parkin
 export type StatutCle = 'remise' | 'a_deposer' | 'deposee'
 export type TypeBail = 'individuel' | 'collectif'
 
-// Statut unique d'affichage dérivé des 3 axes (mission.statut + statut_invitation + statut_rdv).
-// Source de vérité pour tous les badges/couleurs dans l'UI.
+// Statut unique d'affichage SIMPLIFIÉ dérivé des 3 axes (4 valeurs).
+// Source de vérité PRIMAIRE pour les badges UI quotidienne (calendrier, drawer,
+// modale du jour, colonne tableau, filtre tableau). Décision Notion :
+// "Incohérence statut mission — Calendrier".
+//
+// Pour la granularité (où ça bloque exactement), voir la fiche détail mission
+// qui affiche les 3 axes bruts séparés, et la sidebar "Actions en attente"
+// qui décompose via getPendingActions().
+export type StatutMission = 'a_traiter' | 'prete' | 'terminee' | 'annulee'
+
+// Statut d'affichage DÉTAILLÉ à 8 valeurs. Conservé pour la sidebar "Actions
+// en attente" et certaines vues secondaires (map, tiers/lot detail). Pour le
+// badge primaire, utiliser StatutMission / getStatutMission / MissionStatusBadge.
 export type StatutAffichage =
   | 'a_assigner'
   | 'invitation_envoyee'
@@ -28,6 +39,13 @@ export type StatutAffichage =
 
 export const missionStatutLabels: Record<MissionStatut, string> = {
   planifiee: 'Planifiée',
+  terminee: 'Terminée',
+  annulee: 'Annulée',
+}
+
+export const statutMissionLabels: Record<StatutMission, string> = {
+  a_traiter: 'À traiter',
+  prete: 'Prête',
   terminee: 'Terminée',
   annulee: 'Annulée',
 }
@@ -84,6 +102,30 @@ export const missionStatutColors: Record<MissionStatut, string> = {
   planifiee: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
   terminee: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
   annulee: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+}
+
+// Badge couleurs (fond + texte) pour le 4-valeurs primaire.
+export const statutMissionColors: Record<StatutMission, string> = {
+  a_traiter: 'bg-orange-50 text-orange-700 border-orange-200/60 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+  prete: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+  terminee: 'bg-muted/50 text-muted-foreground border-border/40',
+  annulee: 'bg-red-50 text-red-700 border-red-200/60 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+}
+
+// Petit dot de couleur (utilisé dans badge + cartes calendrier).
+export const statutMissionDotColors: Record<StatutMission, string> = {
+  a_traiter: 'bg-orange-500',
+  prete: 'bg-emerald-500',
+  terminee: 'bg-muted-foreground/30',
+  annulee: 'bg-red-400',
+}
+
+// Fond pastel des cartes du calendrier (avec bordure).
+export const statutMissionCardColors: Record<StatutMission, string> = {
+  a_traiter: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
+  terminee: 'bg-muted/30 border-border/30',
+  annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
 export const statutAffichageColors: Record<StatutAffichage, string> = {
@@ -275,8 +317,22 @@ export interface TechnicianConflicts {
 
 // ── Helpers ──
 
-// Source de vérité UNIQUE pour l'affichage d'un statut de mission dans l'UI.
-// Combine les 3 axes (mission.statut, statut_invitation, statut_rdv) en un seul badge.
+// Source de vérité PRIMAIRE pour le badge mission dans l'UI quotidienne (4 valeurs).
+// Combine les 3 axes (mission.statut, statut_invitation, statut_rdv) en À traiter / Prête / Terminée / Annulée.
+// Décision Notion "Incohérence statut mission — Calendrier".
+export function getStatutMission(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutMission {
+  if (mission.statut === 'terminee') return 'terminee'
+  if (mission.statut === 'annulee') return 'annulee'
+  const hasPendingAction =
+    !mission.technicien ||
+    mission.technicien.statut_invitation !== 'accepte' ||
+    mission.statut_rdv === 'a_confirmer' ||
+    mission.statut_rdv === 'reporte'
+  return hasPendingAction ? 'a_traiter' : 'prete'
+}
+
+// Statut DÉTAILLÉ à 8 valeurs — granularité pour la sidebar "Actions en attente"
+// et certaines vues secondaires. Pour le badge primaire, préférer getStatutMission.
 export function getStatutAffichage(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutAffichage {
   if (mission.statut === 'annulee') return 'annulee'
   if (mission.statut === 'terminee') return 'terminee'
@@ -301,8 +357,8 @@ export function getPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv'
   if (mission.statut === 'terminee' || mission.statut === 'annulee') return []
   const actions: string[] = []
   if (!mission.technicien) actions.push('À assigner')
-  else if (mission.technicien.statut_invitation === 'en_attente') actions.push('Invitation en attente')
-  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Invitation refusée')
+  else if (mission.technicien.statut_invitation === 'en_attente') actions.push('Invitation technicien en attente')
+  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Invitation technicien refusée')
   if (mission.statut_rdv === 'a_confirmer') actions.push('RDV à confirmer')
   return actions
 }

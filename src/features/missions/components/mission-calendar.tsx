@@ -11,28 +11,14 @@ import { formatTime, formatDate } from 'src/lib/formatters'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
-import type { Mission, IndisponibiliteTechnicien } from '../types'
+import type { Mission, IndisponibiliteTechnicien, StatutMission } from '../types'
 import {
   sensLabels, sensColors,
   getPendingActions,
+  getStatutMission,
+  statutMissionCardColors,
+  statutMissionDotColors,
 } from '../types'
-
-// ── Statut calendrier (4 valeurs dérivées) ──
-// Mappe les 3 axes (statut + statut_rdv + statut_invitation) sur une seule
-// dimension visuelle utilisée par la carte, la légende et le filtre.
-// Aligné avec le Kanban Missions pour un vocabulaire unique dans l'app.
-type StatutCalendrier = 'a_traiter' | 'prete' | 'terminee' | 'annulee'
-
-function getStatutCalendrier(m: Mission): StatutCalendrier {
-  if (m.statut === 'terminee') return 'terminee'
-  if (m.statut === 'annulee') return 'annulee'
-  const hasPendingAction =
-    !m.technicien ||
-    m.technicien.statut_invitation !== 'accepte' ||
-    m.statut_rdv === 'a_confirmer' ||
-    m.statut_rdv === 'reporte'
-  return hasPendingAction ? 'a_traiter' : 'prete'
-}
 
 /* ── Constants ── */
 
@@ -40,21 +26,6 @@ const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 type CalendarMode = 'week' | 'month'
-
-// Couleurs de fond pastel par statut calendrier (4 valeurs, aligné Kanban).
-const statutCardColors: Record<StatutCalendrier, string> = {
-  a_traiter: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
-  terminee: 'bg-muted/30 border-border/30',
-  annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
-}
-
-const statutDotColors: Record<StatutCalendrier, string> = {
-  a_traiter: 'bg-orange-500',
-  prete: 'bg-emerald-500',
-  terminee: 'bg-muted-foreground/30',
-  annulee: 'bg-red-400',
-}
 
 const legendItems = [
   { label: 'À traiter', color: 'bg-orange-500' },
@@ -127,7 +98,7 @@ export function MissionCalendar(props: Props) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
   const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutFilter, setStatutFilter] = useState<'all' | StatutCalendrier>('all')
+  const [statutFilter, setStatutFilter] = useState<'all' | StatutMission>('all')
   const [showMissions, setShowMissions] = useState(true)
   const [showIndispos, setShowIndispos] = useState(true)
   const [editingIndispoId, setEditingIndispoId] = useState<string | null>(null)
@@ -175,7 +146,7 @@ export function MissionCalendar(props: Props) {
   const visibleMissions = useMemo(() => {
     if (!showMissions) return []
     if (statutFilter === 'all') return allMissions
-    return allMissions.filter(m => getStatutCalendrier(m) === statutFilter)
+    return allMissions.filter(m => getStatutMission(m) === statutFilter)
   }, [allMissions, statutFilter, showMissions])
 
   // Group missions by day
@@ -509,9 +480,9 @@ export function MissionCalendar(props: Props) {
 /* ── Week Card (detailed) ── */
 function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
   const compact = false
-  const statut = getStatutCalendrier(mission)
-  const cardColor = statutCardColors[statut]
-  const dotColor = statutDotColors[statut]
+  const statut = getStatutMission(mission)
+  const cardColor = statutMissionCardColors[statut]
+  const dotColor = statutMissionDotColors[statut]
   const pendingActions = getPendingActions(mission)
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
@@ -571,7 +542,7 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
 
 /* ── Month Card (compact) ── */
 function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
-  const dotColor = statutDotColors[getStatutCalendrier(mission)]
+  const dotColor = statutMissionDotColors[getStatutMission(mission)]
 
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
