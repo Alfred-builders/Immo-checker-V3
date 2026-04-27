@@ -1,24 +1,24 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { MagnifyingGlass, MapTrifold, List, BuildingOffice, CaretRight, CaretUp, CaretDown, House, Storefront, Bank, Plus, UploadSimple, SpinnerGap } from '@phosphor-icons/react'
+import { useState, useMemo, useEffect } from 'react'
+import { MagnifyingGlass, MapTrifold, List, BuildingOffice, CaretRight, CaretUp, CaretDown, House, Storefront, Bank, Plus, UploadSimple } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { useQueryClient } from '@tanstack/react-query'
-import { useBatiments, useBatimentLots } from '../api'
+import { useBatimentsInfinite, useBatimentLots } from '../api'
 import { formatDate } from '../../../lib/formatters'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CreateBuildingModal } from './create-building-modal'
 import { CreateLotModal } from './create-lot-modal'
 import { ImportCSVModal } from './import-csv-modal'
 import { PatrimoineMap } from './patrimoine-map'
-import { ColumnConfig, useColumnPreferences, type ColumnDef } from '../../../components/shared/column-config'
+import { ColumnConfig, type ColumnDef } from '../../../components/shared/column-config'
+import { usePagePreference } from '../../../lib/use-page-preference'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
 import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
+import { LoadMoreFooter } from '../../../components/shared/load-more-footer'
 import type { Batiment, Lot } from '../types'
-
-const BATCH_SIZE = 20
 
 const BATIMENT_COLUMNS: ColumnDef[] = [
   { id: 'designation', label: 'Désignation', defaultVisible: true },
@@ -159,6 +159,9 @@ export function PatrimoinePage() {
   const [typeQuickFilter, setTypeQuickFilter] = useState<string>('all')
   const [sortKey, setSortKey] = useState<SortKey | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  // Cycle 3-états : mémorise la dernière col/dir pour reprendre après "no sort".
+  const [lastSortKey, setLastSortKey] = useState<SortKey | null>(null)
+  const [lastSortDir, setLastSortDir] = useState<SortDir>('asc')
   const [view, setViewState] = useState<'table' | 'carte'>(() => {
     const saved = sessionStorage.getItem('patrimoine_view')
     return saved === 'carte' ? 'carte' : 'table'
@@ -183,76 +186,90 @@ export function PatrimoinePage() {
     }
   }, [searchParams, setSearchParams])
   const { colWidths, onResizeStart: handleResizeStart, onResize: handleResize } = useResizableColumns(DEFAULT_COL_WIDTHS)
-  const [displayCount, setDisplayCount] = useState(BATCH_SIZE)
-  const sentinelRef = useRef<HTMLDivElement>(null)
 
   const debouncedSearch = useDebounce(search, 300)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('patrimoine_batiments', BATIMENT_COLUMNS)
+  const colDefaults = useMemo(() => ({
+    visible_columns: BATIMENT_COLUMNS.filter(c => c.defaultVisible).map(c => c.id),
+    column_order: BATIMENT_COLUMNS.map(c => c.id),
+  }), [])
+  const { config: colPrefs, update: updateColPrefs } = usePagePreference<{ visible_columns: string[]; column_order: string[] }>('patrimoine_batiments', colDefaults)
+  const visibleCols = Array.isArray(colPrefs.visible_columns) ? colPrefs.visible_columns : colDefaults.visible_columns
+  const columnOrder = Array.isArray(colPrefs.column_order) ? colPrefs.column_order : colDefaults.column_order
+  function setVisibleCols(next: string[]) { updateColPrefs({ visible_columns: next }) }
+  function setColumnOrder(next: string[]) { updateColPrefs({ column_order: next }) }
 
   // Check if archive filter is active
   const hasArchiveFilter = dynamicFilters.some(f => f.field === 'est_archive')
   const typeFilter = typeQuickFilter !== 'all' ? typeQuickFilter : dynamicFilters.find(f => f.field === 'type' && f.operator === 'equals')?.value
 
-  const { data, isLoading } = useBatiments({
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useBatimentsInfinite({
     search: debouncedSearch || undefined,
     type: typeFilter || undefined,
     archived: hasArchiveFilter || undefined,
   })
 
+  const batimentsRaw = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data])
+
   // Apply client-side filters + sort
   const filteredBatiments = useMemo(() => {
-    const filtered = applyFilters(data?.data ?? [], dynamicFilters.filter(f => !['type', 'est_archive'].includes(f.field)))
+    const filtered = applyFilters(batimentsRaw, dynamicFilters.filter(f => !['type', 'est_archive'].includes(f.field)))
     return applySorting(filtered, sortKey, sortDir)
-  }, [data, dynamicFilters, sortKey, sortDir])
-
-  // Reset display count when filters/search change
-  useEffect(() => {
-    setDisplayCount(BATCH_SIZE)
-  }, [debouncedSearch, dynamicFilters, typeQuickFilter, sortKey, sortDir])
-
-  const displayedBatiments = useMemo(
-    () => filteredBatiments.slice(0, displayCount),
-    [filteredBatiments, displayCount]
-  )
-
-  const hasMore = displayCount < filteredBatiments.length
-
-  // Infinite scroll via IntersectionObserver
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore) {
-          setDisplayCount(prev => Math.min(prev + BATCH_SIZE, filteredBatiments.length))
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [hasMore, filteredBatiments.length])
+  }, [batimentsRaw, dynamicFilters, sortKey, sortDir])
 
   const isCol = (id: string) => visibleCols.includes(id)
 
-  // Toggle sort
+  // Toggle sort — cycle 3-états : asc → none → desc → none → asc...
   function handleSort(col: string) {
     if (!SORTABLE_COLS.has(col)) return
-    if (sortKey === col) {
-      if (sortDir === 'asc') setSortDir('desc')
-      else { setSortKey(null); setSortDir('asc') } // 3rd click = reset
-    } else {
-      setSortKey(col as SortKey)
-      setSortDir('asc')
+    const key = col as SortKey
+
+    if (sortKey === key) {
+      // Actuellement actif → cancel + mémorise.
+      setLastSortKey(key)
+      setLastSortDir(sortDir)
+      setSortKey(null)
+      return
     }
+    if (sortKey === null && lastSortKey === key) {
+      // Pas de tri, mais cette col était la dernière active → flip dir.
+      const newDir: SortDir = lastSortDir === 'asc' ? 'desc' : 'asc'
+      setLastSortDir(newDir)
+      setSortKey(key)
+      setSortDir(newDir)
+      return
+    }
+    // Nouvelle colonne → start asc.
+    setLastSortKey(key)
+    setLastSortDir('asc')
+    setSortKey(key)
+    setSortDir('asc')
   }
 
   // Stats
   const totalBatiments = filteredBatiments.length
   const totalLots = filteredBatiments.reduce((acc, b) => acc + (b.nb_lots || 0), 0)
   const withMissions = filteredBatiments.filter(b => b.missions_a_venir > 0).length
+
+  // Effective column order — saved order, ensure all known columns covered
+  const effectiveOrder = useMemo(() => {
+    const known = BATIMENT_COLUMNS.map(c => c.id)
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const id of columnOrder) {
+      if (known.includes(id) && !seen.has(id)) { out.push(id); seen.add(id) }
+    }
+    for (const id of known) if (!seen.has(id)) out.push(id)
+    return out
+  }, [columnOrder])
+  const visibleOrdered = effectiveOrder.filter(id => visibleCols.includes(id))
 
   return (
     <div className="px-8 py-6 max-w-[1400px] mx-auto space-y-6">
@@ -333,6 +350,8 @@ export function PatrimoinePage() {
           columns={BATIMENT_COLUMNS}
           visibleColumns={visibleCols}
           onColumnsChange={setVisibleCols}
+          order={columnOrder}
+          onOrderChange={setColumnOrder}
         />
         <div className="flex items-center bg-muted/60 rounded-full p-0.5">
           <button
@@ -357,42 +376,24 @@ export function PatrimoinePage() {
       {/* Table view */}
       {view === 'table' && (
         <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+         <div className="overflow-x-auto">
+          <div className="min-w-max">
           {/* Table header */}
           <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
             <div className="w-7 shrink-0" />
-            {isCol('designation') && (
-              <SortableHeader colId="designation" label="Désignation" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.designation} onResizeStart={handleResizeStart} onResize={handleResize} />
-            )}
-            {isCol('type') && (
-              <div className="relative overflow-visible shrink-0" style={{ width: colWidths.type, minWidth: 40 }}>
-                Type
-                <ResizeHandle colId="type" onResizeStart={handleResizeStart} onResize={handleResize} />
-              </div>
-            )}
-            {isCol('adresse') && (
-              <div className="relative overflow-visible shrink-0" style={{ width: colWidths.adresse, minWidth: 40 }}>
-                Adresse
-                <ResizeHandle colId="adresse" onResizeStart={handleResizeStart} onResize={handleResize} />
-              </div>
-            )}
-            {isCol('nb_lots') && (
-              <SortableHeader colId="nb_lots" label="Lots" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.nb_lots} onResizeStart={handleResizeStart} onResize={handleResize} align="center" />
-            )}
-            {isCol('nb_etages') && (
-              <SortableHeader colId="nb_etages" label="Étages" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.nb_etages} onResizeStart={handleResizeStart} onResize={handleResize} align="center" />
-            )}
-            {isCol('annee_construction') && (
-              <SortableHeader colId="annee_construction" label="Année" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.annee_construction} onResizeStart={handleResizeStart} onResize={handleResize} align="center" />
-            )}
-            {isCol('derniere_mission') && (
-              <SortableHeader colId="derniere_mission" label="Dern. mission" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.derniere_mission} onResizeStart={handleResizeStart} onResize={handleResize} />
-            )}
-            {isCol('missions_a_venir') && (
-              <SortableHeader colId="missions_a_venir" label="À venir" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.missions_a_venir} onResizeStart={handleResizeStart} onResize={handleResize} align="center" />
-            )}
-            {isCol('created_at') && (
-              <SortableHeader colId="created_at" label="Créé le" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths.created_at} onResizeStart={handleResizeStart} onResize={handleResize} />
-            )}
+            {visibleOrdered.map(id => {
+              const sortable = SORTABLE_COLS.has(id)
+              const labelMap: Record<string, string> = { designation: 'Désignation', type: 'Type', adresse: 'Adresse', nb_lots: 'Lots', nb_etages: 'Étages', annee_construction: 'Année', derniere_mission: 'Dern. mission', missions_a_venir: 'À venir', created_at: 'Créé le' }
+              const align: 'center' | undefined = ['nb_lots', 'nb_etages', 'annee_construction', 'missions_a_venir'].includes(id) ? 'center' : undefined
+              return sortable ? (
+                <SortableHeader key={id} colId={id} label={labelMap[id]} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths[id]} onResizeStart={handleResizeStart} onResize={handleResize} align={align} />
+              ) : (
+                <div key={id} className="relative overflow-visible shrink-0" style={{ width: colWidths[id], minWidth: 40 }}>
+                  {labelMap[id]}
+                  <ResizeHandle colId={id} onResizeStart={handleResizeStart} onResize={handleResize} />
+                </div>
+              )
+            })}
           </div>
 
           {isLoading && (
@@ -422,20 +423,20 @@ export function PatrimoinePage() {
             </div>
           )}
 
-          {!isLoading && displayedBatiments.map((bat, idx) => (
-            <BatimentRow key={bat.id} batiment={bat} visibleCols={visibleCols} colWidths={colWidths} index={idx} />
+          {!isLoading && filteredBatiments.map((bat, idx) => (
+            <BatimentRow key={bat.id} batiment={bat} visibleCols={visibleOrdered} colWidths={colWidths} index={idx} />
           ))}
+          </div>
+         </div>
 
-          {!isLoading && hasMore && (
-            <div ref={sentinelRef} className="py-5 text-center">
-              <SpinnerGap className="h-5 w-5 animate-spin text-muted-foreground/40 mx-auto" />
-            </div>
-          )}
-
-          {!isLoading && !hasMore && filteredBatiments.length > BATCH_SIZE && (
-            <div className="py-3.5 text-center text-xs text-muted-foreground/40">
-              {filteredBatiments.length} bâtiment{filteredBatiments.length > 1 ? 's' : ''}
-            </div>
+          {!isLoading && filteredBatiments.length > 0 && (
+            <LoadMoreFooter
+              currentCount={filteredBatiments.length}
+              hasNextPage={!!hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+              noun={['bâtiment', 'bâtiments']}
+            />
           )}
         </div>
       )}
@@ -470,12 +471,66 @@ function SortableHeader({ colId, label, sortKey, sortDir, onSort, width, onResiz
 }
 
 /* ── Building Row ── */
-function BatimentRow({ batiment, visibleCols, colWidths, index }: { batiment: Batiment; visibleCols: string[]; colWidths: Record<string, number>; index: number }) {
-  const [expanded, setExpanded] = useState(false)
-  const navigate = useNavigate()
+function renderBatimentCell(id: string, batiment: Batiment, colWidths: Record<string, number>) {
   const Icon = typeIcons[batiment.type] || BuildingOffice
   const adresse = batiment.adresse_principale
-  const isCol = (id: string) => visibleCols.includes(id)
+  switch (id) {
+    case 'designation':
+      return (
+        <div key={id} className="shrink-0 flex items-center gap-3 min-w-0 overflow-hidden" style={{ width: colWidths.designation }}>
+          <div className="h-8 w-8 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
+            <Icon className="h-4 w-4 text-muted-foreground/60" />
+          </div>
+          <div className="min-w-0">
+            <span className="font-medium text-[13px] text-foreground group-hover/row:text-primary truncate block transition-colors duration-200">{batiment.designation}</span>
+            {batiment.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
+          </div>
+        </div>
+      )
+    case 'type':
+      return (
+        <div key={id} className="shrink-0" style={{ width: colWidths.type }}>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${typeColors[batiment.type] || typeColors.autre}`}>
+            {typeLabels[batiment.type]}
+          </span>
+        </div>
+      )
+    case 'adresse':
+      return (
+        <div key={id} className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width: colWidths.adresse }}>
+          {adresse ? `${adresse.rue}, ${adresse.ville}` : <span className="text-muted-foreground/30">--</span>}
+        </div>
+      )
+    case 'nb_lots':
+      return (
+        <div key={id} className="shrink-0 text-center" style={{ width: colWidths.nb_lots }}>
+          <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-muted/50 text-xs font-semibold text-foreground/70">{batiment.nb_lots}</span>
+        </div>
+      )
+    case 'nb_etages':
+      return <div key={id} className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.nb_etages }}>{batiment.nb_etages ?? <span className="text-muted-foreground/25">--</span>}</div>
+    case 'annee_construction':
+      return <div key={id} className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.annee_construction }}>{batiment.annee_construction ?? <span className="text-muted-foreground/25">--</span>}</div>
+    case 'derniere_mission':
+      return <div key={id} className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.derniere_mission }}>{batiment.derniere_mission ? formatDate(batiment.derniere_mission) : <span className="text-muted-foreground/25">--</span>}</div>
+    case 'missions_a_venir':
+      return (
+        <div key={id} className="shrink-0 text-center" style={{ width: colWidths.missions_a_venir }}>
+          {batiment.missions_a_venir > 0 ? (
+            <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">{batiment.missions_a_venir}</span>
+          ) : <span className="text-muted-foreground/25">--</span>}
+        </div>
+      )
+    case 'created_at':
+      return <div key={id} className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.created_at }}>{formatDate(batiment.created_at)}</div>
+    default:
+      return null
+  }
+}
+
+function BatimentRow({ batiment, visibleCols, colWidths }: { batiment: Batiment; visibleCols: string[]; colWidths: Record<string, number>; index: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div className="group/row">
@@ -489,49 +544,7 @@ function BatimentRow({ batiment, visibleCols, colWidths, index }: { batiment: Ba
         >
           <CaretRight className={`h-4 w-4 text-muted-foreground/50 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
         </button>
-        {isCol('designation') && (
-          <div className="shrink-0 flex items-center gap-3 min-w-0 overflow-hidden" style={{ width: colWidths.designation }}>
-            <div className="h-8 w-8 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
-              <Icon className="h-4 w-4 text-muted-foreground/60" />
-            </div>
-            <div className="min-w-0">
-              <span className="font-medium text-[13px] text-foreground group-hover/row:text-primary truncate block transition-colors duration-200">{batiment.designation}</span>
-              {batiment.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
-            </div>
-          </div>
-        )}
-        {isCol('type') && (
-          <div className="shrink-0" style={{ width: colWidths.type }}>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${typeColors[batiment.type] || typeColors.autre}`}>
-              {typeLabels[batiment.type]}
-            </span>
-          </div>
-        )}
-        {isCol('adresse') && (
-          <div className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width: colWidths.adresse }}>
-            {adresse ? `${adresse.rue}, ${adresse.ville}` : <span className="text-muted-foreground/30">--</span>}
-          </div>
-        )}
-        {isCol('nb_lots') && (
-          <div className="shrink-0 text-center" style={{ width: colWidths.nb_lots }}>
-            <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-muted/50 text-xs font-semibold text-foreground/70">{batiment.nb_lots}</span>
-          </div>
-        )}
-        {isCol('nb_etages') && <div className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.nb_etages }}>{batiment.nb_etages ?? <span className="text-muted-foreground/25">--</span>}</div>}
-        {isCol('annee_construction') && <div className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.annee_construction }}>{batiment.annee_construction ?? <span className="text-muted-foreground/25">--</span>}</div>}
-        {isCol('derniere_mission') && (
-          <div className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.derniere_mission }}>{batiment.derniere_mission ? formatDate(batiment.derniere_mission) : <span className="text-muted-foreground/25">--</span>}</div>
-        )}
-        {isCol('missions_a_venir') && (
-          <div className="shrink-0 text-center" style={{ width: colWidths.missions_a_venir }}>
-            {batiment.missions_a_venir > 0 ? (
-              <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">{batiment.missions_a_venir}</span>
-            ) : <span className="text-muted-foreground/25">--</span>}
-          </div>
-        )}
-        {isCol('created_at') && (
-          <div className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.created_at }}>{formatDate(batiment.created_at)}</div>
-        )}
+        {visibleCols.map(id => renderBatimentCell(id, batiment, colWidths))}
       </div>
 
       {expanded && <LotSubRows batimentId={batiment.id} batimentName={batiment.designation} />}

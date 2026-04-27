@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  MagnifyingGlass, Plus, List, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown, FileText, X,
+  MagnifyingGlass, Plus, List, MapTrifold, ClipboardText, CalendarBlank, CaretUp, CaretDown, FileText, X,
 } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
@@ -13,10 +13,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from 'src/components/ui/tooltip'
-import { useMissions, useMissionStats, useWorkspaceTechnicians } from '../api'
+import { useMissionsInfinite, useMissionStats, useWorkspaceTechnicians } from '../api'
 import { ColumnConfig, type ColumnDef } from 'src/components/shared/column-config'
 import { DynamicFilter, applyDynamicFilters, type FilterField, type ActiveFilter } from 'src/components/shared/dynamic-filter'
 import { ResizeHandle, useResizableColumns } from 'src/components/shared/resizable-columns'
+import { LoadMoreFooter } from 'src/components/shared/load-more-footer'
 import { usePagePreference } from 'src/lib/use-page-preference'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { CreateMissionModal } from './create-mission-modal'
@@ -29,8 +30,6 @@ import {
   getPendingActions, getStatutMission,
 } from '../types'
 import { MissionStatusBadge } from './mission-status-badge'
-
-const BATCH_SIZE = 30
 
 export const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'reference', label: 'Reference', defaultVisible: true },
@@ -135,8 +134,6 @@ export function MissionsPage() {
     return 'table'
   })
   const [showCreate, setShowCreate] = useState(false)
-  const [displayCount, setDisplayCount] = useState(BATCH_SIZE)
-  const sentinelRef = useRef<HTMLDivElement>(null)
 
   function setView(v: ViewMode) {
     setViewState(v)
@@ -159,6 +156,10 @@ export function MissionsPage() {
 
   const [filters, setFiltersState] = useState(PREF_DEFAULTS.filters)
   const [sort, setSortState] = useState(PREF_DEFAULTS.sort)
+  // Cycle 3-états : mémorise la dernière col/dir active pour pouvoir reprendre
+  // le cycle après un "no sort" (sort.col === '').
+  const [lastSortCol, setLastSortCol] = useState<string>(PREF_DEFAULTS.sort.col)
+  const [lastSortDir, setLastSortDir] = useState<SortDir>(PREF_DEFAULTS.sort.dir)
   const [visibleCols, setVisibleColsState] = useState<string[]>(PREF_DEFAULTS.visible_columns)
   const [columnOrder, setColumnOrderState] = useState<string[]>(PREF_DEFAULTS.column_order)
 
@@ -253,14 +254,23 @@ export function MissionsPage() {
     { id: 'commentaire', label: 'Commentaire', type: 'text' },
   ], [technicians])
 
-  const { data: missionsData, isLoading } = useMissions({
+  const {
+    data: missionsData,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useMissionsInfinite({
     search: search || undefined,
     statut_affichage: filters.statut !== 'all' ? (filters.statut as StatutMission) : undefined,
     statut_rdv: filters.rdv !== 'all' ? (filters.rdv as any) : undefined,
     ...periodDates,
   })
 
-  const missionsRaw = missionsData?.data ?? []
+  const missionsRaw = useMemo(
+    () => missionsData?.pages.flatMap((p) => p.data) ?? [],
+    [missionsData],
+  )
 
   const missions = useMemo(
     () => applyDynamicFilters(missionsRaw, dynamicFilters, filterFields),
@@ -269,21 +279,30 @@ export function MissionsPage() {
 
   const { colWidths, onResizeStart, onResize } = useResizableColumns(DEFAULT_COL_WIDTHS)
 
-  // Reset display count on filter changes
-  useEffect(() => {
-    setDisplayCount(BATCH_SIZE)
-  }, [search, filters.period, filters.statut, filters.rdv, customDate, dynamicFilters])
-
   function handleSort(col: string) {
     if (!SORTABLE[col]) return
+
+    // Cycle 3-états sur une même colonne : asc → none → desc → none → asc...
+    // (avec date / created_at qui démarrent en desc).
     if (sort.col === col) {
-      updateSort({ col, dir: sort.dir === 'asc' ? 'desc' : 'asc' })
-    } else {
-      // Date-like columns default to descending (most recent first); the rest
-      // start ascending. The user can flip after the first click.
-      const dir: SortDir = col === 'date' || col === 'created_at' ? 'desc' : 'asc'
-      updateSort({ col, dir })
+      // Actuellement actif sur cette colonne → cancel (passe en "no sort").
+      setLastSortCol(col)
+      setLastSortDir(sort.dir)
+      updateSort({ col: '', dir: sort.dir })
+      return
     }
+    if (sort.col === '' && lastSortCol === col) {
+      // Pas de tri, mais cette colonne était le dernier tri actif → flip dir.
+      const newDir: SortDir = lastSortDir === 'asc' ? 'desc' : 'asc'
+      setLastSortDir(newDir)
+      updateSort({ col, dir: newDir })
+      return
+    }
+    // Nouvelle colonne (jamais cyclée OU autre que la dernière) → start.
+    const dir: SortDir = col === 'date' || col === 'created_at' ? 'desc' : 'asc'
+    setLastSortCol(col)
+    setLastSortDir(dir)
+    updateSort({ col, dir })
   }
 
   const sortedMissions = useMemo(() => {
@@ -296,28 +315,6 @@ export function MissionsPage() {
       return sort.dir === 'asc' ? cmp : -cmp
     })
   }, [missions, sort])
-
-  const displayedMissions = useMemo(
-    () => sortedMissions.slice(0, displayCount),
-    [sortedMissions, displayCount]
-  )
-  const hasMore = displayCount < sortedMissions.length
-
-  // Infinite scroll
-  useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore) {
-          setDisplayCount(prev => Math.min(prev + BATCH_SIZE, missions.length))
-        }
-      },
-      { threshold: 0.1 }
-    )
-    observer.observe(sentinel)
-    return () => observer.disconnect()
-  }, [hasMore, missions.length])
 
   function handleStatClick(type: 'total' | 'today' | 'pending' | 'upcoming') {
     if (customDate) clearCustomDate()
@@ -549,7 +546,7 @@ export function MissionsPage() {
               )}
 
               {/* Rows */}
-              {!isLoading && displayedMissions.map((mission) => {
+              {!isLoading && sortedMissions.map((mission) => {
                 const pending = getPendingActions(mission)
                 return (
                   <tr
@@ -573,17 +570,14 @@ export function MissionsPage() {
             </tbody>
           </table>
 
-          {/* Infinite scroll sentinel */}
-          {!isLoading && hasMore && (
-            <div ref={sentinelRef} className="py-5 text-center">
-              <SpinnerGap className="h-5 w-5 animate-spin text-muted-foreground/40 mx-auto" />
-            </div>
-          )}
-
-          {!isLoading && !hasMore && missions.length > BATCH_SIZE && (
-            <div className="py-3.5 text-center text-[11px] text-muted-foreground/40">
-              {missions.length} mission{missions.length > 1 ? 's' : ''}
-            </div>
+          {!isLoading && missions.length > 0 && (
+            <LoadMoreFooter
+              currentCount={missions.length}
+              hasNextPage={!!hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+              noun={['mission', 'missions']}
+            />
           )}
         </div>
       )}

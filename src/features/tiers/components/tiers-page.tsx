@@ -4,11 +4,13 @@ import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
-import { useTiers, useTiersStats } from '../api'
+import { useTiersInfinite, useTiersStats } from '../api'
 import { CreateTiersModal } from './create-tiers-modal'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
-import { ColumnConfig, useColumnPreferences } from '../../../components/shared/column-config'
+import { ColumnConfig } from '../../../components/shared/column-config'
+import { usePagePreference } from '../../../lib/use-page-preference'
 import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
+import { LoadMoreFooter } from '../../../components/shared/load-more-footer'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../hooks/use-auth'
 import { formatDate } from '../../../lib/formatters'
@@ -122,25 +124,67 @@ export function TiersPage() {
   const defaultWidths = useMemo(() => buildDefaultWidths(columns), [columns])
   const { colWidths, onResizeStart, onResize } = useResizableColumns(defaultWidths)
   const colDefs = useMemo(() => columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true })), [columns])
-  const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('tiers_list', colDefs)
+  const colDefaults = useMemo(() => ({
+    visible_columns: colDefs.map(c => c.id),
+    column_order: columns.map(c => c.id),
+  }), [colDefs, columns])
+  const { config: colPrefs, update: updateColPrefs } = usePagePreference<{ visible_columns: string[]; column_order: string[] }>(`tiers_list_${tab}`, colDefaults)
+  const visibleCols = Array.isArray(colPrefs.visible_columns) ? colPrefs.visible_columns : colDefaults.visible_columns
+  const columnOrder = Array.isArray(colPrefs.column_order) ? colPrefs.column_order : colDefaults.column_order
+  function setVisibleCols(next: string[]) { updateColPrefs({ visible_columns: next }) }
+  function setColumnOrder(next: string[]) { updateColPrefs({ column_order: next }) }
+  const orderedColumns = useMemo(() => {
+    const map = new Map(columns.map(c => [c.id, c]))
+    const out: ColumnDef[] = []
+    const seen = new Set<string>()
+    for (const id of columnOrder) {
+      const c = map.get(id)
+      if (c && !seen.has(id)) { out.push(c); seen.add(id) }
+    }
+    for (const c of columns) if (!seen.has(c.id)) out.push(c)
+    return out
+  }, [columns, columnOrder])
 
   const role = tab === 'tous' ? undefined : tab
-  const { data, isLoading } = useTiers({
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useTiersInfinite({
     search: search || undefined,
     role,
     type_personne: typePersonneFilter !== 'all' ? typePersonneFilter as 'physique' | 'morale' : undefined,
   })
   const { data: stats } = useTiersStats()
-  const tiersRaw = data?.data ?? []
+  const tiersRaw = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data])
 
-  // Sort
+  // Sort — cycle 3-états : asc → none → desc → none → asc...
   type SortDir = 'asc' | 'desc'
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [lastSortCol, setLastSortCol] = useState<string | null>(null)
+  const [lastSortDir, setLastSortDir] = useState<SortDir>('asc')
 
   function handleSort(col: string) {
-    if (sortCol === col) { setSortDir(d => d === 'asc' ? 'desc' : 'asc') }
-    else { setSortCol(col); setSortDir('asc') }
+    if (sortCol === col) {
+      setLastSortCol(col)
+      setLastSortDir(sortDir)
+      setSortCol(null)
+      return
+    }
+    if (sortCol === null && lastSortCol === col) {
+      const newDir: SortDir = lastSortDir === 'asc' ? 'desc' : 'asc'
+      setLastSortDir(newDir)
+      setSortCol(col)
+      setSortDir(newDir)
+      return
+    }
+    setLastSortCol(col)
+    setLastSortDir('asc')
+    setSortCol(col)
+    setSortDir('asc')
   }
 
   // Extra client-side filters
@@ -265,18 +309,22 @@ export function TiersPage() {
 
         <div className="flex-1" />
         <ColumnConfig
-          page="tiers_list"
-          columns={columns.filter(c => c.label).map(c => ({ id: c.id, label: c.label, defaultVisible: true }))}
+          page={`tiers_list_${tab}`}
+          columns={colDefs}
           visibleColumns={visibleCols}
           onColumnsChange={setVisibleCols}
+          order={columnOrder}
+          onOrderChange={setColumnOrder}
         />
       </div>
 
       {/* Table */}
       <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
+       <div className="overflow-x-auto">
+        <div className="min-w-max">
         {/* Dynamic header */}
         <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
-          {columns.filter(col => !col.label || visibleCols.includes(col.id)).map((col) => {
+          {orderedColumns.filter(col => !col.label || visibleCols.includes(col.id)).map((col) => {
             const sortable = col.id !== 'avatar' && !!col.label
             const isActive = sortCol === col.id && sortable
             return (
@@ -331,7 +379,7 @@ export function TiersPage() {
           <TiersRow
             key={tiers.id}
             tiers={tiers}
-            columns={columns.filter(col => !col.label || visibleCols.includes(col.id))}
+            columns={orderedColumns.filter(col => !col.label || visibleCols.includes(col.id))}
             colWidths={colWidths}
             index={idx}
             onClick={() => {
@@ -340,6 +388,18 @@ export function TiersPage() {
             }}
           />
         ))}
+
+        {!isLoading && tiersList.length > 0 && (
+          <LoadMoreFooter
+            currentCount={tiersList.length}
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            noun={['tiers', 'tiers']}
+          />
+        )}
+        </div>
+       </div>
       </div>
     </div>
   )
