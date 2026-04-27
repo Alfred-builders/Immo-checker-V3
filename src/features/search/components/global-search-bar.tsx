@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BuildingOffice, Door, UsersThree, ClipboardText,
-  MagnifyingGlass, ArrowRight, SpinnerGap,
+  MagnifyingGlass, ArrowRight, SpinnerGap, Plus, CalendarX,
 } from '@phosphor-icons/react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Popover, PopoverAnchor, PopoverContent } from 'src/components/ui/popover'
@@ -38,6 +38,53 @@ const STATUT_LABELS: Record<string, string> = {
   annulee: 'Annulée',
 }
 
+const SEARCH_SUGGESTIONS = [
+  'Bureau Levallois',
+  'M-2026-0001',
+  'Marc Dupont',
+  'Rue de Paris',
+  'SCI Patrimoine',
+]
+
+interface QuickAction {
+  label: string
+  icon: typeof Plus
+  iconBg: string
+  iconColor: string
+  to: string
+}
+
+const QUICK_ACTIONS: QuickAction[] = [
+  {
+    label: 'Créer une mission',
+    icon: ClipboardText,
+    iconBg: 'bg-amber-50 dark:bg-amber-950',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    to: '/app/dashboard?action=create-mission',
+  },
+  {
+    label: 'Créer une indisponibilité technicien',
+    icon: CalendarX,
+    iconBg: 'bg-rose-50 dark:bg-rose-950',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+    to: '/app/dashboard?action=create-indispo',
+  },
+  {
+    label: 'Créer un bâtiment',
+    icon: BuildingOffice,
+    iconBg: 'bg-slate-100 dark:bg-slate-900',
+    iconColor: 'text-slate-600 dark:text-slate-400',
+    to: '/app/patrimoine?action=create-batiment',
+  },
+  {
+    label: 'Créer un tiers',
+    icon: UsersThree,
+    iconBg: 'bg-violet-50 dark:bg-violet-950',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+    to: '/app/tiers?action=create-tiers',
+  },
+]
+
 function isMac(): boolean {
   if (typeof navigator === 'undefined') return false
   return /Mac|iPhone|iPad|iPod/.test(navigator.platform)
@@ -47,6 +94,7 @@ export function GlobalSearchBar() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
   const [mac, setMac] = useState(false)
   const debounced = useDebounce(query, 300)
   const { data, isFetching } = useGlobalSearch(debounced)
@@ -59,6 +107,7 @@ export function GlobalSearchBar() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         inputRef.current?.focus()
+        setOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -67,12 +116,17 @@ export function GlobalSearchBar() {
 
   function go(path: string) {
     setQuery('')
+    setOpen(false)
     inputRef.current?.blur()
     navigate(path)
   }
 
+  function handleSuggestionClick(suggestion: string) {
+    setQuery(suggestion)
+    inputRef.current?.focus()
+  }
+
   const trimmed = query.trim()
-  const showResults = trimmed.length > 0
   const hasQuery = trimmed.length >= 1
   const results = data?.results
   const hasMore = data?.meta.has_more
@@ -88,15 +142,16 @@ export function GlobalSearchBar() {
       className="bg-transparent overflow-visible [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
     >
       <Popover
-        open={showResults}
+        open={open}
         onOpenChange={(v) => {
+          setOpen(v)
           if (!v) { setQuery(''); inputRef.current?.blur() }
         }}
       >
         <PopoverAnchor asChild>
           <div
-            onClick={() => inputRef.current?.focus()}
-            style={{ width: showResults ? 480 : 300 }}
+            onClick={() => { inputRef.current?.focus(); setOpen(true) }}
+            style={{ width: open ? 480 : 300 }}
             className="flex items-center gap-2 h-8 px-2.5 rounded-lg bg-card border border-border/60 hover:border-border/80 transition-[width,border-color,box-shadow] duration-200 ease-out cursor-text focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/15 max-w-[calc(100vw-8rem)]"
           >
             <MagnifyingGlass className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
@@ -104,6 +159,7 @@ export function GlobalSearchBar() {
               ref={inputRef}
               value={query}
               onValueChange={setQuery}
+              onFocus={() => setOpen(true)}
               placeholder="Rechercher..."
               className="flex-1 min-w-0 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/60 outline-none border-0 h-full"
             />
@@ -127,6 +183,44 @@ export function GlobalSearchBar() {
           className="p-0 w-[480px] max-w-[calc(100vw-2rem)]"
         >
           <CommandList className="max-h-[420px]">
+            {/* État vide (pas de query) : suggestions + actions rapides */}
+            {!hasQuery && (
+              <>
+                <CommandGroup heading="Recherches suggérées">
+                  {SEARCH_SUGGESTIONS.map((s) => (
+                    <CommandItem
+                      key={s}
+                      value={`suggestion-${s}`}
+                      onSelect={() => handleSuggestionClick(s)}
+                      className="flex items-center gap-3"
+                    >
+                      <div className="h-8 w-8 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
+                        <MagnifyingGlass className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      </div>
+                      <span className="text-[13px] text-muted-foreground">{s}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandGroup heading="Actions rapides">
+                  {QUICK_ACTIONS.map((action) => (
+                    <CommandItem
+                      key={action.label}
+                      value={`action-${action.label}`}
+                      onSelect={() => go(action.to)}
+                      className="flex items-center gap-3"
+                    >
+                      <div className={`h-8 w-8 rounded-lg ${action.iconBg} flex items-center justify-center shrink-0`}>
+                        <action.icon className={`h-4 w-4 ${action.iconColor}`} weight="duotone" />
+                      </div>
+                      <span className="text-[13px] font-medium text-foreground">{action.label}</span>
+                      <Plus className="h-3.5 w-3.5 text-muted-foreground/40 ml-auto shrink-0" />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+
+            {/* Résultats de recherche */}
             {hasQuery && isEmpty && (
               <CommandEmpty>Aucun résultat pour "{debounced}"</CommandEmpty>
             )}
@@ -175,6 +269,25 @@ export function GlobalSearchBar() {
               </CommandGroup>
             )}
           </CommandList>
+
+          {/* Footer raccourcis */}
+          <div className="border-t border-border/30 px-3 py-1.5 flex items-center justify-between text-[11px] text-muted-foreground/60">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1">
+                <kbd className="inline-flex items-center px-1 h-4 rounded bg-muted/60 border border-border/40 font-semibold">↑</kbd>
+                <kbd className="inline-flex items-center px-1 h-4 rounded bg-muted/60 border border-border/40 font-semibold">↓</kbd>
+                <span>naviguer</span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <kbd className="inline-flex items-center px-1 h-4 rounded bg-muted/60 border border-border/40 font-semibold">↵</kbd>
+                <span>sélectionner</span>
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="inline-flex items-center px-1 h-4 rounded bg-muted/60 border border-border/40 font-semibold">esc</kbd>
+              <span>fermer</span>
+            </span>
+          </div>
         </PopoverContent>
       </Popover>
     </Command>

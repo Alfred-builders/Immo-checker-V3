@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 's
 import { useQueryClient } from '@tanstack/react-query'
 import { useBatiments, useBatimentLots } from '../api'
 import { formatDate } from '../../../lib/formatters'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CreateBuildingModal } from './create-building-modal'
 import { CreateLotModal } from './create-lot-modal'
 import { ImportCSVModal } from './import-csv-modal'
@@ -171,6 +171,17 @@ export function PatrimoinePage() {
   const [showCreateLot, setShowCreateLot] = useState(false)
   const [showImportCSV, setShowImportCSV] = useState(false)
   const [maisonBatimentId, setMaisonBatimentId] = useState<string | null>(null)
+
+  // Auto-ouverture depuis Cmd+K (?action=create-batiment).
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('action') === 'create-batiment') {
+      setShowCreateBuilding(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('action')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
   const { colWidths, onResizeStart: handleResizeStart, onResize: handleResize } = useResizableColumns(DEFAULT_COL_WIDTHS)
   const [displayCount, setDisplayCount] = useState(BATCH_SIZE)
   const sentinelRef = useRef<HTMLDivElement>(null)

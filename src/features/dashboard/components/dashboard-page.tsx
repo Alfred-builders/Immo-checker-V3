@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react'
 import { Plus, CalendarBlank, Clock, WarningCircle, CaretRight, CaretUp, CaretDown, FileText, SquaresFour, ChartLine, CheckCircle, MapPin, User } from '@phosphor-icons/react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, Line, LineChart, Pie, PieChart, Sector, XAxis } from 'recharts'
@@ -83,6 +83,23 @@ export function DashboardPage() {
   const [showCreateMission, setShowCreateMission] = useState(false)
   const [showCreateIndispo, setShowCreateIndispo] = useState(false)
   const [prefillDate, setPrefillDate] = useState<string | undefined>()
+
+  // Auto-ouverture des modales depuis Cmd+K (?action=create-mission|create-indispo).
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (action === 'create-mission') {
+      setShowCreateMission(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('action')
+      setSearchParams(next, { replace: true })
+    } else if (action === 'create-indispo') {
+      setShowCreateIndispo(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('action')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   // Day modal (mini calendar)
   const [dayModalDate, setDayModalDate] = useState<string | null>(null)
@@ -293,9 +310,9 @@ export function DashboardPage() {
                           <tr className="bg-surface-sunken text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             <th className="text-left px-4 py-2.5 w-24">Ref.</th>
                             <th className="text-left px-4 py-2.5">Lot / Adresse</th>
-                            <th className="text-left px-4 py-2.5 w-20">Date</th>
+                            <th className="text-left px-4 py-2.5 w-28">Date</th>
                             <th className="text-left px-4 py-2.5 w-20">Type</th>
-                            <th className="text-left px-4 py-2.5 w-24">Statut</th>
+                            <th className="text-left px-4 py-2.5 w-44">Statut</th>
                             {metricSheet === 'pending' && <th className="text-left px-4 py-2.5 w-[130px]">Actions</th>}
                           </tr>
                         </thead>
@@ -348,7 +365,7 @@ export function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   {(() => { const a = getStatutAffichage(m); return (
-                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>
+                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${statutAffichageColors[a]}`}>
                                       {statutAffichageLabels[a]}
                                     </span>
                                   ) })()}

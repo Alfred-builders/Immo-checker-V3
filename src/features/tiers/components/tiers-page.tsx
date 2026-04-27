@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { MagnifyingGlass, Plus, User, BuildingOffice, UsersThree, Briefcase, CaretUp, CaretDown } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
@@ -9,7 +9,7 @@ import { CreateTiersModal } from './create-tiers-modal'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
 import { ColumnConfig, useColumnPreferences } from '../../../components/shared/column-config'
 import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../../hooks/use-auth'
 import { formatDate } from '../../../lib/formatters'
 import type { Tiers } from '../types'
@@ -106,6 +106,17 @@ export function TiersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const navigate = useNavigate()
   const { workspace } = useAuth()
+
+  // Auto-ouverture depuis Cmd+K (?action=create-tiers).
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('action') === 'create-tiers') {
+      setShowCreate(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete('action')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const columns = COLUMNS_BY_TAB[tab]
   const defaultWidths = useMemo(() => buildDefaultWidths(columns), [columns])
