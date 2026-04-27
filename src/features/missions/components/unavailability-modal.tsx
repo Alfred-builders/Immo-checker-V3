@@ -3,6 +3,7 @@ import { CalendarX, Trash, Repeat, SpinnerGap } from '@phosphor-icons/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
+import { TimePicker } from 'src/components/ui/time-picker'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Switch } from 'src/components/ui/switch'
@@ -274,23 +275,11 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Heure début</Label>
-                <Input
-                  type="time"
-                  value={heureDebut}
-                  onChange={(e) => setHeureDebut(e.target.value)}
-                  onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                  className="h-9 cursor-pointer"
-                />
+                <TimePicker value={heureDebut} onChange={setHeureDebut} modal />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Heure fin</Label>
-                <Input
-                  type="time"
-                  value={heureFin}
-                  onChange={(e) => setHeureFin(e.target.value)}
-                  onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                  className="h-9 cursor-pointer"
-                />
+                <TimePicker value={heureFin} onChange={setHeureFin} modal />
               </div>
             </div>
           )}

@@ -54,7 +54,7 @@ router.get('/', async (req, res) => {
     const isTechnicien = req.user!.role === 'technicien'
     const {
       search, statut, statut_affichage, statut_rdv, technicien_id, date_from, date_to,
-      pending_actions, lot_id, cursor, limit: rawLimit
+      pending_actions, lot_id, batiment_id, cursor, limit: rawLimit
     } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
 
@@ -135,6 +135,12 @@ router.get('/', async (req, res) => {
     if (lot_id) {
       where += ` AND m.lot_id = $${paramIndex}`
       params.push(lot_id)
+      paramIndex++
+    }
+
+    if (batiment_id) {
+      where += ` AND EXISTS (SELECT 1 FROM lot l3 WHERE l3.id = m.lot_id AND l3.batiment_id = $${paramIndex})`
+      params.push(batiment_id)
       paramIndex++
     }
 
@@ -680,6 +686,46 @@ router.post('/:id/cancel', requireRole('admin', 'gestionnaire', 'technicien'), v
     }, req.user!.userId))
 
     sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// ── DELETE /api/missions/:id — Soft archive (Tony retours §3) ──
+// Archivage uniquement, pas de hard delete (CLAUDE.md §7b interdiction).
+// Bloqué si un EDL signé existe (document légal immuable).
+router.delete('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+
+    const current = await query(
+      `SELECT id, reference, est_archive FROM mission WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+    if (current.rows.length === 0) throw new NotFoundError('Mission')
+    if (current.rows[0].est_archive) {
+      throw new AppError('Mission deja archivee', 'ALREADY_ARCHIVED', 409)
+    }
+
+    // Block if any signed EDL exists
+    const signedEdls = await query(
+      `SELECT count(*)::int as cnt FROM edl_inventaire WHERE mission_id = $1 AND statut = 'signe'`,
+      [req.params.id]
+    )
+    if (signedEdls.rows[0].cnt > 0) {
+      throw new AppError(
+        'Impossible d\'archiver — la mission a au moins un EDL signe (document legal)',
+        'MISSION_HAS_SIGNED_EDL',
+        409
+      )
+    }
+
+    await query(
+      `UPDATE mission SET est_archive = true, updated_at = now() WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+
+    sendSuccess(res, { id: req.params.id, archived: true })
   } catch (error) {
     sendError(res, error)
   }

@@ -3,20 +3,26 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
   Calendar, Clock, User, Users, MapPin, BuildingOffice, House,
   FileText, Key, Warning, CaretRight, UserPlus, ChatText,
-  ArrowSquareOut, FilePdf, Globe, Scales, Plus,
+  ArrowSquareOut, FilePdf, Globe, Scales, Plus, DotsThreeVertical, Prohibit, Archive,
 } from '@phosphor-icons/react'
 import { Sheet, SheetContent } from 'src/components/ui/sheet'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
+import { TimePicker } from 'src/components/ui/time-picker'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from 'src/components/ui/select'
 import { Skeleton } from 'src/components/ui/skeleton'
-import { TechPicker } from 'src/components/shared/tech-picker'
 import {
-  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from 'src/components/ui/dropdown-menu'
+import { TechPicker } from 'src/components/shared/tech-picker'
+import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
+import { CancelMissionModal } from '../../missions/components/cancel-mission-modal'
+import {
+  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission, useArchiveMission,
 } from '../../missions/api'
 import {
   sensLabels, sensColors,
@@ -212,7 +218,10 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
   const [addEdlSens,       setAddEdlSens]       = useState<SensEDL>('entree')
   const [addEdlType,       setAddEdlType]       = useState<TypeEDL>('edl')
   const [addEdlSaving,     setAddEdlSaving]     = useState(false)
+  const [showCancelModal,  setShowCancelModal]  = useState(false)
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const addEdl = useAddEDLToMission()
+  const archiveMission = useArchiveMission()
 
   useEffect(() => {
     if (mission) {
@@ -362,13 +371,58 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
             {/* ═══ HEADER ═══ */}
             <div className="shrink-0">
               <div className="px-6 pt-5 pb-4">
-                {/* Reference + status */}
+                {/* Reference + status + actions */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-1.5">Mission</p>
                     <h2 className="text-[22px] font-bold tracking-tight leading-none">{mission.reference}</h2>
                   </div>
-                  <MissionStatusBadge mission={mission} className="shrink-0 mt-0.5" />
+                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                    <MissionStatusBadge mission={mission} />
+                    {(() => {
+                      // Tony §3 : Annuler/Supprimer désactivés pour missions passées et terminées.
+                      const today = new Date().toISOString().slice(0, 10)
+                      const datePlanifSlice = (mission.date_planifiee || '').slice(0, 10)
+                      const isPast = !!datePlanifSlice && datePlanifSlice < today
+                      const isPastTerminated = isPast && isTerminated
+                      const cancelDisabled = isCancelled || isPastTerminated
+                      const archiveDisabled = isPastTerminated
+                      const allDisabled = cancelDisabled && archiveDisabled
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+                              aria-label="Actions sur la mission"
+                              title={allDisabled ? 'Mission passée et terminée — aucune action disponible' : 'Actions'}
+                            >
+                              <DotsThreeVertical className="h-4 w-4" weight="bold" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem
+                              onSelect={() => setShowCancelModal(true)}
+                              disabled={cancelDisabled}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Prohibit className="h-4 w-4 mr-2" />
+                              Annuler la mission
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={() => setShowArchiveConfirm(true)}
+                              disabled={archiveDisabled}
+                            >
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archiver la mission
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )
+                    })()}
+                  </div>
                 </div>
 
                 {/* Meta chips */}
@@ -471,24 +525,20 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-semibold text-muted-foreground/55">Début</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           value={heureDebut}
-                          onChange={(e) => handlePlanningChange('heure_debut', e.target.value)}
-                          onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                          onChange={(v) => handlePlanningChange('heure_debut', v)}
                           disabled={isLocked}
-                          className={cn(ghost, !isLocked && 'cursor-pointer')}
+                          modal
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[11px] font-semibold text-muted-foreground/55">Fin</Label>
-                        <Input
-                          type="time"
+                        <TimePicker
                           value={heureFin}
-                          onChange={(e) => handlePlanningChange('heure_fin', e.target.value)}
-                          onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                          onChange={(v) => handlePlanningChange('heure_fin', v)}
                           disabled={isLocked}
-                          className={cn(ghost, !isLocked && 'cursor-pointer')}
+                          modal
                         />
                       </div>
                     </div>
@@ -814,46 +864,11 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                     )}
                   </div>
 
-                  {/* Add EDL */}
-                  {!isLocked && (
-                    <div className="mt-1">
-                      {!showAddEdl ? (
-                        <button
-                          onClick={() => setShowAddEdl(true)}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-border/40 text-[11px] font-semibold text-muted-foreground/50 hover:text-primary hover:border-primary/40 transition-colors"
-                        >
-                          <Plus className="h-3 w-3" /> Ajouter un EDL
-                        </button>
-                      ) : (
-                        <div className="rounded-xl border border-border/25 bg-white px-3 py-3 space-y-2.5">
-                          <div className="grid grid-cols-2 gap-2">
-                            <Select value={addEdlSens} onValueChange={(v) => setAddEdlSens(v as SensEDL)}>
-                              <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="entree">Entrée</SelectItem>
-                                <SelectItem value="sortie">Sortie</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Select value={addEdlType} onValueChange={(v) => setAddEdlType(v as TypeEDL)}>
-                              <SelectTrigger className="h-8 text-[12px]"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="edl">EDL</SelectItem>
-                                <SelectItem value="inventaire">Inventaire</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" className="flex-1 h-8 text-[11px]" onClick={handleAddEdl} disabled={addEdlSaving}>
-                              {addEdlSaving ? '…' : 'Ajouter'}
-                            </Button>
-                            <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={() => setShowAddEdl(false)}>
-                              Annuler
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Ajouter un EDL — fonctionnalité MASQUÉE en attendant complétion (Tony §3) :
+                    * la version actuelle ne permet ni d'assigner un locataire à l'EDL créé,
+                    * ni de modifier/supprimer un EDL fraîchement créé. Réactiver quand le
+                    * scope sera complété (picker locataire + edit/delete inline). State et
+                    * handler conservés (handleAddEdl, addEdl mutation) pour le moment. */}
 
                   {/* Clés */}
                   {mission.cles.length > 0 && (
@@ -929,6 +944,39 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
           </>
         )}
       </SheetContent>
+
+      {/* Cancel mission modal */}
+      {mission && showCancelModal && (
+        <CancelMissionModal
+          open={showCancelModal}
+          onOpenChange={setShowCancelModal}
+          missionId={mission.id}
+          missionStatut={mission.statut}
+          edlBrouillonCount={mission.edls?.filter(e => e.statut === 'brouillon').length ?? 0}
+        />
+      )}
+
+      {/* Archive mission confirm */}
+      {mission && (
+        <ConfirmDialog
+          open={showArchiveConfirm}
+          onOpenChange={setShowArchiveConfirm}
+          title="Archiver la mission ?"
+          description="La mission sera masquée des listes et des recherches. Les EDL signés (s'il y en a) bloqueront l'archivage. Cette action est réversible depuis les archives."
+          confirmLabel={archiveMission.isPending ? 'Archivage...' : 'Archiver'}
+          variant="destructive"
+          onConfirm={async () => {
+            try {
+              await archiveMission.mutateAsync({ id: mission.id })
+              toast.success('Mission archivée')
+              setShowArchiveConfirm(false)
+              onClose()
+            } catch (err: any) {
+              toast.error(err.message || 'Erreur lors de l\'archivage')
+            }
+          }}
+        />
+      )}
     </Sheet>
   )
 }

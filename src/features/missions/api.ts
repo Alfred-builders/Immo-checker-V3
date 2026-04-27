@@ -18,6 +18,7 @@ interface ListMissionsParams {
   date_to?: string
   pending_actions?: boolean
   lot_id?: string
+  batiment_id?: string
   cursor?: string
   limit?: number
 }
@@ -41,6 +42,7 @@ export function useMissions(params: ListMissionsParams = {}) {
       if (params.date_to) sp.set('date_to', params.date_to)
       if (params.pending_actions) sp.set('pending_actions', 'true')
       if (params.lot_id) sp.set('lot_id', params.lot_id)
+      if (params.batiment_id) sp.set('batiment_id', params.batiment_id)
       if (params.cursor) sp.set('cursor', params.cursor)
       if (params.limit) sp.set('limit', String(params.limit))
       const qs = sp.toString()
@@ -106,6 +108,19 @@ export function useCancelMission() {
   return useMutation({
     mutationFn: ({ id, motif }: { id: string; motif: string }) =>
       api(`/missions/${id}/cancel`, { method: 'POST', body: JSON.stringify({ motif }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['missions'] })
+      qc.invalidateQueries({ queryKey: ['missions-stats'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
+    },
+  })
+}
+
+export function useArchiveMission() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      api(`/missions/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['missions'] })
       qc.invalidateQueries({ queryKey: ['missions-stats'] })

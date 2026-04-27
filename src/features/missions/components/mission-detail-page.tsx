@@ -5,10 +5,12 @@ import {
   BuildingOffice, UsersThree, Calendar, User, FileText, Key,
   ChatText, Warning, ArrowSquareOut, Lock, MapPin, Clock, House,
   FlowArrow, FilePdf, Globe, Scales, UserPlus, CheckCircle, Plus, Trash,
+  SpinnerGap, Check,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Input } from 'src/components/ui/input'
+import { TimePicker } from 'src/components/ui/time-picker'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
@@ -128,7 +130,8 @@ export function MissionDetailPage() {
   const isCancelled = mission?.statut === 'annulee'
   const isLocked = isTerminated || isCancelled
   const pendingActions = mission ? getPendingActions(mission) : []
-  const planningChanged = mission && (formData.date_planifiee !== (mission.date_planifiee || '') || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || ''))
+  const initialDate = (mission?.date_planifiee || '').slice(0, 10)
+  const planningChanged = mission && (formData.date_planifiee !== initialDate || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || ''))
   const techAccepted = mission?.technicien?.statut_invitation === 'accepte'
 
   async function doSave(revalidate: boolean) {
@@ -154,6 +157,7 @@ export function MissionDetailPage() {
 
   async function handleSave() {
     if (!mission) return
+    if (!hasEdits) { setEditing(false); return }
     if (planningChanged && techAccepted && !isTerminated) { setShowRevalidation(true); return }
     await doSave(false)
   }
@@ -215,7 +219,7 @@ export function MissionDetailPage() {
 
   const edlBrouillonCount = mission?.edls.filter(e => e.statut === 'brouillon').length ?? 0
 
-  const hasEdits = mission && (formData.date_planifiee !== (mission.date_planifiee || '') || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || ''))
+  const hasEdits = mission && (formData.date_planifiee !== initialDate || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || ''))
 
   useEffect(() => {
     if (!editing || !hasEdits) return
@@ -303,6 +307,15 @@ export function MissionDetailPage() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {!isCancelled && !isTerminated && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>}
+              {!isCancelled && !isTerminated && editing && (
+                <>
+                  <Button variant="outline" size="sm" disabled={saving} onClick={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }}>Annuler</Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving || !hasEdits}>
+                    {saving ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Sauvegarder
+                  </Button>
+                </>
+              )}
               {!isLocked && !editing && <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setShowCancel(true)}><Prohibit className="h-3.5 w-3.5" /> Annuler</Button>}
             </div>
           </div>
@@ -337,8 +350,8 @@ export function MissionDetailPage() {
             <div className="space-y-3">
               <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Date</Label><Input type="date" value={formData.date_planifiee} onChange={(e) => setFormData(prev => ({ ...prev, date_planifiee: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><Input type="time" value={formData.heure_debut} onChange={(e) => setFormData(prev => ({ ...prev, heure_debut: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure fin</Label><Input type="time" value={formData.heure_fin} onChange={(e) => setFormData(prev => ({ ...prev, heure_fin: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><TimePicker value={formData.heure_debut} onChange={(v) => setFormData(prev => ({ ...prev, heure_debut: v }))} /></div>
+                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure fin</Label><TimePicker value={formData.heure_fin} onChange={(v) => setFormData(prev => ({ ...prev, heure_fin: v }))} /></div>
               </div>
               <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Statut RDV</Label><Select value={formData.statut_rdv} onValueChange={(v) => setFormData(prev => ({ ...prev, statut_rdv: v }))}><SelectTrigger className="h-10"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="a_confirmer">À confirmer</SelectItem><SelectItem value="confirme">Confirmé</SelectItem><SelectItem value="reporte">Reporté</SelectItem></SelectContent></Select></div>
             </div>
@@ -814,7 +827,7 @@ export function MissionDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }} saving={saving} />
+      <FloatingSaveBar visible={editing} hasChanges={!!hasEdits} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }} saving={saving} />
     </div>
   )
 }

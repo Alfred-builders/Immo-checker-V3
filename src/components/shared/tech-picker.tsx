@@ -90,7 +90,10 @@ export function TechPicker({
   const conflicts = useAllTechConflicts(technicians, date, excludeMissionId)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // modal={true} : nécessaire quand le picker est utilisé à l'intérieur d'un Sheet/Dialog
+    // Radix (drawer mission). Sinon le pointer-events: none posé par le Dialog bloque
+    // les clics et le focus sur le contenu du Popover, et la recherche ne fonctionne pas.
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
