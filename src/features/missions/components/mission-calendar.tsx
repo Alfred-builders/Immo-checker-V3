@@ -5,6 +5,7 @@ import {
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'src/components/ui/tooltip'
 import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { formatTime, formatDate } from 'src/lib/formatters'
@@ -486,6 +487,7 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
   const pendingActions = getPendingActions(mission)
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
+  const techFullName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
 
   return (
     <div data-mission-card onClick={onClick} className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-all duration-150 hover:shadow-elevation-raised-hover overflow-hidden ${cardColor}`}>
@@ -503,7 +505,16 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
               <span className="font-mono text-[11px] font-bold text-foreground/70 group-hover:text-primary transition-colors truncate">{mission.reference}</span>
             </div>
             {techInitials && (
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0 ml-1">{techInitials}</div>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0 ml-1">
+                      {techInitials}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-[11px]">{techFullName}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <p className="text-[11px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
@@ -618,7 +629,6 @@ function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechni
             backgroundImage:
               'repeating-linear-gradient(135deg, transparent 0px, transparent 5px, rgba(0,0,0,0.06) 5px, rgba(0,0,0,0.06) 6px)',
           }}
-          title={techName}
         >
           <div className="flex items-start justify-between gap-1">
             <div className="flex items-start gap-1.5 text-[11px] font-semibold text-foreground/75 leading-tight min-w-0">
@@ -627,7 +637,18 @@ function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechni
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               {ind.est_recurrent && <ArrowsClockwise size={10} weight="bold" className="text-muted-foreground/50" />}
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">{initials}</div>
+              {techName ? (
+                <TooltipProvider delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">{initials}</div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-[11px]">{techName}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">{initials}</div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/75">
