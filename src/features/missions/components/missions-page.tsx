@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  MagnifyingGlass, Plus, List, GridFour, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown, FileText,
+  MagnifyingGlass, Plus, List, MapTrifold, ClipboardText, SpinnerGap, CalendarBlank, CaretUp, CaretDown, FileText, X,
 } from '@phosphor-icons/react'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
@@ -14,25 +14,25 @@ import {
   TooltipTrigger,
 } from 'src/components/ui/tooltip'
 import { useMissions, useMissionStats, useWorkspaceTechnicians } from '../api'
-import { ColumnConfig, useColumnPreferences, type ColumnDef } from 'src/components/shared/column-config'
-import { DynamicFilter, type FilterField, type ActiveFilter } from 'src/components/shared/dynamic-filter'
+import { ColumnConfig, type ColumnDef } from 'src/components/shared/column-config'
+import { DynamicFilter, applyDynamicFilters, type FilterField, type ActiveFilter } from 'src/components/shared/dynamic-filter'
 import { ResizeHandle, useResizableColumns } from 'src/components/shared/resizable-columns'
+import { usePagePreference } from 'src/lib/use-page-preference'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { CreateMissionModal } from './create-mission-modal'
-import { MissionKanban } from './mission-kanban'
 import { MissionMap } from './mission-map'
 import { MissionCalendar } from './mission-calendar'
 import type { Mission, StatutMission } from '../types'
 import {
   statutRdvLabels, statutInvitationLabels,
   sensLabels, sensColors,
-  getPendingActions,
+  getPendingActions, getStatutMission,
 } from '../types'
 import { MissionStatusBadge } from './mission-status-badge'
 
 const BATCH_SIZE = 30
 
-const MISSION_COLUMNS: ColumnDef[] = [
+export const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'reference', label: 'Reference', defaultVisible: true },
   { id: 'lot', label: 'Lot / Adresse', defaultVisible: true },
   { id: 'date', label: 'Date', defaultVisible: true },
@@ -47,30 +47,47 @@ const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'created_at', label: 'Créée le', defaultVisible: false },
 ]
 
-const MISSION_FILTER_FIELDS: FilterField[] = [
-  { id: 'reference', label: 'Référence', type: 'text' },
-  { id: 'lot_designation', label: 'Lot', type: 'text' },
-  { id: 'technicien_nom', label: 'Technicien', type: 'text' },
-  { id: 'statut', label: 'Statut', type: 'select', options: [
-    { value: 'a_traiter', label: 'À traiter' },
-    { value: 'prete', label: 'Prête' },
-    { value: 'terminee', label: 'Terminée' },
-    { value: 'annulee', label: 'Annulée' },
-  ]},
-  { id: 'statut_rdv', label: 'Statut RDV', type: 'select', options: [
-    { value: 'a_confirmer', label: 'À confirmer' },
-    { value: 'confirme', label: 'Confirmé' },
-    { value: 'reporte', label: 'Reporté' },
-  ]},
-  { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean' },
-  { id: 'commentaire', label: 'Commentaire', type: 'text' },
-]
+export const DEFAULT_COL_WIDTHS: Record<string, number> = {
+  reference: 130, lot: 220, date: 110, types: 130, technicien: 150,
+  proprietaire: 160, locataires: 180,
+  statut: 130, statut_rdv: 110, invitation: 110, documents: 100, created_at: 110,
+}
 
-type ViewMode = 'table' | 'kanban' | 'calendrier' | 'carte'
+// Sort accessor per column id. Columns missing here are non-sortable.
+export const SORTABLE: Record<string, (m: Mission) => string> = {
+  reference: (m) => m.reference,
+  lot: (m) => m.lot_designation || '',
+  date: (m) => m.date_planifiee || '',
+  technicien: (m) => (m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : ''),
+  statut: (m) => getStatutMission(m),
+  statut_rdv: (m) => m.statut_rdv || '',
+  created_at: (m) => m.created_at || '',
+}
 
-type PeriodFilter = 'today' | 'week' | 'month' | 'all'
+type ViewMode = 'table' | 'calendrier' | 'carte'
 
-function getPeriodDates(period: PeriodFilter): { date_from?: string; date_to?: string } {
+export type PeriodFilter = 'today' | 'week' | 'month' | 'all'
+export type SortDir = 'asc' | 'desc'
+
+interface MissionsPrefs {
+  visible_columns: string[]
+  column_order: string[]
+  filters: {
+    period: PeriodFilter
+    statut: string
+    rdv: string
+  }
+  sort: { col: string; dir: SortDir }
+}
+
+const PREF_DEFAULTS: MissionsPrefs = {
+  visible_columns: MISSION_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id),
+  column_order: MISSION_COLUMNS.map((c) => c.id),
+  filters: { period: 'all', statut: 'all', rdv: 'all' },
+  sort: { col: 'date', dir: 'desc' },
+}
+
+export function getPeriodDates(period: PeriodFilter): { date_from?: string; date_to?: string } {
   const now = new Date()
   const today = now.toISOString().split('T')[0]
 
@@ -99,16 +116,23 @@ function getPeriodDates(period: PeriodFilter): { date_from?: string; date_to?: s
 
 export function MissionsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [period, setPeriod] = useState<PeriodFilter>('all')
-  const [techFilter, setTechFilter] = useState<string>('all')
-  const [statutFilter, setStatutFilter] = useState<string>('all')
-  const [rdvFilter, setRdvFilter] = useState<string>('all')
+  // Pré-filtre date passé via URL (?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD)
+  // Quand présent, prend le pas sur la sélection de période.
+  const [customDate, setCustomDate] = useState<{ from: string; to: string } | null>(() => {
+    const df = searchParams.get('date_from')
+    const dt = searchParams.get('date_to')
+    if (df && dt) return { from: df, to: dt }
+    return null
+  })
   const [dynamicFilters, setDynamicFilters] = useState<ActiveFilter[]>([])
-  const [pendingFilter, setPendingFilter] = useState(false)
   const [view, setViewState] = useState<ViewMode>(() => {
     const saved = sessionStorage.getItem('missions_view')
-    return (saved as ViewMode) || 'table'
+    // Migration : la vue "kanban" a été retirée en V1 (décision Tony §7).
+    // Toute préférence stale tombe sur "table".
+    if (saved === 'table' || saved === 'calendrier' || saved === 'carte') return saved
+    return 'table'
   })
   const [showCreate, setShowCreate] = useState(false)
   const [displayCount, setDisplayCount] = useState(BATCH_SIZE)
@@ -119,7 +143,68 @@ export function MissionsPage() {
     sessionStorage.setItem('missions_view', v)
   }
 
-  const periodDates = useMemo(() => getPeriodDates(period), [period])
+  function clearCustomDate() {
+    setCustomDate(null)
+    const next = new URLSearchParams(searchParams)
+    next.delete('date_from')
+    next.delete('date_to')
+    setSearchParams(next, { replace: true })
+  }
+
+  // Persisted preferences (visible columns, order, quick filters, sort)
+  const { config: prefs, loaded: prefsLoaded, update: updatePrefs } = usePagePreference<MissionsPrefs>(
+    'missions_list',
+    PREF_DEFAULTS,
+  )
+
+  const [filters, setFiltersState] = useState(PREF_DEFAULTS.filters)
+  const [sort, setSortState] = useState(PREF_DEFAULTS.sort)
+  const [visibleCols, setVisibleColsState] = useState<string[]>(PREF_DEFAULTS.visible_columns)
+  const [columnOrder, setColumnOrderState] = useState<string[]>(PREF_DEFAULTS.column_order)
+
+  // Sync state once preferences finish loading from the server.
+  const syncedRef = useRef(false)
+  useEffect(() => {
+    if (!prefsLoaded || syncedRef.current) return
+    syncedRef.current = true
+    setFiltersState({ ...PREF_DEFAULTS.filters, ...(prefs.filters || {}) })
+    setSortState({ ...PREF_DEFAULTS.sort, ...(prefs.sort || {}) })
+    if (Array.isArray(prefs.visible_columns)) setVisibleColsState(prefs.visible_columns)
+    if (Array.isArray(prefs.column_order)) setColumnOrderState(prefs.column_order)
+  }, [prefsLoaded, prefs])
+
+  function updateFilters(partial: Partial<MissionsPrefs['filters']>) {
+    setFiltersState((prev) => {
+      const next = { ...prev, ...partial }
+      updatePrefs({ filters: next })
+      return next
+    })
+  }
+
+  function updateSort(next: { col: string; dir: SortDir }) {
+    setSortState(next)
+    updatePrefs({ sort: next })
+  }
+
+  function setVisibleCols(next: string[]) {
+    setVisibleColsState(next)
+    updatePrefs({ visible_columns: next })
+  }
+
+  function setColumnOrder(next: string[]) {
+    setColumnOrderState(next)
+    updatePrefs({ column_order: next })
+  }
+
+  function handlePeriodChange(v: PeriodFilter) {
+    updateFilters({ period: v })
+    if (customDate) clearCustomDate()
+  }
+
+  const periodDates = useMemo(
+    () => (customDate ? { date_from: customDate.from, date_to: customDate.to } : getPeriodDates(filters.period)),
+    [customDate, filters.period],
+  )
 
   const { data: statsData, isLoading: statsLoading } = useMissionStats()
   const stats = statsData ?? { total: 0, today: 0, pending: 0, upcoming: 0 }
@@ -127,78 +212,90 @@ export function MissionsPage() {
   const { data: techData } = useWorkspaceTechnicians()
   const technicians = techData ?? []
 
+  // Custom filter fields. `getValue` accessors map the user-friendly column id
+  // to the actual data path on Mission, so nested fields (technicien object,
+  // derived statut) match correctly when filtered client-side.
+  const filterFields: FilterField[] = useMemo(() => [
+    { id: 'reference', label: 'Référence', type: 'text' },
+    { id: 'lot_designation', label: 'Lot', type: 'text' },
+    {
+      id: 'technicien',
+      label: 'Technicien',
+      type: 'select',
+      options: technicians.map((t) => ({ value: t.id, label: `${t.prenom} ${t.nom}` })),
+      getValue: (m: Mission) => m.technicien?.user_id,
+    },
+    {
+      id: 'statut',
+      label: 'Statut',
+      type: 'select',
+      options: [
+        { value: 'a_traiter', label: 'À traiter' },
+        { value: 'prete', label: 'Prête' },
+        { value: 'terminee', label: 'Terminée' },
+        { value: 'annulee', label: 'Annulée' },
+      ],
+      getValue: (m: Mission) => getStatutMission(m),
+    },
+    {
+      id: 'statut_rdv',
+      label: 'Statut RDV',
+      type: 'select',
+      options: [
+        { value: 'a_confirmer', label: 'À confirmer' },
+        { value: 'confirme', label: 'Confirmé' },
+        { value: 'reporte', label: 'Reporté' },
+      ],
+    },
+    { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean', getValue: (m: Mission) => m.avec_inventaire },
+    { id: 'date_planifiee', label: 'Date mission', type: 'date' },
+    { id: 'created_at', label: 'Créée le', type: 'date' },
+    { id: 'commentaire', label: 'Commentaire', type: 'text' },
+  ], [technicians])
+
   const { data: missionsData, isLoading } = useMissions({
     search: search || undefined,
-    statut_affichage: statutFilter !== 'all' ? (statutFilter as StatutMission) : undefined,
-    statut_rdv: rdvFilter !== 'all' ? (rdvFilter as any) : undefined,
-    technicien_id: techFilter !== 'all' ? techFilter : undefined,
-    pending_actions: pendingFilter || undefined,
+    statut_affichage: filters.statut !== 'all' ? (filters.statut as StatutMission) : undefined,
+    statut_rdv: filters.rdv !== 'all' ? (filters.rdv as any) : undefined,
     ...periodDates,
   })
 
   const missionsRaw = missionsData?.data ?? []
 
-  // Apply dynamic filters client-side
-  const missions = useMemo(() => {
-    if (dynamicFilters.length === 0) return missionsRaw
-    return missionsRaw.filter(m => {
-      for (const f of dynamicFilters) {
-        const val = String((m as any)[f.field] ?? '')
-        switch (f.operator) {
-          case 'contains': if (!val.toLowerCase().includes(f.value.toLowerCase())) return false; break
-          case 'equals': if (val.toLowerCase() !== f.value.toLowerCase()) return false; break
-          case 'not_equals': if (val.toLowerCase() === f.value.toLowerCase()) return false; break
-          case 'starts_with': if (!val.toLowerCase().startsWith(f.value.toLowerCase())) return false; break
-          default: break
-        }
-      }
-      return true
-    })
-  }, [missionsRaw, dynamicFilters])
-  const { visible: visibleCols, setVisible: setVisibleCols } = useColumnPreferences('missions_list', MISSION_COLUMNS)
-  const { colWidths, onResizeStart, onResize } = useResizableColumns({
-    reference: 120, lot: 220, date: 110, types: 130, technicien: 140,
-    proprietaire: 150, locataires: 170,
-    statut: 110, statut_rdv: 90, invitation: 90, documents: 90, created_at: 90,
-  })
+  const missions = useMemo(
+    () => applyDynamicFilters(missionsRaw, dynamicFilters, filterFields),
+    [missionsRaw, dynamicFilters, filterFields],
+  )
+
+  const { colWidths, onResizeStart, onResize } = useResizableColumns(DEFAULT_COL_WIDTHS)
 
   // Reset display count on filter changes
   useEffect(() => {
     setDisplayCount(BATCH_SIZE)
-  }, [search, period, techFilter, statutFilter, pendingFilter])
-
-  // Sort state
-  const [sortCol, setSortCol] = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  }, [search, filters.period, filters.statut, filters.rdv, customDate, dynamicFilters])
 
   function handleSort(col: string) {
-    if (sortCol === col) {
-      if (sortDir === 'asc') setSortDir('desc')
-      else { setSortCol(null); setSortDir('asc') }
+    if (!SORTABLE[col]) return
+    if (sort.col === col) {
+      updateSort({ col, dir: sort.dir === 'asc' ? 'desc' : 'asc' })
     } else {
-      setSortCol(col)
-      setSortDir('asc')
+      // Date-like columns default to descending (most recent first); the rest
+      // start ascending. The user can flip after the first click.
+      const dir: SortDir = col === 'date' || col === 'created_at' ? 'desc' : 'asc'
+      updateSort({ col, dir })
     }
   }
 
   const sortedMissions = useMemo(() => {
-    if (!sortCol) return missions
+    const accessor = SORTABLE[sort.col]
+    if (!accessor) return missions
     return [...missions].sort((a, b) => {
-      let av = '', bv = ''
-      switch (sortCol) {
-        case 'reference': av = a.reference; bv = b.reference; break
-        case 'lot': av = a.lot_designation || ''; bv = b.lot_designation || ''; break
-        case 'date': av = a.date_planifiee || ''; bv = b.date_planifiee || ''; break
-        case 'statut': av = a.statut; bv = b.statut; break
-        case 'technicien': av = a.technicien ? `${a.technicien.prenom} ${a.technicien.nom}` : ''; bv = b.technicien ? `${b.technicien.prenom} ${b.technicien.nom}` : ''; break
-        case 'statut_rdv': av = a.statut_rdv || ''; bv = b.statut_rdv || ''; break
-        case 'created_at': av = a.created_at || ''; bv = b.created_at || ''; break
-        default: return 0
-      }
+      const av = accessor(a) || ''
+      const bv = accessor(b) || ''
       const cmp = av.localeCompare(bv, 'fr', { numeric: true })
-      return sortDir === 'asc' ? cmp : -cmp
+      return sort.dir === 'asc' ? cmp : -cmp
     })
-  }, [missions, sortCol, sortDir])
+  }, [missions, sort])
 
   const displayedMissions = useMemo(
     () => sortedMissions.slice(0, displayCount),
@@ -222,32 +319,52 @@ export function MissionsPage() {
     return () => observer.disconnect()
   }, [hasMore, missions.length])
 
-  const isCol = (id: string) => visibleCols.includes(id)
-
   function handleStatClick(type: 'total' | 'today' | 'pending' | 'upcoming') {
-    setPendingFilter(false)
+    if (customDate) clearCustomDate()
     switch (type) {
       case 'total':
-        setPeriod('all')
-        setStatutFilter('all')
+        updateFilters({ period: 'all', statut: 'all' })
         break
       case 'today':
-        setPeriod('today')
-        setStatutFilter('all')
+        updateFilters({ period: 'today', statut: 'all' })
         break
       case 'pending':
-        setPeriod('all')
-        setStatutFilter('all')
-        setPendingFilter(true)
+        // "À traiter" couvre déjà les missions avec actions en attente.
+        updateFilters({ period: 'all', statut: 'a_traiter' })
         break
       case 'upcoming':
-        setPeriod('all')
-        setStatutFilter('planifiee')
+        updateFilters({ period: 'all', statut: 'all' })
         break
     }
   }
 
-  const filters = { period, techFilter, statutFilter, pendingFilter }
+  // Effective column order: saved order, but always covering all known columns
+  // (anything new gets appended at the end so future columns appear by default).
+  const effectiveOrder: string[] = useMemo(() => {
+    const knownIds = MISSION_COLUMNS.map((c) => c.id)
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const id of columnOrder) {
+      if (knownIds.includes(id) && !seen.has(id)) {
+        out.push(id)
+        seen.add(id)
+      }
+    }
+    for (const id of knownIds) {
+      if (!seen.has(id)) out.push(id)
+    }
+    return out
+  }, [columnOrder])
+
+  const visibleOrdered = effectiveOrder.filter((id) => visibleCols.includes(id))
+
+  const hasActiveFilters =
+    !!search ||
+    filters.statut !== 'all' ||
+    filters.rdv !== 'all' ||
+    filters.period !== 'all' ||
+    !!customDate ||
+    dynamicFilters.length > 0
 
   return (
     <div className="px-8 py-6 max-w-[1400px] mx-auto space-y-6">
@@ -260,13 +377,13 @@ export function MissionsPage() {
           <p className="text-xs text-muted-foreground mt-1">
             {statsLoading ? '...' : `${stats.total} mission${stats.total > 1 ? 's' : ''}`}
             {stats.today > 0 && (
-              <> {'\u00b7 '}<button onClick={() => handleStatClick('today')} className="text-primary font-semibold hover:text-primary/80 transition-colors">{stats.today} aujourd'hui</button></>
+              <> {'· '}<button onClick={() => handleStatClick('today')} className="text-primary font-semibold hover:text-primary/80 transition-colors">{stats.today} aujourd'hui</button></>
             )}
             {stats.pending > 0 && (
-              <> {'\u00b7 '}<button onClick={() => handleStatClick('pending')} className="text-orange-600 dark:text-orange-400 font-semibold hover:opacity-80 transition-opacity">{stats.pending} en attente</button></>
+              <> {'· '}<button onClick={() => handleStatClick('pending')} className="text-orange-600 dark:text-orange-400 font-semibold hover:opacity-80 transition-opacity">{stats.pending} en attente</button></>
             )}
             {stats.upcoming > 0 && (
-              <> {'\u00b7 '}{stats.upcoming} à venir</>
+              <> {'· '}{stats.upcoming} à venir</>
             )}
           </p>
         </div>
@@ -276,8 +393,8 @@ export function MissionsPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <MagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
           <Input
             placeholder="Rechercher une mission..."
@@ -288,31 +405,55 @@ export function MissionsPage() {
         </div>
 
         {/* Quick filters */}
-        <Select value={period} onValueChange={(v) => setPeriod(v as PeriodFilter)}>
-          <SelectTrigger className="h-10 w-[150px] text-sm">
+        <Select
+          value={customDate ? '__custom' : filters.period}
+          onValueChange={(v) => { if (v === '__custom') return; handlePeriodChange(v as PeriodFilter) }}
+        >
+          <SelectTrigger className="h-10 w-[180px] text-sm">
             <SelectValue placeholder="Période" />
           </SelectTrigger>
           <SelectContent>
+            {customDate && (
+              <SelectItem value="__custom" disabled>
+                {customDate.from === customDate.to
+                  ? formatDate(customDate.from)
+                  : `${formatDate(customDate.from)} → ${formatDate(customDate.to)}`}
+              </SelectItem>
+            )}
             <SelectItem value="all">Tout</SelectItem>
             <SelectItem value="today">Aujourd'hui</SelectItem>
             <SelectItem value="week">Cette semaine</SelectItem>
             <SelectItem value="month">Ce mois</SelectItem>
           </SelectContent>
         </Select>
+        {customDate && (
+          <button
+            onClick={clearCustomDate}
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold hover:bg-primary/15 transition-colors"
+            title="Retirer le filtre date"
+          >
+            <CalendarBlank className="h-3 w-3" weight="fill" />
+            {customDate.from === customDate.to
+              ? formatDate(customDate.from)
+              : `${formatDate(customDate.from)} → ${formatDate(customDate.to)}`}
+            <X className="h-3 w-3" />
+          </button>
+        )}
 
-        <Select value={statutFilter} onValueChange={setStatutFilter}>
-          <SelectTrigger className="h-10 w-[140px] text-sm">
+        <Select value={filters.statut} onValueChange={(v) => updateFilters({ statut: v })}>
+          <SelectTrigger className="h-10 w-[150px] text-sm">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="planifiee">Planifiée</SelectItem>
+            <SelectItem value="a_traiter">À traiter</SelectItem>
+            <SelectItem value="prete">Prête</SelectItem>
             <SelectItem value="terminee">Terminée</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select value={rdvFilter} onValueChange={setRdvFilter}>
+        <Select value={filters.rdv} onValueChange={(v) => updateFilters({ rdv: v })}>
           <SelectTrigger className="h-10 w-[150px] text-sm">
             <SelectValue placeholder="Statut RDV" />
           </SelectTrigger>
@@ -324,7 +465,7 @@ export function MissionsPage() {
           </SelectContent>
         </Select>
 
-        <DynamicFilter fields={MISSION_FILTER_FIELDS} filters={dynamicFilters} onChange={setDynamicFilters} />
+        <DynamicFilter fields={filterFields} filters={dynamicFilters} onChange={setDynamicFilters} />
 
         <div className="flex-1" />
 
@@ -333,11 +474,13 @@ export function MissionsPage() {
           columns={MISSION_COLUMNS}
           visibleColumns={visibleCols}
           onColumnsChange={setVisibleCols}
+          order={effectiveOrder}
+          onOrderChange={setColumnOrder}
         />
 
         {/* View toggle */}
         <div className="flex items-center bg-muted/60 rounded-full p-0.5">
-          {([['table', List], ['kanban', GridFour], ['calendrier', CalendarBlank], ['carte', MapTrifold]] as [ViewMode, React.ElementType][]).map(([v, Icon]) => (
+          {([['table', List], ['calendrier', CalendarBlank], ['carte', MapTrifold]] as [ViewMode, React.ElementType][]).map(([v, Icon]) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -353,44 +496,54 @@ export function MissionsPage() {
 
       {/* Table view */}
       {view === 'table' && (
-        <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-x-auto">
+          <table className="w-full text-sm" style={{ minWidth: 'max-content' }}>
             <thead>
               <tr className="border-b border-border/30 group/thead bg-muted/20">
                 <th className="w-[3%] px-2 py-3.5" />
-                {isCol('reference') && <MissionTh col="reference" label="Référence" w={colWidths.reference} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="reference" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('lot') && <MissionTh col="lot" label="Lot / Adresse" w={colWidths.lot} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="lot" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('date') && <MissionTh col="date" label="Date" w={colWidths.date} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="date" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('types') && <MissionTh col="" label="Type(s)" w={colWidths.types} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="types" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('technicien') && <MissionTh col="technicien" label="Technicien" w={colWidths.technicien} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="technicien" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('proprietaire') && <MissionTh col="" label="Propriétaire" w={colWidths.proprietaire} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="proprietaire" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('locataires') && <MissionTh col="" label="Locataire(s)" w={colWidths.locataires} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="locataires" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('statut') && <MissionTh col="statut" label="Statut" w={colWidths.statut} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('statut_rdv') && <MissionTh col="statut_rdv" label="RDV" w={colWidths.statut_rdv} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="statut_rdv" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('invitation') && <MissionTh col="" label="Invitation" w={colWidths.invitation} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="invitation" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('documents') && <MissionTh col="" label="Docs" w={colWidths.documents} sortable={false} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="documents" onResizeStart={onResizeStart} onResize={onResize} />}
-                {isCol('created_at') && <MissionTh col="created_at" label="Créée le" w={colWidths.created_at} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} colId="created_at" onResizeStart={onResizeStart} onResize={onResize} last />}
+                {visibleOrdered.map((id, idx) => {
+                  const def = MISSION_COLUMNS.find((c) => c.id === id)
+                  if (!def) return null
+                  const sortKey = SORTABLE[id] ? id : ''
+                  const last = idx === visibleOrdered.length - 1
+                  return (
+                    <MissionTh
+                      key={id}
+                      col={sortKey}
+                      label={def.label}
+                      w={colWidths[id] ?? 120}
+                      sortable={!!sortKey}
+                      sortCol={sort.col}
+                      sortDir={sort.dir}
+                      onSort={handleSort}
+                      colId={id}
+                      onResizeStart={onResizeStart}
+                      onResize={onResize}
+                      last={last}
+                    />
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
               {/* Loading */}
               {isLoading && [1,2,3,4,5,6].map(i => (
                 <tr key={i} className="border-b border-border/20">
-                  <td className="px-2 py-3" /><td colSpan={12} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
+                  <td className="px-2 py-3" /><td colSpan={Math.max(1, visibleOrdered.length)} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
                 </tr>
               ))}
 
               {/* Empty */}
               {!isLoading && missions.length === 0 && (
-                <tr><td colSpan={13} className="py-20 text-center">
+                <tr><td colSpan={visibleOrdered.length + 1} className="py-20 text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted/60 mb-4">
                     <ClipboardText className="h-6 w-6 text-muted-foreground/50" />
                   </div>
                   <p className="text-sm font-semibold text-muted-foreground">
-                    {search || statutFilter !== 'all' || pendingFilter ? 'Aucune mission trouvée' : 'Aucune mission planifiée'}
+                    {hasActiveFilters ? 'Aucune mission trouvée' : 'Aucune mission planifiée'}
                   </p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">
-                    {search || statutFilter !== 'all' || pendingFilter ? 'Essayez avec d\'autres critères' : 'Créez votre première mission'}
+                  <p className="text-[11px] text-muted-foreground/60 mt-1">
+                    {hasActiveFilters ? 'Essayez avec d\'autres critères' : 'Créez votre première mission'}
                   </p>
                 </td></tr>
               )}
@@ -398,7 +551,6 @@ export function MissionsPage() {
               {/* Rows */}
               {!isLoading && displayedMissions.map((mission) => {
                 const pending = getPendingActions(mission)
-                const techName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
                 return (
                   <tr
                     key={mission.id}
@@ -414,18 +566,7 @@ export function MissionsPage() {
                         </TooltipContent></Tooltip></TooltipProvider>
                       )}
                     </td>
-                    {isCol('reference') && <td className="px-3 py-3 font-mono text-[13px] font-medium text-foreground group-hover:text-primary transition-colors truncate">{mission.reference}</td>}
-                    {isCol('lot') && <td className="px-3 py-3 truncate"><div className="text-[13px] font-medium text-foreground truncate">{mission.lot_designation}</div><div className="text-xs text-muted-foreground/50 truncate">{mission.adresse || mission.batiment_designation}</div></td>}
-                    {isCol('date') && <td className="px-3 py-3 text-[13px] text-muted-foreground">{formatDate(mission.date_planifiee)}{mission.heure_debut && <div className="text-xs text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}</td>}
-                    {isCol('types') && <td className="px-3 py-3"><div className="flex flex-wrap gap-1">{mission.edl_types.map(t => <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>{t === 'entree' || t === 'sortie' ? sensLabels[t as 'entree' | 'sortie'] : 'Inv.'}</span>)}</div></td>}
-                    {isCol('technicien') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate">{techName || <span className="text-muted-foreground/30">—</span>}</td>}
-                    {isCol('proprietaire') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.proprietaire_nom || ''}>{mission.proprietaire_nom || <span className="text-muted-foreground/30">—</span>}</td>}
-                    {isCol('locataires') && <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.locataires_noms?.join(', ') || ''}>{mission.locataires_noms && mission.locataires_noms.length > 0 ? mission.locataires_noms.join(', ') : <span className="text-muted-foreground/30">—</span>}</td>}
-                    {isCol('statut') && <td className="px-3 py-3"><MissionStatusBadge mission={mission} variant="compact" /></td>}
-                    {isCol('statut_rdv') && <td className="px-3 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutRdvLabels[mission.statut_rdv]}</span></td>}
-                    {isCol('invitation') && <td className="px-3 py-3">{mission.technicien ? <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
-                    {isCol('documents') && <td className="px-3 py-3">{mission.has_signed_document ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" title="Au moins un EDL signé disponible"><FileText className="h-3 w-3" weight="fill" /> Dispo</span> : <span className="text-muted-foreground/30 text-xs">—</span>}</td>}
-                    {isCol('created_at') && <td className="px-3 py-3 text-[13px] text-muted-foreground/50">{formatDate(mission.created_at)}</td>}
+                    {visibleOrdered.map((id) => <MissionTd key={id} colId={id} mission={mission} />)}
                   </tr>
                 )
               })}
@@ -440,16 +581,11 @@ export function MissionsPage() {
           )}
 
           {!isLoading && !hasMore && missions.length > BATCH_SIZE && (
-            <div className="py-3.5 text-center text-xs text-muted-foreground/40">
+            <div className="py-3.5 text-center text-[11px] text-muted-foreground/40">
               {missions.length} mission{missions.length > 1 ? 's' : ''}
             </div>
           )}
         </div>
-      )}
-
-      {/* Kanban view */}
-      {view === 'kanban' && (
-        <MissionKanban missions={missions} filters={filters} />
       )}
 
       {/* Calendar view */}
@@ -466,15 +602,15 @@ export function MissionsPage() {
 }
 
 /* ── Table header cell with separator + sort arrows ── */
-function MissionTh({ col, label, w, sortable = true, last, sortCol, sortDir, onSort, colId, onResizeStart, onResize }: {
+export function MissionTh({ col, label, w, sortable = true, last, sortCol, sortDir, onSort, colId, onResizeStart, onResize }: {
   col: string; label: string; w: number; sortable?: boolean; last?: boolean
   sortCol: string | null; sortDir: 'asc' | 'desc'; onSort: (col: string) => void
   colId: string; onResizeStart: () => void; onResize: (id: string, delta: number) => void
 }) {
-  const isActive = sortCol === col && sortable
+  const isActive = sortable && !!col && sortCol === col
   return (
     <th
-      className={`text-left font-medium text-xs text-muted-foreground px-3 py-3.5 relative select-none transition-colors ${sortable ? 'cursor-pointer hover:text-foreground' : ''}`}
+      className={`text-left font-medium text-[11px] text-muted-foreground px-3 py-3.5 relative select-none transition-colors ${sortable ? 'cursor-pointer hover:text-foreground' : ''}`}
       style={{ width: w, minWidth: 40 }}
       onClick={() => sortable && col && onSort(col)}
     >
@@ -490,4 +626,80 @@ function MissionTh({ col, label, w, sortable = true, last, sortCol, sortDir, onS
       {!last && <ResizeHandle colId={colId} onResizeStart={onResizeStart} onResize={onResize} />}
     </th>
   )
+}
+
+/* ── Body cell renderers, looked up by column id so they follow user-chosen order ── */
+export function MissionTd({ colId, mission }: { colId: string; mission: Mission }) {
+  switch (colId) {
+    case 'reference':
+      return <td className="px-3 py-3 font-mono text-[13px] font-medium text-foreground group-hover:text-primary transition-colors truncate">{mission.reference}</td>
+    case 'lot':
+      return (
+        <td className="px-3 py-3 truncate">
+          <div className="text-[13px] font-medium text-foreground truncate">{mission.lot_designation}</div>
+          <div className="text-[11px] text-muted-foreground/50 truncate">{mission.adresse || mission.batiment_designation}</div>
+        </td>
+      )
+    case 'date':
+      return (
+        <td className="px-3 py-3 text-[13px] text-muted-foreground">
+          {formatDate(mission.date_planifiee)}
+          {mission.heure_debut && <div className="text-[11px] text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}
+        </td>
+      )
+    case 'types':
+      return (
+        <td className="px-3 py-3">
+          <div className="flex flex-wrap gap-1">
+            {mission.edl_types.map((t) => (
+              <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>
+                {t === 'entree' || t === 'sortie' ? sensLabels[t as 'entree' | 'sortie'] : 'Inv.'}
+              </span>
+            ))}
+          </div>
+        </td>
+      )
+    case 'technicien': {
+      const techName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
+      return <td className="px-3 py-3 text-[13px] text-muted-foreground truncate">{techName || <span className="text-muted-foreground/30">—</span>}</td>
+    }
+    case 'proprietaire':
+      return <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.proprietaire_nom || ''}>{mission.proprietaire_nom || <span className="text-muted-foreground/30">—</span>}</td>
+    case 'locataires':
+      return <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.locataires_noms?.join(', ') || ''}>{mission.locataires_noms && mission.locataires_noms.length > 0 ? mission.locataires_noms.join(', ') : <span className="text-muted-foreground/30">—</span>}</td>
+    case 'statut':
+      return <td className="px-3 py-3"><MissionStatusBadge mission={mission} variant="compact" /></td>
+    case 'statut_rdv':
+      return (
+        <td className="px-3 py-3">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+            {statutRdvLabels[mission.statut_rdv]}
+          </span>
+        </td>
+      )
+    case 'invitation':
+      return (
+        <td className="px-3 py-3">
+          {mission.technicien ? (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+              {statutInvitationLabels[mission.technicien.statut_invitation]}
+            </span>
+          ) : <span className="text-muted-foreground/30 text-[11px]">—</span>}
+        </td>
+      )
+    case 'documents':
+      return (
+        <td className="px-3 py-3">
+          {mission.has_signed_document ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" title="Au moins un EDL signé disponible">
+              <FileText className="h-3 w-3" weight="fill" /> Dispo
+            </span>
+          ) : <span className="text-muted-foreground/30 text-[11px]">—</span>}
+        </td>
+      )
+    case 'created_at':
+      return <td className="px-3 py-3 text-[13px] text-muted-foreground/50">{formatDate(mission.created_at)}</td>
+    default:
+      return null
+  }
 }
