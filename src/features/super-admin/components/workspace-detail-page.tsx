@@ -104,8 +104,8 @@ export function SuperAdminWorkspaceDetailPage() {
                   <p className="text-xs text-muted-foreground">{m.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize text-[10px]">{m.role}</Badge>
-                  {!m.est_actif && <Badge variant="secondary" className="text-[10px]">Inactif</Badge>}
+                  <Badge variant="outline" className="capitalize text-[11px]">{m.role}</Badge>
+                  {!m.est_actif && <Badge variant="secondary" className="text-[11px]">Inactif</Badge>}
                   <span className="text-[11px] text-muted-foreground">
                     {m.last_login_at ? `Connect. ${formatDate(m.last_login_at)}` : 'Jamais connecté'}
                   </span>
@@ -133,7 +133,7 @@ export function SuperAdminWorkspaceDetailPage() {
                   <p className="text-foreground font-medium">{inv.email}</p>
                   <p className="text-[11px] text-muted-foreground">Expire le {formatDate(inv.expires_at)}</p>
                 </div>
-                <Badge variant="outline" className="capitalize text-[10px]">{inv.role}</Badge>
+                <Badge variant="outline" className="capitalize text-[11px]">{inv.role}</Badge>
               </div>
             ))}
           </div>

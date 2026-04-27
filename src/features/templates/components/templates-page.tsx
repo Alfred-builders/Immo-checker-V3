@@ -182,7 +182,7 @@ export function TemplatesPage() {
                           {piece.nom}
                         </p>
                         {piece.est_archive && (
-                          <span className="text-[10px] text-muted-foreground/50">Archive</span>
+                          <span className="text-[11px] text-muted-foreground/50">Archive</span>
                         )}
                       </div>
 
@@ -232,7 +232,7 @@ export function TemplatesPage() {
                             </Button>
                           </>
                         ) : (
-                          <span className="text-[10px] text-muted-foreground/40">Lecture seule</span>
+                          <span className="text-[11px] text-muted-foreground/40">Lecture seule</span>
                         )}
                       </div>
                     </div>

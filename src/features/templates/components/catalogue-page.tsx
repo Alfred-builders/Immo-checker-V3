@@ -196,7 +196,7 @@ export function CataloguePage() {
                 {item.nom}
               </p>
               {item.est_archive && (
-                <span className="text-[10px] text-muted-foreground/50">Archivé</span>
+                <span className="text-[11px] text-muted-foreground/50">Archivé</span>
               )}
             </div>
 
@@ -521,7 +521,7 @@ function TagSection({
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-medium text-foreground/70">{label}</span>
         {!readOnly && !adding && (
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => setAdding(true)}>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]" onClick={() => setAdding(true)}>
             <Plus className="h-3 w-3 mr-0.5" /> Ajouter
           </Button>
         )}

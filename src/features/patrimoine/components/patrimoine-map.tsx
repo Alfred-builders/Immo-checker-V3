@@ -187,7 +187,7 @@ export function PatrimoineMap({ batiments }: Props) {
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
-              <span style="font-size: 10px; background: #f0f0f0; padding: 1px 6px; border-radius: 4px;">${props?.type_label ?? ''}</span>
+              <span style="font-size: 11px; background: #f0f0f0; padding: 1px 6px; border-radius: 4px;">${props?.type_label ?? ''}</span>
             </div>
             <button onclick="event.stopPropagation(); window.__batMapPin__()" class="immo-pin-btn" title="Epingler" style="background: none; border: none; cursor: pointer; color: #9ca3af; padding: 2px; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
               ${pinSvg}
@@ -210,7 +210,7 @@ export function PatrimoineMap({ batiments }: Props) {
         const p = f.properties
         const color = p?.color ?? '#9ca3af'
         const missionsTag = p?.missions_a_venir > 0
-          ? `<span style="font-size: 10px; color: #2563eb; font-weight: 500;">${p.missions_a_venir} mission(s)</span>`
+          ? `<span style="font-size: 11px; color: #2563eb; font-weight: 500;">${p.missions_a_venir} mission(s)</span>`
           : ''
         return `
           <div class="immo-mission-row" onclick="window.__batMapNav__('${p?.id}','${(p?.designation ?? '').replace(/'/g, "\\'")}')" style="display: flex; align-items: center; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
@@ -218,9 +218,9 @@ export function PatrimoineMap({ batiments }: Props) {
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; font-weight: 600; color: #111827;">${p?.designation ?? ''}</span>
-                <span style="font-size: 10px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px;">${p?.type_label ?? ''}</span>
+                <span style="font-size: 11px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px;">${p?.type_label ?? ''}</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 10px; color: #6b7280;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 11px; color: #6b7280;">
                 <span>${p?.nb_lots ?? 0} lots</span>
                 ${missionsTag}
               </div>

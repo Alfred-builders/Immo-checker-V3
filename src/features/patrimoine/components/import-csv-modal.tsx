@@ -352,7 +352,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
               <UploadSimple className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-sm font-medium text-muted-foreground">Glissez votre fichier CSV ici</p>
               <p className="text-xs text-muted-foreground/60 mt-1">ou cliquez pour parcourir</p>
-              <p className="text-[10px] text-muted-foreground/40 mt-3">Formats: .csv (separateurs: virgule, point-virgule, tabulation)</p>
+              <p className="text-[11px] text-muted-foreground/40 mt-3">Formats: .csv (separateurs: virgule, point-virgule, tabulation)</p>
               <input
                 id="csv-input"
                 type="file"
@@ -372,7 +372,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
                 <p className="text-sm font-medium text-foreground">Mapping des colonnes</p>
                 <p className="text-xs text-muted-foreground/60">{csvData.rows.length} lignes detectees — Associez chaque colonne CSV a un champ ImmoChecker</p>
               </div>
-              <Badge variant="outline" className="text-[10px]">{csvData.headers.length} colonnes</Badge>
+              <Badge variant="outline" className="text-[11px]">{csvData.headers.length} colonnes</Badge>
             </div>
 
             <div className="space-y-2 max-h-[350px] overflow-y-auto">
@@ -383,7 +383,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
                   <div key={header} className={`grid grid-cols-[1fr_24px_240px] items-center gap-3 p-2.5 rounded-lg border ${isMapped ? 'bg-emerald-50/30 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{header}</p>
-                      <p className="text-[10px] text-muted-foreground/60 truncate">{csvData.rows[0]?.[csvData.headers.indexOf(header)] || '—'}</p>
+                      <p className="text-[11px] text-muted-foreground/60 truncate">{csvData.rows[0]?.[csvData.headers.indexOf(header)] || '—'}</p>
                     </div>
                     <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${isMapped ? 'text-emerald-400' : 'text-muted-foreground/40'}`} />
                     <Select value={currentMapping} onValueChange={(v) => setMapping({ ...mapping, [header]: v })}>
@@ -417,7 +417,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Apercu (3 premières lignes)</p>
               <div className="overflow-x-auto">
-                <table className="text-[10px] w-full">
+                <table className="text-[11px] w-full">
                   <thead>
                     <tr className="bg-gray-50">
                       <th className="px-2 py-1 text-left font-semibold text-muted-foreground/60">#</th>
@@ -478,7 +478,7 @@ export function ImportCSVModal({ open, onOpenChange, onImported }: Props) {
             {results.errors.length > 0 && (
               <div className="max-h-40 overflow-y-auto bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
                 {results.errors.map((err, i) => (
-                  <p key={i} className="text-[10px] text-red-700">{err}</p>
+                  <p key={i} className="text-[11px] text-red-700">{err}</p>
                 ))}
               </div>
             )}

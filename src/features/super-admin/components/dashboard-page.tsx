@@ -210,7 +210,7 @@ export function SuperAdminDashboardPage() {
                         <p className="text-[11px] text-muted-foreground capitalize">{typeLabels[w.type_workspace] ?? w.type_workspace}</p>
                       </div>
                     </div>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-[11px]">
                       {w.missions_count} {w.missions_count === 1 ? 'mission' : 'missions'}
                     </Badge>
                   </Link>
@@ -233,7 +233,7 @@ export function SuperAdminDashboardPage() {
               value={
                 <div className="flex gap-1.5 flex-wrap justify-end">
                   {(trends?.by_statut ?? []).map((s) => (
-                    <Badge key={s.statut} className={`${statutLabels[s.statut]?.color ?? ''} text-[10px]`}>
+                    <Badge key={s.statut} className={`${statutLabels[s.statut]?.color ?? ''} text-[11px]`}>
                       {statutLabels[s.statut]?.label ?? s.statut} · {s.count}
                     </Badge>
                   ))}
@@ -294,7 +294,7 @@ function KpiCard({ label, value, sub, tag, tagIcon, color, loading }: {
         </CardTitle>
         {tag && (
           <CardAction>
-            <Badge variant="outline" className={`${colorCls} gap-1 text-[10px]`}>
+            <Badge variant="outline" className={`${colorCls} gap-1 text-[11px]`}>
               {tagIcon}
               {tag}
             </Badge>

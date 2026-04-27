@@ -276,7 +276,7 @@ export function SuperAdminAuditLogPage() {
         <div className="space-y-5">
           {grouped.map(([groupKey, group]) => (
             <section key={groupKey}>
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60 mb-2 pl-1">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/60 mb-2 pl-1">
                 {group.label} · {group.entries.length}
               </h2>
               <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised divide-y divide-border/15 overflow-hidden">
@@ -314,11 +314,11 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={`${TONE_BG[meta.tone]} text-[10px] font-semibold px-2 py-0.5 border`}>
+              <Badge variant="outline" className={`${TONE_BG[meta.tone]} text-[11px] font-semibold px-2 py-0.5 border`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${TONE_DOT[meta.tone]} mr-1.5`} />
                 {meta.label}
               </Badge>
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground/70 px-1.5 py-0.5 rounded bg-muted/40">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/70 px-1.5 py-0.5 rounded bg-muted/40">
                 <TargetIcon className="h-3 w-3" />
                 {entry.target_type}
               </span>
@@ -338,7 +338,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
           {/* Author + toggle metadata */}
           <div className="flex items-center justify-between gap-3 mt-2">
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[9px] font-bold">
+              <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
                 {authorInitials || '?'}
               </span>
               <Link
@@ -353,7 +353,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
             {pairs.length > 0 && (
               <button
                 onClick={() => setOpen(v => !v)}
-                className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {open ? <CaretUp className="h-3 w-3" /> : <CaretDown className="h-3 w-3" />}
                 Détails ({pairs.length})
@@ -395,7 +395,7 @@ function StatCard({ label, value, Icon, tone, hint }: {
       <div className="min-w-0">
         <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-wider">{label}</p>
         <p className="text-2xl font-bold tracking-tight text-foreground mt-1">{value}</p>
-        {hint && <p className="text-[10px] text-muted-foreground/50 mt-0.5">{hint}</p>}
+        {hint && <p className="text-[11px] text-muted-foreground/50 mt-0.5">{hint}</p>}
       </div>
       <div className={`shrink-0 h-9 w-9 rounded-lg flex items-center justify-center border ${TONE_BG[tone]}`}>
         <Icon className="h-4 w-4" weight="fill" />

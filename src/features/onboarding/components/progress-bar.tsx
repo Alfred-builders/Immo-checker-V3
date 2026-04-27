@@ -26,7 +26,7 @@ export function ProgressBar({ steps, currentStep, skippedSteps }: ProgressBarPro
               }`}
             >
               <p
-                className={`text-[9px] font-semibold uppercase tracking-[0.12em] ${
+                className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${
                   isCurrent ? 'text-primary' : isDone ? 'text-muted-foreground' : 'text-muted-foreground/40'
                 }`}
               >

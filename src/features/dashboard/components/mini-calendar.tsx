@@ -132,7 +132,7 @@ export function MiniCalendar({ onDayClick, onMissionClick: _onMissionClick }: Mi
           {DAY_LABELS.map((label) => (
             <div
               key={label}
-              className="text-center text-[10px] font-medium text-muted-foreground py-1"
+              className="text-center text-[11px] font-medium text-muted-foreground py-1"
             >
               {label}
             </div>

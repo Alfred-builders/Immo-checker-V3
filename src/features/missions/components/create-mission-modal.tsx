@@ -380,7 +380,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                       <span className="text-[13px] font-medium text-foreground">
                         {loc.prenom ? `${loc.prenom} ${loc.nom}` : loc.nom}
                       </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${
                         loc.role_locataire === 'entrant'
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-amber-50 text-amber-700'
@@ -472,7 +472,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                     Collectif
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground/60">
+                <p className="text-[11px] text-muted-foreground/60">
                   {typeBail === 'individuel'
                     ? 'Chaque locataire aura son propre EDL'
                     : 'Un seul EDL signe par tous les locataires'}
@@ -498,7 +498,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                           {t.prenom} {t.nom}
                         </span>
                         {conflictInfo && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${
                             conflictInfo.color === 'text-muted-foreground'
                               ? 'bg-muted/30 text-muted-foreground'
                               : 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400'

@@ -85,7 +85,7 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
                       {mission.edl_types?.map((t) => (
                         <span
                           key={t}
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold ${
                             t === 'entree' || t === 'sortie'
                               ? sensColors[t as 'entree' | 'sortie']
                               : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'
@@ -124,7 +124,7 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
                         <Badge
                           key={i}
                           variant="outline"
-                          className="text-[10px] px-1.5 py-0 font-medium text-amber-600 border-amber-200 bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:bg-amber-950/50"
+                          className="text-[11px] px-1.5 py-0 font-medium text-amber-600 border-amber-200 bg-amber-50 dark:text-amber-400 dark:border-amber-800 dark:bg-amber-950/50"
                         >
                           {action}
                         </Badge>

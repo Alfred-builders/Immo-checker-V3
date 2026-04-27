@@ -189,7 +189,7 @@ export function LotDetailPage() {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{lot.designation}</h1>
                 <div className="flex items-center gap-2 mt-1.5">
-                  {lot.meuble && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700">Meublé</span>}
+                  {lot.meuble && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700">Meublé</span>}
                   {lot.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
                 </div>
                 <div className="flex items-center gap-5 mt-2 text-xs text-muted-foreground">
@@ -481,7 +481,7 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
           {/* Propriétaires */}
           {proprietaires.length > 0 && (
             <div className="mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Propriétaire(s)</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Propriétaire(s)</p>
               <div className="space-y-0 divide-y divide-border/30">
                 {proprietaires.map((p) => {
                   const displayName = p.prenom ? `${p.prenom} ${p.nom}` : p.raison_sociale || p.nom
@@ -490,7 +490,7 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
                     <div key={p.id} className="flex items-center gap-3 py-3 group">
                       <div className={`h-9 w-9 rounded-[10px] flex items-center justify-center text-[12px] font-bold shrink-0 ${avatarColors.sky}`}>{initial}</div>
                       <Link to={`/app/tiers/${p.id}`} className="text-[14px] text-primary hover:underline font-medium flex-1 truncate">{displayName}</Link>
-                      {p.est_principal && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700">Principal</span>}
+                      {p.est_principal && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-700">Principal</span>}
                       {p.tel && <span className="text-[12px] text-muted-foreground">{p.tel}</span>}
                       {!isArchived && (
                         <button onClick={() => setUnlinkTarget({ id: p.id, name: displayName })} className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-500 transition-all"><X className="h-3.5 w-3.5" /></button>
@@ -505,7 +505,7 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
           {/* Mandataire */}
           <div className="mb-3 border-t border-border/30 pt-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40">Mandataire</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40">Mandataire</p>
               {!isArchived && !showMandataireSearch && (
                 <button onClick={() => setShowMandataireSearch(true)} className="text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors">
                   {mandataire ? 'Modifier' : '+ Assigner'}
@@ -551,14 +551,14 @@ function TiersCard({ lotId, proprietaires, mandataire, dernierLocataire, isArchi
           {/* Dernier locataire (read-only) */}
           {dernierLocataire && (
             <div className="border-t border-border/30 pt-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Dernier locataire</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2">Dernier locataire</p>
               <div className="flex items-center gap-3 py-2">
                 <div className="h-9 w-9 rounded-[10px] flex items-center justify-center text-[12px] font-bold shrink-0 bg-green-100 text-green-700">{(dernierLocataire.prenom?.[0] || dernierLocataire.nom[0]).toUpperCase()}</div>
                 <div className="flex-1 min-w-0">
                   <Link to={`/app/tiers/${dernierLocataire.id}`} className="text-[14px] text-primary hover:underline font-medium truncate block">{dernierLocataire.prenom ? `${dernierLocataire.prenom} ${dernierLocataire.nom}` : dernierLocataire.nom}</Link>
                   <span className="text-[12px] text-muted-foreground">{dernierLocataire.date_entree ? `Entrée ${formatDate(dernierLocataire.date_entree)}` : ''}{dernierLocataire.tel ? ` · ${dernierLocataire.tel}` : ''}</span>
                 </div>
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-green-50 text-green-600 border border-green-200">Informatif</span>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-semibold bg-green-50 text-green-600 border border-green-200">Informatif</span>
               </div>
             </div>
           )}
@@ -602,7 +602,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
       <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2.5 px-6 py-4 hover:bg-muted/10 transition-colors cursor-pointer">
         <ClipboardText className="h-4 w-4 text-muted-foreground/50" />
         <span className="text-[13px] font-bold text-foreground">Missions liées</span>
-        {missions.length > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary">{missions.length}</span>}
+        {missions.length > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">{missions.length}</span>}
         {!isArchived && (
           <div className="ml-3" onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" size="sm" className="h-7 text-xs text-primary hover:text-primary px-2" onClick={() => setShowCreate(true)}>
@@ -644,7 +644,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         {m.edl_types?.map((type: string) => (
-                          <span key={type} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>
+                          <span key={type} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>
                             {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inventaire'}
                           </span>
                         ))}
@@ -652,7 +652,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{m.technicien_nom || '—'}</td>
                     <td className="px-4 py-3">
-                      {(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
+                      {(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
                     </td>
                   </tr>
                 ))}

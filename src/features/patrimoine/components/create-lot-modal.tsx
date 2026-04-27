@@ -164,7 +164,7 @@ export function CreateLotModal({ open, onOpenChange, preselectedBatimentId, pres
                     createLabel="Créer un bâtiment"
                   />
                   {batimentId && selectedBatiment && (
-                    <p className="text-[10px] text-emerald-600 flex items-center gap-1">
+                    <p className="text-[11px] text-emerald-600 flex items-center gap-1">
                       Sélectionné : <span className="font-medium">{selectedBatiment.designation}</span>
                       — {selectedBatiment.adresse_principale?.rue}, {selectedBatiment.adresse_principale?.ville}
                     </p>

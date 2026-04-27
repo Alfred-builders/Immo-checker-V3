@@ -74,7 +74,7 @@ export function BellDropdown() {
         >
           {unreadCount > 0 ? <BellRinging size={18} weight="duotone" /> : <Bell size={18} weight="regular" />}
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -155,7 +155,7 @@ function NotificationItem({ n, onClick }: { n: Notification; onClick: () => void
         {n.message && (
           <p className="text-[11.5px] text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
         )}
-        <p className="text-[10px] text-muted-foreground/70 mt-1">{formatRelative(n.created_at)}</p>
+        <p className="text-[11px] text-muted-foreground/70 mt-1">{formatRelative(n.created_at)}</p>
       </div>
     </button>
   )

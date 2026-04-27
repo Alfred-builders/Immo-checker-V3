@@ -92,7 +92,7 @@ export function SettingsPage() {
             {/* EPIC 4 sub-pages — Config EDL — disabled until backend + UI are fully shipped */}
             {canManageTemplates && (
               <div className={visibleNavItems.length > 0 ? 'pt-4 mt-4 border-t border-border/60' : ''}>
-                <p className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
+                <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
                 {NAV_LINKS.map(({ label, icon: Icon, href }) => (
                   <div
                     key={href}
@@ -101,7 +101,7 @@ export function SettingsPage() {
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="flex-1">{label}</span>
-                    <span className="text-[9px] font-semibold tracking-wider uppercase bg-muted/50 text-muted-foreground/60 px-1.5 py-0.5 rounded">À venir</span>
+                    <span className="text-[11px] font-semibold tracking-wider uppercase bg-muted/50 text-muted-foreground/60 px-1.5 py-0.5 rounded">À venir</span>
                   </div>
                 ))}
               </div>
@@ -147,7 +147,7 @@ function GestionnaireEmptyState() {
             >
               <Icon className="h-5 w-5 text-muted-foreground/40" />
               <span className="text-xs font-medium text-muted-foreground/60">{label}</span>
-              <span className="absolute top-1.5 right-1.5 text-[8px] font-semibold tracking-wider uppercase bg-muted/60 text-muted-foreground/60 px-1 py-0.5 rounded">À venir</span>
+              <span className="absolute top-1.5 right-1.5 text-[11px] font-semibold tracking-wider uppercase bg-muted/60 text-muted-foreground/60 px-1 py-0.5 rounded">À venir</span>
             </div>
           ))}
         </div>
@@ -382,7 +382,7 @@ function GeneralSection() {
                       style === 'gradient' ? 'bg-background bg-gradient-to-br from-primary/5 to-transparent' :
                       'bg-background bg-[radial-gradient(ellipse_at_top_left,var(--color-primary)/0.08,transparent),radial-gradient(ellipse_at_bottom_right,var(--color-primary)/0.05,transparent)]'
                     }`} />
-                    <span className="relative text-[9px] font-semibold text-foreground/70 capitalize">{style}</span>
+                    <span className="relative text-[11px] font-semibold text-foreground/70 capitalize">{style}</span>
                   </button>
                 ))}
               </div>
@@ -558,7 +558,7 @@ function UsersSection() {
                     </div>
                     {/* Role — clickable select disguised as badge */}
                     <Select value={user.role} onValueChange={(v) => handleRoleChange(user, v)} disabled={!user.est_actif}>
-                      <SelectTrigger className={`h-7 w-auto gap-1 px-2.5 rounded-full border text-[10px] font-semibold ${rc.bg} ${rc.color} ${rc.border}`}>
+                      <SelectTrigger className={`h-7 w-auto gap-1 px-2.5 rounded-full border text-[11px] font-semibold ${rc.bg} ${rc.color} ${rc.border}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -570,7 +570,7 @@ function UsersSection() {
                       </SelectContent>
                     </Select>
                     {/* Statut badge */}
-                    <Badge className={user.est_actif ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]' : 'bg-zinc-100 text-zinc-500 border-zinc-200 text-[10px]'}>{user.est_actif ? 'Actif' : 'Inactif'}</Badge>
+                    <Badge className={user.est_actif ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px]' : 'bg-zinc-100 text-zinc-500 border-zinc-200 text-[11px]'}>{user.est_actif ? 'Actif' : 'Inactif'}</Badge>
                     {/* Action */}
                     {user.est_actif ? (
                       <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50" disabled={isSelf} onClick={() => setConfirmAction({ user, action: 'deactivate' })}>
@@ -736,8 +736,8 @@ function InvitationsSection() {
                       {isPending && ` — expire le ${new Date(inv.expires_at).toLocaleDateString('fr-FR')}`}
                     </p>
                   </div>
-                  <Badge className={`${rc.bg} ${rc.color} ${rc.border} text-[10px]`}>{rc.label}</Badge>
-                  <Badge variant={isAccepted ? 'default' : isExpired ? 'destructive' : 'outline'} className="text-[10px]">
+                  <Badge className={`${rc.bg} ${rc.color} ${rc.border} text-[11px]`}>{rc.label}</Badge>
+                  <Badge variant={isAccepted ? 'default' : isExpired ? 'destructive' : 'outline'} className="text-[11px]">
                     {isAccepted ? 'Acceptée' : isExpired ? 'Expirée' : 'En attente'}
                   </Badge>
                   <div className="flex items-center gap-1 shrink-0">
@@ -967,8 +967,8 @@ function ApiKeysBlock() {
                       {k.last_used_at && <span className="font-sans ml-2">— utilisée le {new Date(k.last_used_at).toLocaleDateString('fr-FR')}</span>}
                     </p>
                   </div>
-                  <Badge className={`${sc.bg} ${sc.color} ${sc.border} text-[10px] shrink-0`}>{sc.label}</Badge>
-                  {!k.est_active && <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">Révoquée</Badge>}
+                  <Badge className={`${sc.bg} ${sc.color} ${sc.border} text-[11px] shrink-0`}>{sc.label}</Badge>
+                  {!k.est_active && <Badge variant="outline" className="text-[11px] text-muted-foreground shrink-0">Révoquée</Badge>}
                   {k.est_active && (
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                       onClick={() => handleRevoke(k)}>
@@ -1093,7 +1093,7 @@ function WebhooksBlock() {
                         className="mt-0.5 accent-primary" />
                       <div>
                         <p className="text-xs font-medium text-foreground">{ev.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{ev.description}</p>
+                        <p className="text-[11px] text-muted-foreground">{ev.description}</p>
                       </div>
                     </label>
                   ))}
@@ -1154,7 +1154,7 @@ function WebhooksBlock() {
                 {/* Delivery log */}
                 {expandedId === wh.id && (
                   <div className="border-t border-border/50 bg-surface-sunken px-4 py-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">Dernières livraisons</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-2">Dernières livraisons</p>
                     {deliveries.length === 0 ? (
                       <p className="text-xs text-muted-foreground py-4 text-center">Aucune livraison</p>
                     ) : (
@@ -1164,9 +1164,9 @@ function WebhooksBlock() {
                           return (
                             <div key={d.id} className="flex items-center gap-2 text-xs">
                               <span className={`font-medium w-16 shrink-0 ${ds.color}`}>{ds.label}</span>
-                              <code className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded text-[10px]">{d.event_type}</code>
+                              <code className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded text-[11px]">{d.event_type}</code>
                               {d.response_code && <span className="text-muted-foreground">{d.response_code}</span>}
-                              <span className="text-muted-foreground/50 ml-auto text-[10px]">
+                              <span className="text-muted-foreground/50 ml-auto text-[11px]">
                                 {d.last_attempt_at ? new Date(d.last_attempt_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                               </span>
                             </div>

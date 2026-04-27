@@ -425,6 +425,37 @@ En dark mode, les surfaces s'eclaircissent quand l'elevation augmente (effet "ec
 
 ---
 
+## 7i. Typographie — tailles minimales lisibles
+
+Suite aux retours QA d'avril 2026, on impose un plancher de lisibilite sur toute l'app. Le constat : des `text-[7px]`/`text-[8px]`/`text-[9px]`/`text-[10px]` sont apparus sur les cartes calendrier, badges et tags d'actions en attente — illisibles a l'usage.
+
+### Plancher de tailles
+
+| Usage | Taille mini | Classe |
+|---|---|---|
+| Texte courant (paragraphe, body) | 12px | `text-xs` ou `text-sm` |
+| Texte secondaire (helper, meta, tag, badge, eyebrow) | 11px | `text-[11px]` |
+| Hint micro (compteur de notification, indice clavier) | 11px | `text-[11px]` |
+
+### Regles
+
+- **Plancher absolu : 11px**. Pas d'exception, meme pour les badges/tags compacts. Les tailles < 11px (`text-[7px]` → `text-[10px]`) sont **interdites**.
+- Pour les eyebrows/labels uppercase, utiliser `text-[11px] font-bold uppercase tracking-wider` (et non plus `text-[10px]`).
+- Pour les badges, `text-[11px]` + padding genereux. Si la place manque, reduire le padding plutot que la police.
+- Pour les initiales d'avatar dans cercle compact : conteneur min `h-5 w-5` avec `text-[11px]`. Si vraiment etroit, monter conteneur a `h-6 w-6`.
+- Les inline `font-size: Npx` (ex: HTML strings injectes dans Mapbox popups) suivent la meme regle : 11px mini.
+- `text-xs` (12px) reste autorise pour le secondaire — preferer `text-[11px]` uniquement quand `text-xs` casse la mise en page.
+
+### Antipatterns
+
+| Antipattern | Remplacer par |
+|---|---|
+| `text-[7px]`, `text-[8px]`, `text-[9px]`, `text-[10px]` | `text-[11px]` |
+| `style="font-size: 10px"` (HTML inline) | `style="font-size: 11px"` |
+| Reduire le texte pour faire tenir un badge | Reduire le padding ou le contenu, jamais la police |
+
+---
+
 ## 8. Specifications, EPICs & User Stories
 
 > Toutes les specs, EPICs et US detaillees sont dans `knowledge/notion/`. Consulter `knowledge/notion/_index.md` pour naviguer.

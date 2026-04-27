@@ -46,7 +46,7 @@ function NavItem({ to, icon: Icon, label, disabled, expanded }: { to: string; ic
         {expanded && (
           <>
             <span className="text-[13px] font-medium whitespace-nowrap">{label}</span>
-            <span className="ml-auto text-[9px] font-medium bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground/40">Bientôt</span>
+            <span className="ml-auto text-[11px] font-medium bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground/40">Bientôt</span>
           </>
         )}
       </div>
@@ -193,7 +193,7 @@ export function MainLayout() {
             <section key={group.group}>
               <div className={`${ICON_PL} mb-1.5 h-4 flex items-center`}>
                 {expanded && (
-                  <h3 className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider whitespace-nowrap">{group.group}</h3>
+                  <h3 className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider whitespace-nowrap">{group.group}</h3>
                 )}
               </div>
               <div className="flex flex-col">

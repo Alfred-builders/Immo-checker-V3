@@ -328,7 +328,7 @@ export function MissionCalendar(props: Props) {
           {legendItems.map(l => (
             <div key={l.label} className="flex items-center gap-1.5">
               <div className={`w-2 h-2 rounded-full ${l.color}`} />
-              <span className="text-[10px] text-muted-foreground/50 font-medium">{l.label}</span>
+              <span className="text-[11px] text-muted-foreground/50 font-medium">{l.label}</span>
             </div>
           ))}
           <div className="flex items-center gap-1.5">
@@ -339,7 +339,7 @@ export function MissionCalendar(props: Props) {
                   'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)',
               }}
             />
-            <span className="text-[10px] text-muted-foreground/50 font-medium">Indisponible</span>
+            <span className="text-[11px] text-muted-foreground/50 font-medium">Indisponible</span>
           </div>
         </div>
       </div>
@@ -355,7 +355,7 @@ export function MissionCalendar(props: Props) {
               const isWeekend = dayIdx >= 5
               return (
                 <div key={toDateStr(day)} className={`text-center py-3 ${i < 6 ? 'border-r border-border/20' : ''} border-b border-border/30 ${isToday ? 'bg-primary/[0.04]' : isWeekend ? 'bg-muted/10' : ''}`}>
-                  <div className={`text-[10px] font-semibold uppercase tracking-widest ${isToday ? 'text-primary' : 'text-muted-foreground/40'}`}>{DAY_NAMES_SHORT[dayIdx]}</div>
+                  <div className={`text-[11px] font-semibold uppercase tracking-widest ${isToday ? 'text-primary' : 'text-muted-foreground/40'}`}>{DAY_NAMES_SHORT[dayIdx]}</div>
                   <div className="mt-0.5">
                     {isToday ? (
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-base font-bold">{day.getDate()}</span>
@@ -424,7 +424,7 @@ export function MissionCalendar(props: Props) {
           {/* Day headers */}
           <div className="grid grid-cols-7">
             {DAY_NAMES_SHORT.map((d, i) => (
-              <div key={d} className={`text-center py-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 ${i < 6 ? 'border-r border-border/20' : ''} border-b border-border/30`}>{d}</div>
+              <div key={d} className={`text-center py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/40 ${i < 6 ? 'border-r border-border/20' : ''} border-b border-border/30`}>{d}</div>
             ))}
           </div>
 
@@ -454,7 +454,7 @@ export function MissionCalendar(props: Props) {
                 >
                   <div className={`text-[11px] font-bold mb-1 px-1 ${isToday ? 'text-primary' : 'text-muted-foreground/50'}`}>
                     {isToday ? (
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px]">{day.getDate()}</span>
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px]">{day.getDate()}</span>
                     ) : day.getDate()}
                   </div>
 
@@ -463,7 +463,7 @@ export function MissionCalendar(props: Props) {
                       <MonthCard key={mission.id} mission={mission} onClick={() => handleMissionClick(mission.id, mission.reference)} />
                     ))}
                     {dayMissions.length > 3 && (
-                      <div className="text-[9px] font-semibold text-muted-foreground/50 px-1">+{dayMissions.length - 3} autres</div>
+                      <div className="text-[11px] font-semibold text-muted-foreground/50 px-1">+{dayMissions.length - 3} autres</div>
                     )}
                     {/* Indisponibilités — rendu compact adapté aux cellules mois */}
                     {dayIndispos.slice(0, 2).map(ind => {
@@ -477,7 +477,7 @@ export function MissionCalendar(props: Props) {
                           type="button"
                           onClick={() => setEditingIndispoId(ind.parent_id || ind.id)}
                           title={`Indisponibilité${ind.motif ? ` — ${ind.motif}` : ''}`}
-                          className="w-full flex items-center gap-1 px-1 py-0.5 rounded text-[9px] font-medium text-muted-foreground hover:bg-muted/60 transition-colors [background-image:repeating-linear-gradient(135deg,transparent_0px,transparent_2px,rgba(0,0,0,0.06)_2px,rgba(0,0,0,0.06)_3px)]"
+                          className="w-full flex items-center gap-1 px-1 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:bg-muted/60 transition-colors [background-image:repeating-linear-gradient(135deg,transparent_0px,transparent_2px,rgba(0,0,0,0.06)_2px,rgba(0,0,0,0.06)_3px)]"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
                           <span className="truncate">{label}</span>
@@ -485,7 +485,7 @@ export function MissionCalendar(props: Props) {
                       )
                     })}
                     {dayIndispos.length > 2 && (
-                      <div className="text-[9px] font-semibold text-muted-foreground/40 px-1">+{dayIndispos.length - 2} indispos</div>
+                      <div className="text-[11px] font-semibold text-muted-foreground/40 px-1">+{dayIndispos.length - 2} indispos</div>
                     )}
                   </div>
                 </div>
@@ -521,29 +521,29 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
       {compact ? (
         <div className="flex items-center gap-1.5">
           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-          <span className="text-[9px] font-bold text-foreground/80 truncate">{mission.lot_designation}</span>
-          {mission.heure_debut && <span className="text-[8px] text-muted-foreground/40 ml-auto shrink-0">{formatTime(mission.heure_debut)}</span>}
+          <span className="text-[11px] font-bold text-foreground/80 truncate">{mission.lot_designation}</span>
+          {mission.heure_debut && <span className="text-[11px] text-muted-foreground/40 ml-auto shrink-0">{formatTime(mission.heure_debut)}</span>}
         </div>
       ) : (
         <>
           <div className="flex items-center justify-between mb-0.5">
             <div className="flex items-center gap-1 min-w-0">
               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-              <span className="font-mono text-[9px] font-bold text-foreground/70 group-hover:text-primary transition-colors truncate">{mission.reference}</span>
+              <span className="font-mono text-[11px] font-bold text-foreground/70 group-hover:text-primary transition-colors truncate">{mission.reference}</span>
             </div>
             {techInitials && (
-              <div className="h-4 w-4 rounded bg-primary/10 flex items-center justify-center text-[7px] font-bold text-primary shrink-0 ml-1">{techInitials}</div>
+              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0 ml-1">{techInitials}</div>
             )}
           </div>
-          <p className="text-[10px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
+          <p className="text-[11px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
           {mission.adresse && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[10px] text-muted-foreground/80 truncate">
+            <div className="flex items-center gap-0.5 mt-0.5 text-[11px] text-muted-foreground/80 truncate">
               <MapPin className="h-2.5 w-2.5 shrink-0" />
               <span className="truncate">{mission.adresse}</span>
             </div>
           )}
           {mission.heure_debut && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[10px] font-medium text-muted-foreground/75">
+            <div className="flex items-center gap-0.5 mt-0.5 text-[11px] font-medium text-muted-foreground/75">
               <Clock className="h-2.5 w-2.5" />
               {formatTime(mission.heure_debut)}{mission.heure_fin ? `-${formatTime(mission.heure_fin)}` : ''}
             </div>
@@ -554,12 +554,12 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
       {!compact && (
         <div className="flex flex-wrap gap-0.5 mt-1">
           {mission.edl_types.map(type => (
-            <span key={type} className={`px-1 py-0 rounded text-[7px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
+            <span key={type} className={`px-1 py-0 rounded text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
               {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inv.'}
             </span>
           ))}
           {hasPending && (
-            <span className="flex items-center gap-0.5 px-1 py-0 rounded text-[7px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+            <span className="flex items-center gap-0.5 px-1 py-0 rounded text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
               <WarningCircle className="h-2 w-2" weight="fill" />{pendingActions.length}
             </span>
           )}
@@ -576,8 +576,8 @@ function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-      <span className="text-[9px] font-semibold text-foreground/80 truncate group-hover:text-primary transition-colors">{mission.lot_designation}</span>
-      {mission.heure_debut && <span className="text-[8px] text-muted-foreground/40 shrink-0 ml-auto">{formatTime(mission.heure_debut)}</span>}
+      <span className="text-[11px] font-semibold text-foreground/80 truncate group-hover:text-primary transition-colors">{mission.lot_designation}</span>
+      {mission.heure_debut && <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-auto">{formatTime(mission.heure_debut)}</span>}
     </div>
   )
 }
@@ -650,16 +650,16 @@ function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechni
           title={techName}
         >
           <div className="flex items-start justify-between gap-1">
-            <div className="flex items-start gap-1.5 text-[10px] font-semibold text-foreground/75 leading-tight min-w-0">
+            <div className="flex items-start gap-1.5 text-[11px] font-semibold text-foreground/75 leading-tight min-w-0">
               <span className="text-[12px] leading-none shrink-0 mt-0.5" aria-hidden>⛔</span>
               <span className="line-clamp-2 break-words">{title}</span>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
               {ind.est_recurrent && <ArrowsClockwise size={10} weight="bold" className="text-muted-foreground/50" />}
-              <div className="h-4 w-4 rounded bg-primary/10 flex items-center justify-center text-[7px] font-bold text-primary">{initials}</div>
+              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary">{initials}</div>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/75">
+          <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/75">
             <Clock size={9} className="shrink-0" />
             <span className="truncate">{timeLabel}</span>
           </div>

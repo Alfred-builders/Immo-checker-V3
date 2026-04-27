@@ -98,7 +98,7 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
                 rows={3}
                 autoFocus
               />
-              <p className="text-[10px] text-muted-foreground/60">
+              <p className="text-[11px] text-muted-foreground/60">
                 Le motif est obligatoire et sera conservé dans l'historique.
               </p>
             </div>

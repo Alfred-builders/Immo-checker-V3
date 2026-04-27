@@ -249,7 +249,7 @@ function TemplateItemRow({
           {templateItem.labels_defaut.map((label, idx) => (
             <span
               key={idx}
-              className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/50 text-muted-foreground"
+              className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted/50 text-muted-foreground"
             >
               {label}
             </span>
@@ -386,7 +386,7 @@ function AddItemDialog({
 
           {!isLoading && grouped.map(([cat, items]) => (
             <div key={cat} className="mb-3">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
                 {catalogueCategorieLabels[cat as CatalogueCategorie] || cat}
               </p>
               {items.map((item) => (

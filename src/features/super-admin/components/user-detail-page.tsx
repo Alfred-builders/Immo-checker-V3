@@ -87,8 +87,8 @@ export function SuperAdminUserDetailPage() {
                   <p className="text-xs text-muted-foreground capitalize">{m.type_workspace.replace('_', ' ')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize text-[10px]">{m.role}</Badge>
-                  {!m.est_actif && <Badge variant="secondary" className="text-[10px]">Inactif</Badge>}
+                  <Badge variant="outline" className="capitalize text-[11px]">{m.role}</Badge>
+                  {!m.est_actif && <Badge variant="secondary" className="text-[11px]">Inactif</Badge>}
                 </div>
               </Link>
             ))}

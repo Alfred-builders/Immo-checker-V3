@@ -194,7 +194,7 @@ export function BuildingDetailPage() {
               )}
             </div>
             <div className="mt-1 flex items-center gap-2">
-              {batiment.est_archive && <Badge variant="destructive" className="text-[10px]">Archivé</Badge>}
+              {batiment.est_archive && <Badge variant="destructive" className="text-[11px]">Archivé</Badge>}
             </div>
           </div>
         </div>
@@ -270,7 +270,7 @@ export function BuildingDetailPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <Select value={a.type} onValueChange={(v) => updateAddrField(idx, 'type', v)}>
-                          <SelectTrigger className="h-7 w-[110px] text-[10px]"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-7 w-[110px] text-[11px]"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="principale">Principale</SelectItem>
                             <SelectItem value="secondaire">Secondaire</SelectItem>
@@ -304,7 +304,7 @@ export function BuildingDetailPage() {
                     </div>
                   ) : (
                     <div className="flex items-start gap-3">
-                      <Badge variant="outline" className={`text-[10px] capitalize shrink-0 mt-0.5 ${a.type === 'principale' ? 'bg-primary/10 text-primary border-primary/20' : ''}`}>{a.type}</Badge>
+                      <Badge variant="outline" className={`text-[11px] capitalize shrink-0 mt-0.5 ${a.type === 'principale' ? 'bg-primary/10 text-primary border-primary/20' : ''}`}>{a.type}</Badge>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground truncate mb-0.5">
                           {a.rue}{a.complement ? `, ${a.complement}` : ''}
@@ -386,13 +386,13 @@ export function BuildingDetailPage() {
               <div key={lot.id} className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/patrimoine/lots/${lot.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation, href: `/app/patrimoine/batiments/${batiment.id}` }, { label: lot.designation }] } })}>
                 <div className="shrink-0 text-sm font-medium text-foreground truncate" style={{ width: lotCols.colWidths.designation }}>{lot.designation}</div>
                 <div className="shrink-0" style={{ width: lotCols.colWidths.type }}>
-                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] capitalize">{lot.type_bien.replace('_', ' ')}</Badge>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] capitalize">{lot.type_bien.replace('_', ' ')}</Badge>
                 </div>
                 <div className="shrink-0 text-sm text-muted-foreground" style={{ width: lotCols.colWidths.etage }}>{lot.etage || '--'}</div>
                 <div className="shrink-0 text-sm text-muted-foreground" style={{ width: lotCols.colWidths.nb_pieces }}>{lot.nb_pieces || '--'}</div>
                 <div className="shrink-0 text-sm text-muted-foreground text-right" style={{ width: lotCols.colWidths.surface }}>{lot.surface ? `${lot.surface} m²` : '--'}</div>
                 <div className="shrink-0" style={{ width: lotCols.colWidths.meuble }}>
-                  <Badge variant="outline" className={lot.meuble ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]' : 'bg-muted/50 text-muted-foreground border-border/60 text-[10px]'}>
+                  <Badge variant="outline" className={lot.meuble ? 'bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px]' : 'bg-muted/50 text-muted-foreground border-border/60 text-[11px]'}>
                     {lot.meuble ? 'Oui' : 'Non'}
                   </Badge>
                 </div>

@@ -85,7 +85,7 @@ export function GlobalSearchBar() {
   return (
     <Command
       shouldFilter={false}
-      className="bg-transparent overflow-visible [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
+      className="bg-transparent overflow-visible [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
     >
       <Popover
         open={showResults}
@@ -110,7 +110,7 @@ export function GlobalSearchBar() {
             {isFetching && hasQuery ? (
               <SpinnerGap className="h-3.5 w-3.5 text-muted-foreground/50 animate-spin shrink-0" />
             ) : (
-              <kbd className="inline-flex items-center gap-0.5 px-1.5 h-5 rounded bg-muted/60 border border-border/40 text-[10px] font-semibold text-muted-foreground/70 shrink-0">
+              <kbd className="inline-flex items-center gap-0.5 px-1.5 h-5 rounded bg-muted/60 border border-border/40 text-[11px] font-semibold text-muted-foreground/70 shrink-0">
                 {mac ? '⌘' : 'Ctrl'}<span>K</span>
               </kbd>
             )}
@@ -193,7 +193,7 @@ function BatimentRow({ item, onSelect }: { item: SearchBatimentResult; onSelect:
         <p className="text-[13px] font-semibold text-foreground truncate">{item.designation}</p>
         {item.adresse && <p className="text-[11px] text-muted-foreground truncate">{item.adresse}</p>}
       </div>
-      <span className="text-[10px] text-muted-foreground/60 font-medium shrink-0">{item.nb_lots} lot{item.nb_lots > 1 ? 's' : ''}</span>
+      <span className="text-[11px] text-muted-foreground/60 font-medium shrink-0">{item.nb_lots} lot{item.nb_lots > 1 ? 's' : ''}</span>
     </CommandItem>
   )
 }
@@ -211,7 +211,7 @@ function LotRow({ item, onSelect }: { item: SearchLotResult; onSelect: () => voi
           {item.batiment_designation}{item.etage ? ` · ${item.etage}` : ''}
         </p>
       </div>
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium shrink-0">{typeLabel}</span>
+      <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium shrink-0">{typeLabel}</span>
     </CommandItem>
   )
 }
@@ -229,7 +229,7 @@ function TiersRow({ item, onSelect }: { item: SearchTiersResult; onSelect: () =>
         <p className="text-[13px] font-semibold text-foreground truncate">{displayName}</p>
         {item.email && <p className="text-[11px] text-muted-foreground truncate">{item.email}</p>}
       </div>
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium shrink-0">
+      <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground font-medium shrink-0">
         {item.type_personne === 'morale' ? 'PM' : 'PP'}
       </span>
     </CommandItem>
@@ -250,7 +250,7 @@ function MissionRow({ item, onSelect }: { item: SearchMissionResult; onSelect: (
           {item.lot_designation}{item.date_planifiee ? ` · ${formatDate(item.date_planifiee)}` : ''}
         </p>
       </div>
-      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${statutColor}`}>{statutLabel}</span>
+      <span className={`text-[11px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${statutColor}`}>{statutLabel}</span>
     </CommandItem>
   )
 }

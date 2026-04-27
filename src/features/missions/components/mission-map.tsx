@@ -234,7 +234,7 @@ export function MissionMap({ missions }: Props) {
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 11px; font-weight: 600; color: #6366f1;">${p?.reference ?? ''}</span>
-              <span style="font-size: 10px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px; white-space: nowrap;">${statusLabel}</span>
+              <span style="font-size: 11px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px; white-space: nowrap;">${statusLabel}</span>
             </div>
             <div style="font-size: 11px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">${p?.lot_designation ?? ''} — ${dateStr}${timeStr}</div>
           </div>
@@ -260,7 +260,7 @@ export function MissionMap({ missions }: Props) {
         .filter(t => t.key === 'all' || (counts[t.key] ?? 0) > 0)
         .map(t => {
           const cnt = t.key === 'all' ? '' : ` (${counts[t.key]})`
-          return `<button class="immo-tab" data-tab="${t.key}" onclick="event.stopPropagation(); window.__missionMapTab__('${t.key}')" style="font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 5px; border: none; cursor: pointer; white-space: nowrap; background: ${t.key === 'all' ? '#f0f0f0' : 'transparent'}; color: ${t.key === 'all' ? '#111827' : '#6b7280'};">${t.label}${cnt}</button>`
+          return `<button class="immo-tab" data-tab="${t.key}" onclick="event.stopPropagation(); window.__missionMapTab__('${t.key}')" style="font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 5px; border: none; cursor: pointer; white-space: nowrap; background: ${t.key === 'all' ? '#f0f0f0' : 'transparent'}; color: ${t.key === 'all' ? '#111827' : '#6b7280'};">${t.label}${cnt}</button>`
         }).join('')
 
       const rows = sorted.map(f => missionRowHtml(f.properties)).join('')

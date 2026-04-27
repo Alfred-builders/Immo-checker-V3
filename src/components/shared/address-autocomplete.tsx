@@ -138,7 +138,7 @@ export function AddressAutocomplete({ value, onChange, placeholder = 'Rechercher
       )}
 
       {!MAPBOX_TOKEN && (
-        <p className="text-[10px] text-muted-foreground mt-1">Saisie manuelle — autocomplete non disponible</p>
+        <p className="text-[11px] text-muted-foreground mt-1">Saisie manuelle — autocomplete non disponible</p>
       )}
     </div>
   )

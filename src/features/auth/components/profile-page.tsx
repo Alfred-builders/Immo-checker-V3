@@ -173,7 +173,7 @@ export function ProfilePage() {
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-muted-foreground">Email</Label>
             <Input value={user?.email || ''} disabled className="h-10 bg-muted/30" />
-            <p className="text-[10px] text-muted-foreground/50">L'email ne peut pas être modifié</p>
+            <p className="text-[11px] text-muted-foreground/50">L'email ne peut pas être modifié</p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-muted-foreground">Téléphone</Label>
@@ -192,7 +192,7 @@ export function ProfilePage() {
                 </span>
               )}
             </div>
-            {tel && !telValid && <p className="text-[10px] text-destructive">Numéro invalide — format attendu : 06 12 34 56 78 ou +33 6 12 34 56 78</p>}
+            {tel && !telValid && <p className="text-[11px] text-destructive">Numéro invalide — format attendu : 06 12 34 56 78 ou +33 6 12 34 56 78</p>}
           </div>
         </div>
 

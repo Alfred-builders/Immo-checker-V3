@@ -171,11 +171,11 @@ export function SuperAdminWorkspacesListPage() {
                 {w.siret && <p className="text-[11px] text-muted-foreground font-mono">{w.siret}</p>}
               </div>
             </div>
-            <div><Badge variant="outline" className="capitalize text-[10px]">{typeLabels[w.type_workspace] ?? w.type_workspace}</Badge></div>
+            <div><Badge variant="outline" className="capitalize text-[11px]">{typeLabels[w.type_workspace] ?? w.type_workspace}</Badge></div>
             <div className="text-center text-sm text-foreground tabular-nums">{w.members_count}</div>
             <div className="text-center text-sm text-foreground tabular-nums">{w.batiments_count}</div>
             <div className="text-center text-sm text-foreground tabular-nums">{w.missions_count}</div>
-            <div><Badge className={`${statutColors[w.statut] ?? ''} capitalize text-[10px]`}>{w.statut}</Badge></div>
+            <div><Badge className={`${statutColors[w.statut] ?? ''} capitalize text-[11px]`}>{w.statut}</Badge></div>
             <div className="text-xs text-muted-foreground">{formatDate(w.created_at)}</div>
           </Link>
         ))}

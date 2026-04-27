@@ -157,7 +157,7 @@ export function TiersDetailPage() {
                     {tiers.type_personne === 'morale' ? 'Personne morale' : 'Personne physique'}
                   </span>
                   {roles.map(r => (
-                    <span key={r} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{r}</span>
+                    <span key={r} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{r}</span>
                   ))}
                   {tiers.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
                 </div>
@@ -363,7 +363,7 @@ function OrganisationsSection({ tiersId, organisations, isArchived }: {
                     </div>
                     <div className="flex items-center gap-2">
                       {org.fonction && <Badge variant="outline" className="text-xs capitalize">{org.fonction}</Badge>}
-                      {org.est_principal && <Badge className="bg-primary/5 text-primary border-primary/30 text-[9px]">Principal</Badge>}
+                      {org.est_principal && <Badge className="bg-primary/5 text-primary border-primary/30 text-[11px]">Principal</Badge>}
                       {!isArchived && (
                         <button
                           className="ml-1 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -448,7 +448,7 @@ function MembresSection({ tiersId, membres, isArchived }: {
                     </div>
                     <div className="flex items-center gap-2">
                       {m.fonction && <Badge variant="outline" className="text-xs capitalize">{m.fonction}</Badge>}
-                      {m.est_principal && <Badge className="bg-primary/5 text-primary border-primary/30 text-[9px]">Principal</Badge>}
+                      {m.est_principal && <Badge className="bg-primary/5 text-primary border-primary/30 text-[11px]">Principal</Badge>}
                       {!isArchived && (
                         <button
                           className="ml-1 p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"

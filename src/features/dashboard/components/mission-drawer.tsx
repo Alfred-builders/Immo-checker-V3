@@ -115,7 +115,7 @@ function DrawerSkeleton() {
 
 function SectionHeading({ children, Icon }: { children: React.ReactNode; Icon?: React.ElementType }) {
   return (
-    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45 mb-3">
+    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45 mb-3">
       {Icon && <Icon className="h-3 w-3 shrink-0" />}
       {children}
     </p>
@@ -132,7 +132,7 @@ function PersonRow({ initials, name, subtitle, badge, badgeClass, avatarClass, d
   const inner = (
     <div className={cn('flex items-center gap-3 py-2.5', to && 'group')}>
       <div className="relative shrink-0">
-        <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold', avatarClass || 'bg-primary/10 text-primary')}>
+        <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold', avatarClass || 'bg-primary/10 text-primary')}>
           {initials}
         </div>
         {dot && <span className={cn('absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-[#fafafa]', dot)} />}
@@ -141,7 +141,7 @@ function PersonRow({ initials, name, subtitle, badge, badgeClass, avatarClass, d
         <p className="text-[13px] font-medium leading-tight truncate">{name}</p>
         {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
       </div>
-      {badge && <span className={cn('shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full', badgeClass)}>{badge}</span>}
+      {badge && <span className={cn('shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full', badgeClass)}>{badge}</span>}
       {to && <CaretRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-primary transition-colors shrink-0" />}
     </div>
   )
@@ -171,7 +171,7 @@ function ManualInvitationActions({ onAccept, onRefuse, busy }: {
           type="button"
           disabled={busy}
           onClick={onAccept}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
         >
           ✓ Confirmer
         </button>
@@ -179,7 +179,7 @@ function ManualInvitationActions({ onAccept, onRefuse, busy }: {
           type="button"
           disabled={busy}
           onClick={onRefuse}
-          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+          className="inline-flex items-center gap-1 h-6 px-2 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
         >
           ✗ Refuser
         </button>
@@ -376,7 +376,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                 {/* Reference + status */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-1.5">Mission</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-1.5">Mission</p>
                     <h2 className="text-[22px] font-bold tracking-tight leading-none">{mission.reference}</h2>
                   </div>
                   {(() => {
@@ -567,7 +567,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   {/* Technicien */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
+                      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
                           <User className="h-3 w-3 shrink-0" />
                           Technicien
                         </p>
@@ -637,7 +637,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                     */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
+                      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/45">
                           <Users className="h-3 w-3 shrink-0" />
                           Parties
                         </p>
@@ -692,7 +692,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                         )}
                       </div>
                     )}
-                    <p className="text-[10px] text-muted-foreground/50 mt-3 leading-relaxed">
+                    <p className="text-[11px] text-muted-foreground/50 mt-3 leading-relaxed">
                       Propriétaire/mandataire se modifient sur la <Link to={`/app/patrimoine/lots/${mission.lot.id}`} onClick={onClose} className="text-primary hover:underline">fiche lot</Link>. Locataires gérés via les EDL.
                     </p>
                   </div>
@@ -755,7 +755,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                     <div className="flex items-center justify-between mb-3">
                       <SectionHeading Icon={FileText}>Documents EDL</SectionHeading>
                       {mission.edls.length > 0 && (
-                        <span className="text-[10px] text-muted-foreground -mt-3">
+                        <span className="text-[11px] text-muted-foreground -mt-3">
                           {mission.edls.length} doc{mission.edls.length > 1 ? 's' : ''}
                         </span>
                       )}
@@ -781,7 +781,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                               {/* Header */}
                               <div className="flex items-center justify-between px-4 pt-3.5 pb-3">
                                 <div className="flex items-center gap-2">
-                                  <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full', sensColors[edl.sens])}>
+                                  <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full', sensColors[edl.sens])}>
                                     {sensLabels[edl.sens]}
                                   </span>
                                   <span className="text-[13px] font-semibold text-foreground">
@@ -799,7 +799,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                                 <div className="px-4 pb-2.5 flex flex-wrap gap-1">
                                   {edl.locataires.map((l) => (
                                     <span key={l.tiers_id} className={cn(
-                                      'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                                      'text-[11px] font-semibold px-2 py-0.5 rounded-full',
                                       l.role_locataire === 'entrant'
                                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
                                         : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
@@ -819,12 +819,12 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                                   { url: edl.url_web_legal, Icon: Globe,   label: 'Web légal', color: 'text-violet-500' },
                                 ] as const).map(({ url, Icon: LIcon, label, color }) => url ? (
                                   <a key={label} href={url} target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-[10px] font-medium px-2.5 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-white/60 hover:border-border/30 shadow-xs transition-all">
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-white/60 hover:border-border/30 shadow-xs transition-all">
                                     <LIcon className={cn('h-3.5 w-3.5 shrink-0', color)} weight="duotone" />
                                     <span className="text-foreground/70">{label}</span>
                                   </a>
                                 ) : (
-                                  <span key={label} className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1.5 rounded-lg bg-white/30 border border-white/20 text-muted-foreground/30 cursor-not-allowed select-none">
+                                  <span key={label} className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-white/30 border border-white/20 text-muted-foreground/30 cursor-not-allowed select-none">
                                     <LIcon className="h-3.5 w-3.5 shrink-0" />{label}
                                   </span>
                                 ))}
@@ -890,7 +890,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                               {cle.quantite > 1 && <span className="text-[11px] text-muted-foreground">×{cle.quantite}</span>}
                               {cle.lieu_depot && <span className="text-[11px] text-muted-foreground">· {cle.lieu_depot}</span>}
                             </div>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
                               {statutCleLabels[cle.statut] || cle.statut}
                             </span>
                           </div>

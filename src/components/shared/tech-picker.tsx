@@ -100,7 +100,7 @@ export function TechPicker({
         >
           {displayName ? (
             <span className="flex items-center gap-2 truncate">
-              <div className={`h-5 w-5 rounded-md flex items-center justify-center text-[9px] font-bold shrink-0 ${getAvatarColor(selected!.id)}`}>
+              <div className={`h-5 w-5 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${getAvatarColor(selected!.id)}`}>
                 {selected!.prenom[0]}{selected!.nom[0]}
               </div>
               {displayName}
@@ -135,15 +135,15 @@ export function TechPicker({
                     onSelect={() => { onSelect(t.id); setOpen(false) }}
                     className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-primary/5' : ''} ${dimmed ? 'opacity-60' : ''}`}
                   >
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 ${colorClass}`}>
                       {initials}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium truncate">{t.prenom} {t.nom}</div>
-                      {t.email && <div className="text-[10px] text-muted-foreground/50 truncate">{t.email}</div>}
+                      {t.email && <div className="text-[11px] text-muted-foreground/50 truncate">{t.email}</div>}
                     </div>
                     {conflict && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 flex items-center gap-0.5 ${
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-semibold shrink-0 flex items-center gap-0.5 ${
                         conflict.variant === 'mission'
                           ? 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
                           : 'bg-muted/60 text-muted-foreground'

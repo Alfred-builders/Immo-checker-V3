@@ -143,7 +143,7 @@ function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: Ka
       <div className="flex items-center justify-between mb-2">
         <span className="font-mono text-[11px] font-bold text-muted-foreground group-hover:text-primary transition-colors">{mission.reference}</span>
         {techInitials ? (
-          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">{techInitials}</div>
+          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0">{techInitials}</div>
         ) : (
           <div className="h-6 w-6 rounded-full bg-muted/40 flex items-center justify-center shrink-0"><User className="h-3 w-3 text-muted-foreground/30" /></div>
         )}
@@ -176,7 +176,7 @@ function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: Ka
         {mission.edl_types.map((type) => (
           <span
             key={type}
-            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${
+            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
               type === 'entree' || type === 'sortie'
                 ? sensColors[type as 'entree' | 'sortie']
                 : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'
@@ -187,7 +187,7 @@ function KanbanCard({ mission, statut, onClick }: { mission: Mission; statut: Ka
         ))}
 
         {hasPending && (
-          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
             <WarningCircle className="h-2.5 w-2.5" weight="fill" />
             {pendingActions.length} action{pendingActions.length > 1 ? 's' : ''}
           </span>

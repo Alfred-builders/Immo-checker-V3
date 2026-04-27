@@ -45,9 +45,9 @@ function RevalidationDialog({ open, onOpenChange, onRevalidate, onConfirmDirectl
           <p className="text-sm text-muted-foreground">Le technicien a déjà accepté cette mission. Que souhaitez-vous faire ?</p>
           <div className="flex flex-col gap-2">
             <Button variant="outline" onClick={onRevalidate} disabled={saving} className="justify-start">Demander revalidation</Button>
-            <p className="text-[10px] text-muted-foreground/60 ml-1 -mt-1">Le technicien devra re-accepter la mission avec les nouvelles dates.</p>
+            <p className="text-[11px] text-muted-foreground/60 ml-1 -mt-1">Le technicien devra re-accepter la mission avec les nouvelles dates.</p>
             <Button onClick={onConfirmDirectly} disabled={saving} className="justify-start">Confirmer d'office</Button>
-            <p className="text-[10px] text-muted-foreground/60 ml-1 -mt-1">Les modifications seront enregistrées sans demander revalidation.</p>
+            <p className="text-[11px] text-muted-foreground/60 ml-1 -mt-1">Les modifications seront enregistrées sans demander revalidation.</p>
           </div>
           <div className="flex justify-end pt-1">
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>Annuler</Button>
@@ -272,9 +272,9 @@ export function MissionDetailPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{mission.reference}</h1>
                 {(() => { const a = getStatutAffichage(mission); return <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>RDV: {statutRdvLabels[mission.statut_rdv]}</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>RDV: {statutRdvLabels[mission.statut_rdv]}</span>
                 {mission.edl_types.map((type) => (
-                  <span key={type} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
+                  <span key={type} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
                     {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inventaire'}
                   </span>
                 ))}
@@ -444,7 +444,7 @@ export function MissionDetailPage() {
                   <p className="text-[15px] font-semibold text-foreground">{techName}</p>
                   <p className="text-[12px] text-muted-foreground mt-0.5">{mission.technicien.statut_invitation === 'accepte' ? mission.technicien.email || '' : ''}</p>
                 </div>
-                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${mission.technicien.statut_invitation === 'accepte' ? 'bg-green-100 text-green-700' : mission.technicien.statut_invitation === 'refuse' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutInvitationLabels[mission.technicien.statut_invitation]}</span>
               </div>
               {mission.technicien.statut_invitation === 'en_attente' && !isLocked && (
                 <div className="flex items-center gap-2 flex-wrap pl-[58px]">
@@ -456,7 +456,7 @@ export function MissionDetailPage() {
                       type="button"
                       disabled={updateInvitation.isPending}
                       onClick={() => handleManualInvitation('accepte')}
-                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 transition-colors disabled:opacity-50 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
                     >
                       ✓ Confirmer
                     </button>
@@ -464,7 +464,7 @@ export function MissionDetailPage() {
                       type="button"
                       disabled={updateInvitation.isPending}
                       onClick={() => handleManualInvitation('refuse')}
-                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                      className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/60 transition-colors disabled:opacity-50 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
                     >
                       ✗ Refuser
                     </button>
@@ -620,10 +620,10 @@ export function MissionDetailPage() {
                   <div key={edl.id} className={`p-4 rounded-xl border ${edl.statut === 'signe' ? 'bg-green-50/50 border-green-200/60 dark:bg-green-950/20 dark:border-green-800/40' : 'bg-muted/20 border-border/30'}`}>
                     <div className="flex items-center justify-between mb-2.5">
                       <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${sensColors[edl.sens]}`}>{sensLabels[edl.sens]}</span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${sensColors[edl.sens]}`}>{sensLabels[edl.sens]}</span>
                         <span className="text-[14px] font-bold text-foreground capitalize">{edl.type}</span>
                       </div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${edl.statut === 'signe' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : edl.statut === 'infructueux' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${edl.statut === 'signe' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : edl.statut === 'infructueux' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
                         {edl.statut === 'signe' ? 'Signé' : edl.statut === 'infructueux' ? 'Infructueux' : 'Brouillon'}
                       </span>
                     </div>
@@ -633,7 +633,7 @@ export function MissionDetailPage() {
                         {edl.locataires.map(l => (
                           <span key={l.tiers_id} className="inline-flex items-center gap-1.5">
                             {l.prenom ? `${l.prenom} ${l.nom}` : l.nom}
-                            <span className={`inline-flex px-2 py-px rounded-full text-[9px] font-semibold ${l.role_locataire === 'entrant' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'}</span>
+                            <span className={`inline-flex px-2 py-px rounded-full text-[11px] font-semibold ${l.role_locataire === 'entrant' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{l.role_locataire === 'entrant' ? 'Entrant' : 'Sortant'}</span>
                           </span>
                         ))}
                       </div>
@@ -689,8 +689,8 @@ export function MissionDetailPage() {
                   if (edlCles.length === 0) return null
                   return (
                     <div key={edl.id}>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2 flex items-center gap-1.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${sensColors[edl.sens]}`}>{sensLabels[edl.sens]}</span>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/40 mb-2 flex items-center gap-1.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${sensColors[edl.sens]}`}>{sensLabels[edl.sens]}</span>
                         {edl.locataires.map(l => l.prenom ? `${l.prenom} ${l.nom}` : l.nom).join(', ') || 'EDL'}
                       </p>
                       <div className="space-y-2">
@@ -894,7 +894,7 @@ function PersonRow({ id, nom, prenom, color, role, subtitle }: { id: string; nom
         <Link to={`/app/tiers/${id}`} className="text-[14px] text-primary hover:underline font-medium block truncate">{displayName}</Link>
         {subtitle && <p className="text-[11px] text-muted-foreground/70 truncate">{subtitle}</p>}
       </div>
-      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold shrink-0 ${avatarColors[color]}`}>{role}</span>
+      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold shrink-0 ${avatarColors[color]}`}>{role}</span>
     </div>
   )
 }

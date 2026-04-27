@@ -28,7 +28,7 @@ export function SuperAdminLayout() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold leading-tight text-foreground">Super-admin</span>
-            <span className="text-[10px] font-medium text-destructive/80 uppercase tracking-wider">mode élevé</span>
+            <span className="text-[11px] font-medium text-destructive/80 uppercase tracking-wider">mode élevé</span>
           </div>
         </div>
 

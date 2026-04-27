@@ -136,12 +136,12 @@ export function SuperAdminUsersListPage() {
               </div>
               <div className="flex flex-wrap gap-1">
                 {(u.memberships ?? []).slice(0, 2).map((m) => (
-                  <Badge key={m.workspace_id} variant="outline" className="text-[9px] max-w-[150px] truncate">
+                  <Badge key={m.workspace_id} variant="outline" className="text-[11px] max-w-[150px] truncate">
                     {m.workspace_nom} · {m.role}
                   </Badge>
                 ))}
                 {u.memberships && u.memberships.length > 2 && (
-                  <Badge variant="secondary" className="text-[9px]">+{u.memberships.length - 2}</Badge>
+                  <Badge variant="secondary" className="text-[11px]">+{u.memberships.length - 2}</Badge>
                 )}
               </div>
               <div className="text-center text-sm text-foreground tabular-nums">{u.memberships?.length ?? 0}</div>
@@ -149,10 +149,10 @@ export function SuperAdminUsersListPage() {
                 {u.last_login_at ? (
                   <span className={isInactive ? 'text-muted-foreground/60' : 'text-muted-foreground'}>
                     {formatDate(u.last_login_at)}
-                    {isInactive && <Badge variant="secondary" className="text-[9px] ml-1.5">{daysSinceLogin}j</Badge>}
+                    {isInactive && <Badge variant="secondary" className="text-[11px] ml-1.5">{daysSinceLogin}j</Badge>}
                   </span>
                 ) : (
-                  <Badge variant="secondary" className="text-[9px]">Jamais</Badge>
+                  <Badge variant="secondary" className="text-[11px]">Jamais</Badge>
                 )}
               </div>
               <div className="text-xs text-muted-foreground">{formatDate(u.created_at)}</div>

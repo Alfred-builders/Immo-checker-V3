@@ -290,7 +290,7 @@ export function DashboardPage() {
                     <div>
                       <table className="w-full table-fixed">
                         <thead>
-                          <tr className="bg-surface-sunken text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <tr className="bg-surface-sunken text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                             <th className="text-left px-4 py-2.5 w-24">Ref.</th>
                             <th className="text-left px-4 py-2.5">Lot / Adresse</th>
                             <th className="text-left px-4 py-2.5 w-20">Date</th>
@@ -338,7 +338,7 @@ export function DashboardPage() {
                                 <td className="px-4 py-3">
                                   <div className="flex flex-wrap gap-1">
                                     {m.edl_types.map(type => (
-                                      <span key={type} className={`px-1.5 py-0.5 rounded-full text-[8px] font-semibold ${
+                                      <span key={type} className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
                                         type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'
                                       }`}>
                                         {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inv.'}
@@ -348,7 +348,7 @@ export function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   {(() => { const a = getStatutAffichage(m); return (
-                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statutAffichageColors[a]}`}>
+                                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>
                                       {statutAffichageLabels[a]}
                                     </span>
                                   ) })()}
@@ -357,7 +357,7 @@ export function DashboardPage() {
                                   <td className="px-4 py-3">
                                     <div className="flex flex-wrap gap-1">
                                       {actions.map((a, i) => (
-                                        <span key={i} className="px-1.5 py-0.5 rounded-full text-[8px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
+                                        <span key={i} className="px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
                                       ))}
                                     </div>
                                   </td>
@@ -487,18 +487,18 @@ export function DashboardPage() {
                                   <div className="text-[12px] font-semibold truncate">{m.reference}</div>
                                   <div className="flex flex-wrap gap-1 justify-end shrink-0">
                                     {actions.map((a, i) => (
-                                      <span key={i} className="px-1.5 py-0 rounded-full text-[8px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
+                                      <span key={i} className="px-1.5 py-0 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
                                     ))}
                                   </div>
                                 </div>
                                 {(m.adresse || m.batiment_designation) && (
-                                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 truncate mt-0.5">
                                     <MapPin className="h-2.5 w-2.5 shrink-0" />
                                     <span className="truncate">{m.adresse || m.batiment_designation}</span>
                                   </div>
                                 )}
                                 {(m.date_planifiee || m.heure_debut) && (
-                                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mt-0.5">
+                                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5">
                                     <Clock className="h-2.5 w-2.5 shrink-0" />
                                     <span className="truncate">
                                       {m.date_planifiee && formatDate(m.date_planifiee)}
@@ -791,7 +791,7 @@ function MissionsTable({ missions, navigate }: { missions: Mission[]; navigate: 
             <td className="px-3 py-3">
               <div className="flex gap-1">
                 {m.edl_types?.map((t) => (
-                  <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>
+                  <span key={t} className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${t === 'entree' || t === 'sortie' ? sensColors[t as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700'}`}>
                     {t === 'entree' || t === 'sortie' ? sensLabels[t as 'entree' | 'sortie'] : 'Inv.'}
                   </span>
                 ))}

@@ -342,7 +342,7 @@ function AvatarCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
       <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${t.type_personne === 'morale' ? 'bg-green-100 dark:bg-green-950' : 'bg-primary/8'}`}>
         {t.type_personne === 'morale'
           ? <BuildingOffice className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-          : <span className="text-[10px] font-semibold text-primary/70">{(t.prenom?.[0] || t.nom[0]).toUpperCase()}</span>
+          : <span className="text-[11px] font-semibold text-primary/70">{(t.prenom?.[0] || t.nom[0]).toUpperCase()}</span>
         }
       </div>
     </div>
@@ -356,7 +356,7 @@ function NomCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
     <div className="shrink-0 min-w-0" style={{ width }}>
       <p className="font-semibold text-[13px] text-foreground group-hover:text-primary truncate transition-colors duration-200">{displayName}</p>
-      {t.est_archive && <span className="text-[10px] text-muted-foreground/50">Archivé</span>}
+      {t.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
     </div>
   )
 }
@@ -381,7 +381,7 @@ function RolesCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
     <div className="shrink-0 flex items-center gap-1 flex-wrap" style={{ width }}>
       {roles.length > 0
         ? roles.map((r) => (
-            <span key={r.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.className}`}>{r.label}</span>
+            <span key={r.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${r.className}`}>{r.label}</span>
           ))
         : <span className="text-muted-foreground/25 text-[13px]">--</span>
       }

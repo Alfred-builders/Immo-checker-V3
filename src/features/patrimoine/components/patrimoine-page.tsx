@@ -485,7 +485,7 @@ function BatimentRow({ batiment, visibleCols, colWidths, index }: { batiment: Ba
             </div>
             <div className="min-w-0">
               <span className="font-medium text-[13px] text-foreground group-hover/row:text-primary truncate block transition-colors duration-200">{batiment.designation}</span>
-              {batiment.est_archive && <span className="text-[10px] text-muted-foreground/50">Archivé</span>}
+              {batiment.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
             </div>
           </div>
         )}
@@ -579,7 +579,7 @@ function LotSubRows({ batimentId, batimentName }: { batimentId: string; batiment
             </div>
             <div>
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${typeColors[lot.type_bien] || typeColors.autre}`}
+                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${typeColors[lot.type_bien] || typeColors.autre}`}
                 title={lot.type_bien === 'autre' && lot.type_bien_precision ? lot.type_bien_precision : undefined}
               >
                 {lot.type_bien === 'autre' && lot.type_bien_precision
@@ -591,7 +591,7 @@ function LotSubRows({ batimentId, batimentName }: { batimentId: string; batiment
             <div className="text-muted-foreground/50">{lot.surface ? `${lot.surface} m²` : <span className="text-muted-foreground/25">--</span>}</div>
             <div>
               {lot.meuble ? (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Meublé</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Meublé</span>
               ) : <span className="text-muted-foreground/25">--</span>}
             </div>
             <div className="text-muted-foreground/50 truncate">{propLabel}</div>
