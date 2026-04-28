@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BuildingOffice, Door, UsersThree, ClipboardText,
-  MagnifyingGlass, ArrowRight, SpinnerGap, Plus, CalendarX,
+  MagnifyingGlass, ArrowRight, SpinnerGap, Plus, CalendarX, Clock as ClockIcon,
 } from '@phosphor-icons/react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { Popover, PopoverAnchor, PopoverContent } from 'src/components/ui/popover'
@@ -11,6 +11,7 @@ import {
 } from 'src/components/ui/command'
 import { formatDate } from 'src/lib/formatters'
 import { useDebounce } from 'src/hooks/use-debounce'
+import { useRecentItems, type RecentItem, type RecentItemType } from 'src/hooks/use-recent-items'
 import { useGlobalSearch } from '../api'
 import type {
   SearchBatimentResult, SearchLotResult, SearchTiersResult, SearchMissionResult,
@@ -38,13 +39,21 @@ const STATUT_LABELS: Record<string, string> = {
   annulee: 'Annulée',
 }
 
-const SEARCH_SUGGESTIONS = [
+const SEARCH_SUGGESTIONS_FALLBACK = [
   'Bureau Levallois',
   'M-2026-0001',
   'Marc Dupont',
   'Rue de Paris',
   'SCI Patrimoine',
 ]
+
+// Icônes par type d'item récent — alignées sur les rows de résultats.
+const RECENT_TYPE_ICON: Record<RecentItemType, { Icon: typeof BuildingOffice; bg: string; color: string }> = {
+  mission: { Icon: ClipboardText, bg: 'bg-amber-50 dark:bg-amber-950', color: 'text-amber-600 dark:text-amber-400' },
+  lot: { Icon: Door, bg: 'bg-blue-50 dark:bg-blue-950', color: 'text-blue-600 dark:text-blue-400' },
+  batiment: { Icon: BuildingOffice, bg: 'bg-slate-100 dark:bg-slate-900', color: 'text-slate-500 dark:text-slate-400' },
+  tiers: { Icon: UsersThree, bg: 'bg-violet-50 dark:bg-violet-950', color: 'text-violet-600 dark:text-violet-400' },
+}
 
 interface QuickAction {
   label: string
@@ -98,6 +107,7 @@ export function GlobalSearchBar() {
   const [mac, setMac] = useState(false)
   const debounced = useDebounce(query, 300)
   const { data, isFetching } = useGlobalSearch(debounced)
+  const { items: recentItems } = useRecentItems()
 
   useEffect(() => { setMac(isMac()) }, [])
 
@@ -183,24 +193,35 @@ export function GlobalSearchBar() {
           className="p-0 w-[480px] max-w-[calc(100vw-2rem)]"
         >
           <CommandList className="max-h-[420px]">
-            {/* État vide (pas de query) : suggestions + actions rapides */}
+            {/* État vide (pas de query) : récemment consultés + actions rapides.
+                Si l'utilisateur n'a encore rien visité, on affiche des suggestions
+                statiques d'exemple à la place. */}
+            {!hasQuery && recentItems.length > 0 && (
+              <CommandGroup heading="Récemment consultés">
+                {recentItems.map((item) => (
+                  <RecentItemRow key={`${item.type}-${item.id}`} item={item} onSelect={() => go(item.to)} />
+                ))}
+              </CommandGroup>
+            )}
+            {!hasQuery && recentItems.length === 0 && (
+              <CommandGroup heading="Recherches suggérées">
+                {SEARCH_SUGGESTIONS_FALLBACK.map((s) => (
+                  <CommandItem
+                    key={s}
+                    value={`suggestion-${s}`}
+                    onSelect={() => handleSuggestionClick(s)}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="h-8 w-8 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
+                      <MagnifyingGlass className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    </div>
+                    <span className="text-[13px] text-muted-foreground">{s}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
             {!hasQuery && (
               <>
-                <CommandGroup heading="Recherches suggérées">
-                  {SEARCH_SUGGESTIONS.map((s) => (
-                    <CommandItem
-                      key={s}
-                      value={`suggestion-${s}`}
-                      onSelect={() => handleSuggestionClick(s)}
-                      className="flex items-center gap-3"
-                    >
-                      <div className="h-8 w-8 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
-                        <MagnifyingGlass className="h-3.5 w-3.5 text-muted-foreground/50" />
-                      </div>
-                      <span className="text-[13px] text-muted-foreground">{s}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
                 <CommandGroup heading="Actions rapides">
                   {QUICK_ACTIONS.map((action) => (
                     <CommandItem
@@ -373,6 +394,26 @@ function SeeAllRow({ label, onSelect }: { label: string; onSelect: () => void })
     <CommandItem value={`see-all-${label}`} onSelect={onSelect} className="flex items-center gap-2 text-primary">
       <ArrowRight className="h-3.5 w-3.5" />
       <span className="text-[12px] font-medium">{label}</span>
+    </CommandItem>
+  )
+}
+
+function RecentItemRow({ item, onSelect }: { item: RecentItem; onSelect: () => void }) {
+  const { Icon, bg, color } = RECENT_TYPE_ICON[item.type]
+  return (
+    <CommandItem
+      value={`recent-${item.type}-${item.id}`}
+      onSelect={onSelect}
+      className="flex items-center gap-3"
+    >
+      <div className={`h-8 w-8 rounded-lg ${bg} flex items-center justify-center shrink-0`}>
+        <Icon className={`h-4 w-4 ${color}`} weight="duotone" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-foreground truncate">{item.label}</p>
+        {item.subtitle && <p className="text-[11px] text-muted-foreground truncate">{item.subtitle}</p>}
+      </div>
+      <ClockIcon className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
     </CommandItem>
   )
 }

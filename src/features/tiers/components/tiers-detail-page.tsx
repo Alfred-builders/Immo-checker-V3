@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText, IdentificationCard } from '@phosphor-icons/react'
+import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText, IdentificationCard, SpinnerGap, Check } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -15,6 +15,7 @@ import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
 import { CreateLotModal } from '../../patrimoine/components/create-lot-modal'
 import { useTiersDetail, useUpdateTiers, useTiersMissions, useTiersEdlHistory, useLinkOrganisation, useUnlinkOrganisation, useSearchTiers, useTiersLots } from '../api'
+import { useRecentItems } from 'src/hooks/use-recent-items'
 import { CreateTiersModal } from './create-tiers-modal'
 import { api } from 'src/lib/api-client'
 import { toast } from 'sonner'
@@ -36,6 +37,7 @@ export function TiersDetailPage() {
   const location = useLocation()
   const [editing, setEditing] = useState(false)
   const { data: tiers, isLoading } = useTiersDetail(id)
+  const { addItem: addRecent } = useRecentItems()
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
@@ -44,6 +46,21 @@ export function TiersDetailPage() {
       navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Tiers', href: '/app/tiers' }, { label: name || 'Fiche tiers' }] } })
     }
   }, [tiers?.id])
+
+  // Track visit pour l'historique Cmd+K.
+  useEffect(() => {
+    if (!tiers) return
+    const label = tiers.type_personne === 'morale'
+      ? (tiers.raison_sociale || tiers.nom)
+      : (tiers.prenom ? `${tiers.prenom} ${tiers.nom}` : tiers.nom)
+    addRecent({
+      id: tiers.id,
+      type: 'tiers',
+      label,
+      subtitle: tiers.email ?? undefined,
+      to: `/app/tiers/${tiers.id}`,
+    })
+  }, [tiers?.id, addRecent])
   const updateMutation = useUpdateTiers()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
@@ -54,17 +71,21 @@ export function TiersDetailPage() {
   })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (tiers) {
-      setFormData({
-        nom: tiers.nom || '', prenom: tiers.prenom || '', raison_sociale: tiers.raison_sociale || '',
-        type_personne: tiers.type_personne, email: tiers.email || '', tel: tiers.tel || '',
-        adresse: tiers.adresse || '', code_postal: tiers.code_postal || '', ville: tiers.ville || '',
-        siren: tiers.siren || '', date_naissance: tiers.date_naissance || '',
-        representant_nom: tiers.representant_nom || '', notes: tiers.notes || '',
-      })
+  function tiersToForm(t: typeof tiers) {
+    return {
+      nom: t?.nom || '', prenom: t?.prenom || '', raison_sociale: t?.raison_sociale || '',
+      type_personne: t?.type_personne || 'physique', email: t?.email || '', tel: t?.tel || '',
+      adresse: t?.adresse || '', code_postal: t?.code_postal || '', ville: t?.ville || '',
+      siren: t?.siren || '', date_naissance: t?.date_naissance || '',
+      representant_nom: t?.representant_nom || '', notes: t?.notes || '',
     }
+  }
+
+  useEffect(() => {
+    if (tiers) setFormData(tiersToForm(tiers))
   }, [tiers, editing])
+
+  const hasChanges = !!tiers && JSON.stringify(formData) !== JSON.stringify(tiersToForm(tiers))
 
   if (isLoading) {
     return (
@@ -87,19 +108,12 @@ export function TiersDetailPage() {
   }
 
   function handleCancel() {
-    if (tiers) {
-      setFormData({
-        nom: tiers.nom || '', prenom: tiers.prenom || '', raison_sociale: tiers.raison_sociale || '',
-        type_personne: tiers.type_personne, email: tiers.email || '', tel: tiers.tel || '',
-        adresse: tiers.adresse || '', code_postal: tiers.code_postal || '', ville: tiers.ville || '',
-        siren: tiers.siren || '', date_naissance: tiers.date_naissance || '',
-        representant_nom: tiers.representant_nom || '', notes: tiers.notes || '',
-      })
-    }
+    if (tiers) setFormData(tiersToForm(tiers))
     setEditing(false)
   }
 
   async function handleSave() {
+    if (!hasChanges) { setEditing(false); return }
     setSaving(true)
     try {
       await updateMutation.mutateAsync({
@@ -171,6 +185,15 @@ export function TiersDetailPage() {
             <div className="flex items-center gap-2 shrink-0">
               {!tiers.est_archive && !editing && (
                 <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>
+              )}
+              {!tiers.est_archive && editing && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>Annuler</Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
+                    {saving ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Sauvegarder
+                  </Button>
+                </>
               )}
               <Button variant="outline" size="sm" className={tiers.est_archive ? '' : 'text-destructive hover:text-destructive'} onClick={() => setShowArchiveConfirm(true)}>
                 {tiers.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
@@ -271,7 +294,7 @@ export function TiersDetailPage() {
       {/* Fix 3: US-807: EDL History (locataire) — improved */}
       <EdlHistorySection tiersId={tiers.id} />
 
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={handleCancel} saving={saving} />
+      <FloatingSaveBar visible={editing} hasChanges={hasChanges} onSave={handleSave} onCancel={handleCancel} saving={saving} />
       <ConfirmDialog
         open={showArchiveConfirm}
         onOpenChange={setShowArchiveConfirm}
@@ -730,6 +753,8 @@ function LotsTable({ lotsProprietaire, tiersId, tiersName, isArchived }: {
         </div>
 
         {/* Table header */}
+       <div className="overflow-x-auto">
+        <div className="min-w-max">
         <div className="flex items-center gap-3 px-5 py-2.5 text-xs font-medium text-muted-foreground border-b border-border/50 select-none">
           <div className="relative shrink-0" style={{ width: lotCols.colWidths.designation, minWidth: 40 }}>
             Désignation
@@ -775,6 +800,8 @@ function LotsTable({ lotsProprietaire, tiersId, tiersName, isArchived }: {
             <p>Aucun lot lié</p>
           </div>
         )}
+        </div>
+       </div>
       </div>
 
       <CreateLotModal

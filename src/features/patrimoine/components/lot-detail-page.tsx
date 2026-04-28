@@ -6,6 +6,7 @@ import {
   UsersThree, IdentificationCard, Ruler, Lightning, ArrowSquareOut,
   ChatText, ClipboardText, FilePdf,
   BuildingApartment, Storefront, Garage, DoorOpen,
+  SpinnerGap, Check,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
@@ -17,6 +18,7 @@ import { Switch } from 'src/components/ui/switch'
 import { FloatingSaveBar } from '../../../components/shared/floating-save-bar'
 import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { useLotDetail, useUpdateLot, useSearchTiers, useLinkProprietaire, useUnlinkProprietaire } from '../api'
+import { useRecentItems } from 'src/hooks/use-recent-items'
 import { useMissions } from '../../missions/api'
 import { statutAffichageLabels, statutAffichageColors, sensLabels, sensColors, getStatutAffichage } from '../../missions/types'
 import { CreateMissionModal } from '../../missions/components/create-mission-modal'
@@ -75,6 +77,19 @@ export function LotDetailPage() {
   const location = useLocation()
   const [editing, setEditing] = useState(false)
   const { data: lot, isLoading } = useLotDetail(id)
+  const { addItem: addRecent } = useRecentItems()
+
+  // Track visit pour l'historique Cmd+K.
+  useEffect(() => {
+    if (!lot) return
+    addRecent({
+      id: lot.id,
+      type: 'lot',
+      label: lot.designation,
+      subtitle: lot.batiment?.designation,
+      to: `/app/patrimoine/lots/${lot.id}`,
+    })
+  }, [lot?.id, addRecent])
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
@@ -98,22 +113,26 @@ export function LotDetailPage() {
   })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (lot) {
-      setFormData({
-        designation: lot.designation || '', type_bien: lot.type_bien || '',
-        type_bien_precision: lot.type_bien_precision || '',
-        etage: lot.etage || '', surface: lot.surface?.toString() || '',
-        nb_pieces: lot.nb_pieces || '', meuble: lot.meuble || false,
-        emplacement_palier: lot.emplacement_palier || '',
-        num_cave: lot.num_cave || '', num_parking: lot.num_parking || '',
-        dpe_classe: lot.dpe_classe || '', ges_classe: lot.ges_classe || '',
-        commentaire: lot.commentaire || '', reference_interne: lot.reference_interne || '',
-        eau_chaude_type: lot.eau_chaude_type || '', eau_chaude_mode: lot.eau_chaude_mode || '',
-        chauffage_type: lot.chauffage_type || '', chauffage_mode: lot.chauffage_mode || '',
-      })
+  function lotToForm(l: typeof lot) {
+    return {
+      designation: l?.designation || '', type_bien: l?.type_bien || '',
+      type_bien_precision: l?.type_bien_precision || '',
+      etage: l?.etage || '', surface: l?.surface?.toString() || '',
+      nb_pieces: l?.nb_pieces || '', meuble: l?.meuble || false,
+      emplacement_palier: l?.emplacement_palier || '',
+      num_cave: l?.num_cave || '', num_parking: l?.num_parking || '',
+      dpe_classe: l?.dpe_classe || '', ges_classe: l?.ges_classe || '',
+      commentaire: l?.commentaire || '', reference_interne: l?.reference_interne || '',
+      eau_chaude_type: l?.eau_chaude_type || '', eau_chaude_mode: l?.eau_chaude_mode || '',
+      chauffage_type: l?.chauffage_type || '', chauffage_mode: l?.chauffage_mode || '',
     }
+  }
+
+  useEffect(() => {
+    if (lot) setFormData(lotToForm(lot))
   }, [lot, editing])
+
+  const hasChanges = !!lot && JSON.stringify(formData) !== JSON.stringify(lotToForm(lot))
 
   if (isLoading) return (
     <div className="px-8 py-6 max-w-[1180px] mx-auto space-y-5">
@@ -137,22 +156,12 @@ export function LotDetailPage() {
   }
 
   function handleCancel() {
-    if (lot) setFormData({
-      designation: lot.designation || '', type_bien: lot.type_bien || '',
-      type_bien_precision: lot.type_bien_precision || '',
-      etage: lot.etage || '', surface: lot.surface?.toString() || '',
-      nb_pieces: lot.nb_pieces || '', meuble: lot.meuble || false,
-      emplacement_palier: lot.emplacement_palier || '',
-      num_cave: lot.num_cave || '', num_parking: lot.num_parking || '',
-      dpe_classe: lot.dpe_classe || '', ges_classe: lot.ges_classe || '',
-      commentaire: lot.commentaire || '', reference_interne: lot.reference_interne || '',
-      eau_chaude_type: lot.eau_chaude_type || '', eau_chaude_mode: lot.eau_chaude_mode || '',
-      chauffage_type: lot.chauffage_type || '', chauffage_mode: lot.chauffage_mode || '',
-    })
+    if (lot) setFormData(lotToForm(lot))
     setEditing(false)
   }
 
   async function handleSave() {
+    if (!hasChanges) { setEditing(false); return }
     setSaving(true)
     try {
       await updateMutation.mutateAsync({
@@ -202,6 +211,15 @@ export function LotDetailPage() {
               {!lot.est_archive && !editing && (
                 <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>
               )}
+              {!lot.est_archive && editing && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleCancel} disabled={saving}>Annuler</Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
+                    {saving ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Sauvegarder
+                  </Button>
+                </>
+              )}
               <Button variant="outline" size="sm" className={lot.est_archive ? '' : 'text-destructive hover:text-destructive'} onClick={() => setShowArchiveConfirm(true)}>
                 {lot.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
               </Button>
@@ -216,7 +234,7 @@ export function LotDetailPage() {
         )}
       </div>
 
-      {/* ═══ ROW 1: 3-col grid — Identification | Caractéristiques | Énergie & Annexes ═══ */}
+      {/* ═══ ROW 1: 3-col grid — Identification (incl. annexes) | Caractéristiques | Énergie ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Identification */}
         <CardBlock title="Identification" icon={IdentificationCard}>
@@ -255,8 +273,14 @@ export function LotDetailPage() {
               />
             </FieldRow>
           )}
-          <FieldRow label="Meublé" editing={editing} value={lot.meuble ? 'Oui' : 'Non'} last>
+          <FieldRow label="Meublé" editing={editing} value={lot.meuble ? 'Oui' : 'Non'}>
             <Switch checked={formData.meuble} onCheckedChange={(checked) => setFormData(prev => ({ ...prev, meuble: checked }))} />
+          </FieldRow>
+          <FieldRow label="N° Cave" editing={editing} value={lot.num_cave || '—'}>
+            <Input value={formData.num_cave} onChange={(e) => setFormData(prev => ({ ...prev, num_cave: e.target.value }))} className="h-9 text-sm" />
+          </FieldRow>
+          <FieldRow label="N° Parking" editing={editing} value={lot.num_parking || '—'} last>
+            <Input value={formData.num_parking} onChange={(e) => setFormData(prev => ({ ...prev, num_parking: e.target.value }))} className="h-9 text-sm" />
           </FieldRow>
         </CardBlock>
 
@@ -276,8 +300,8 @@ export function LotDetailPage() {
           </FieldRow>
         </CardBlock>
 
-        {/* Énergie & Annexes */}
-        <CardBlock title="Énergie & Annexes" icon={Lightning}>
+        {/* Énergie */}
+        <CardBlock title="Énergie" icon={Lightning}>
           <FieldRow label="DPE" editing={editing} value={lot.dpe_classe ? <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg font-bold text-[14px] ${dpeColors[lot.dpe_classe] || 'bg-muted text-muted-foreground'}`}>{lot.dpe_classe}</span> : '—'}>
             <Select value={formData.dpe_classe || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, dpe_classe: v }))}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
@@ -290,11 +314,29 @@ export function LotDetailPage() {
               <SelectContent>{dpeGesOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
             </Select>
           </FieldRow>
-          <FieldRow label="N° Cave" editing={editing} value={lot.num_cave || '—'}>
-            <Input value={formData.num_cave} onChange={(e) => setFormData(prev => ({ ...prev, num_cave: e.target.value }))} className="h-9 text-sm" />
+          <FieldRow label="Chauffage type" editing={editing} value={lot.chauffage_type ? (energyLabels[lot.chauffage_type] || lot.chauffage_type) : '—'}>
+            <Select value={formData.chauffage_type || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, chauffage_type: v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{ENERGY_TYPE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
           </FieldRow>
-          <FieldRow label="N° Parking" editing={editing} value={lot.num_parking || '—'} last>
-            <Input value={formData.num_parking} onChange={(e) => setFormData(prev => ({ ...prev, num_parking: e.target.value }))} className="h-9 text-sm" />
+          <FieldRow label="Chauffage mode" editing={editing} value={lot.chauffage_mode ? (energyLabels[lot.chauffage_mode] || lot.chauffage_mode) : '—'}>
+            <Select value={formData.chauffage_mode || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, chauffage_mode: v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{ENERGY_MODE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </FieldRow>
+          <FieldRow label="Eau chaude type" editing={editing} value={lot.eau_chaude_type ? (energyLabels[lot.eau_chaude_type] || lot.eau_chaude_type) : '—'}>
+            <Select value={formData.eau_chaude_type || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, eau_chaude_type: v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{ENERGY_TYPE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </FieldRow>
+          <FieldRow label="Eau chaude mode" editing={editing} value={lot.eau_chaude_mode ? (energyLabels[lot.eau_chaude_mode] || lot.eau_chaude_mode) : '—'} last>
+            <Select value={formData.eau_chaude_mode || undefined} onValueChange={(v) => setFormData(prev => ({ ...prev, eau_chaude_mode: v }))}>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>{ENERGY_MODE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
           </FieldRow>
         </CardBlock>
       </div>
@@ -340,7 +382,7 @@ export function LotDetailPage() {
       {/* Meta */}
       <p className="text-xs text-muted-foreground/40 px-1">Créé {formatDate(lot.created_at)} — Modifié {formatDate(lot.updated_at)}</p>
 
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={handleCancel} saving={saving} />
+      <FloatingSaveBar visible={editing} hasChanges={hasChanges} onSave={handleSave} onCancel={handleCancel} saving={saving} />
       <ConfirmDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}
         title={lot.est_archive ? 'Restaurer ce lot ?' : 'Archiver ce lot ?'}
         description={lot.est_archive ? 'Le lot redeviendra visible dans les listes et les recherches.' : 'Le lot sera masqué des listes, recherches et pickers. Les missions existantes restent consultables.'}

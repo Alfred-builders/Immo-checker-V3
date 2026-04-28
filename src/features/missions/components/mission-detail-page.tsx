@@ -19,6 +19,7 @@ import { TechPicker } from 'src/components/shared/tech-picker'
 import { useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateCle, useDeleteCle, useAddCle, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission } from '../api'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { CancelMissionModal } from './cancel-mission-modal'
+import { useRecentItems } from 'src/hooks/use-recent-items'
 import { formatDate, formatTime } from 'src/lib/formatters'
 import { toast } from 'sonner'
 import type { MissionDetail, CleMission, StatutRdv, StatutCle, SensEDL, TypeEDL } from '../types'
@@ -65,6 +66,7 @@ export function MissionDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data: mission, isLoading } = useMissionDetail(id)
+  const { addItem: addRecent } = useRecentItems()
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
@@ -72,6 +74,18 @@ export function MissionDetailPage() {
       navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference }] } })
     }
   }, [mission?.reference])
+
+  // Track visit pour l'historique Cmd+K (Recherches suggérées dynamiques).
+  useEffect(() => {
+    if (!mission) return
+    addRecent({
+      id: mission.id,
+      type: 'mission',
+      label: mission.reference,
+      subtitle: mission.lot_designation,
+      to: `/app/missions/${mission.id}`,
+    })
+  }, [mission?.id, addRecent])
   const updateMission = useUpdateMission()
   const assignTech = useAssignTechnician()
   const updateCle = useUpdateCle()
@@ -428,7 +442,8 @@ export function MissionDetailPage() {
               <TimelineEvent
                 color={mission.statut_rdv === 'confirme' ? 'bg-green-500' : mission.statut_rdv === 'reporte' ? 'bg-red-400' : 'bg-muted-foreground/20'}
                 title={`RDV ${statutRdvLabels[mission.statut_rdv].toLowerCase()}`}
-                desc={`Date : ${formatDate(mission.date_planifiee)}${mission.heure_debut ? ` à ${formatTime(mission.heure_debut)}` : ''}`}
+                desc={`Date prévue : ${formatDate(mission.date_planifiee)}${mission.heure_debut ? ` à ${formatTime(mission.heure_debut)}` : ''}`}
+                timestamp={mission.statut_rdv !== 'a_confirmer' ? mission.statut_rdv_updated_at : null}
                 muted={mission.statut_rdv === 'a_confirmer'}
               />
               {mission.edls.filter(e => e.statut === 'signe').map((edl) => (
@@ -440,8 +455,24 @@ export function MissionDetailPage() {
                   timestamp={edl.date_signature}
                 />
               ))}
-              {isTerminated && <TimelineEvent color="bg-green-500" title="Mission terminée" desc="Tous les EDL signés — auto-terminaison" last />}
-              {isCancelled && <TimelineEvent color="bg-red-500" title="Mission annulée" desc={mission.motif_annulation || 'Motif non renseigné'} last />}
+              {isTerminated && (
+                <TimelineEvent
+                  color="bg-green-500"
+                  title="Mission terminée"
+                  desc="Tous les EDL signés — auto-terminaison"
+                  timestamp={mission.terminee_at}
+                  last
+                />
+              )}
+              {isCancelled && (
+                <TimelineEvent
+                  color="bg-red-500"
+                  title="Mission annulée"
+                  desc={mission.motif_annulation || 'Motif non renseigné'}
+                  timestamp={mission.annulee_at}
+                  last
+                />
+              )}
             </div>
           </CardBlock>
       </div>

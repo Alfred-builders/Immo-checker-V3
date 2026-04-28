@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Archive, ArrowCounterClockwise, Plus, PencilSimple, Warning, Trash } from '@phosphor-icons/react'
+import { Archive, ArrowCounterClockwise, Plus, PencilSimple, Warning, Trash, ClipboardText, SpinnerGap, Check, MagnifyingGlass } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -9,7 +9,16 @@ import { Label } from 'src/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Textarea } from 'src/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from 'src/components/ui/tooltip'
 import { useBatimentDetail, useBatimentLots, useUpdateBatiment, useUpdateAddress, useAddAddress, useDeleteAddress } from '../api'
+import { useRecentItems } from 'src/hooks/use-recent-items'
+import { useMissions, useWorkspaceTechnicians } from '../../missions/api'
+import { getPendingActions, getStatutMission } from '../../missions/types'
+import type { Mission, StatutMission } from '../../missions/types'
+import { MISSION_COLUMNS, DEFAULT_COL_WIDTHS, SORTABLE, MissionTh, MissionTd, getPeriodDates, type PeriodFilter, type SortDir } from '../../missions/components/missions-page'
+import { ColumnConfig } from 'src/components/shared/column-config'
+import { DynamicFilter, applyDynamicFilters, type FilterField, type ActiveFilter } from 'src/components/shared/dynamic-filter'
+import { usePagePreference } from 'src/lib/use-page-preference'
 import { AddressAutocomplete } from 'src/components/shared/address-autocomplete'
 import { FloatingSaveBar } from '../../../components/shared/floating-save-bar'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
@@ -40,6 +49,7 @@ export function BuildingDetailPage() {
   const [showCreateLot, setShowCreateLot] = useState(false)
   const [editing, setEditing] = useState(false)
   const { data: batiment, isLoading } = useBatimentDetail(id)
+  const { addItem: addRecent } = useRecentItems()
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
@@ -47,6 +57,19 @@ export function BuildingDetailPage() {
       navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation }] } })
     }
   }, [batiment?.designation])
+
+  // Track visit pour l'historique Cmd+K.
+  useEffect(() => {
+    if (!batiment) return
+    const ville = (batiment as any).adresse_principale?.ville ?? (batiment as any).adresses?.[0]?.ville
+    addRecent({
+      id: batiment.id,
+      type: 'batiment',
+      label: batiment.designation,
+      subtitle: ville || undefined,
+      to: `/app/patrimoine/batiments/${batiment.id}`,
+    })
+  }, [batiment?.id, addRecent])
   const { data: lots } = useBatimentLots(id)
   const updateMutation = useUpdateBatiment()
   const updateAddr = useUpdateAddress()
@@ -68,30 +91,44 @@ export function BuildingDetailPage() {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [showAddAddress, setShowAddAddress] = useState(false)
 
+  function batimentToForm(b: typeof batiment) {
+    return {
+      designation: b?.designation || '',
+      type: b?.type || '',
+      nb_etages: b?.nb_etages?.toString() || '',
+      annee_construction: b?.annee_construction?.toString() || '',
+      commentaire: b?.commentaire || '',
+    }
+  }
+
+  function batimentToAddrForms(b: typeof batiment): AddressForm[] {
+    return (b?.adresses ?? []).map((a: any) => ({
+      id: a.id,
+      type: a.type,
+      rue: a.rue || '',
+      complement: a.complement || '',
+      code_postal: a.code_postal || '',
+      ville: a.ville || '',
+      latitude: a.latitude,
+      longitude: a.longitude,
+    }))
+  }
+
   // Sync form data when batiment loads or editing starts
   useEffect(() => {
     if (batiment) {
-      setFormData({
-        designation: batiment.designation || '',
-        type: batiment.type || '',
-        nb_etages: batiment.nb_etages?.toString() || '',
-        annee_construction: batiment.annee_construction?.toString() || '',
-        commentaire: batiment.commentaire || '',
-      })
-      setAddrForms((batiment.adresses ?? []).map((a: any) => ({
-        id: a.id,
-        type: a.type,
-        rue: a.rue || '',
-        complement: a.complement || '',
-        code_postal: a.code_postal || '',
-        ville: a.ville || '',
-        latitude: a.latitude,
-        longitude: a.longitude,
-      })))
+      setFormData(batimentToForm(batiment))
+      setAddrForms(batimentToAddrForms(batiment))
     }
   }, [batiment, editing])
 
+  const hasChanges = !!batiment && (
+    JSON.stringify(formData) !== JSON.stringify(batimentToForm(batiment)) ||
+    JSON.stringify(addrForms) !== JSON.stringify(batimentToAddrForms(batiment))
+  )
+
   async function handleSave() {
+    if (!hasChanges) { setEditing(false); return }
     setSaving(true)
     try {
       // Save building info
@@ -141,17 +178,8 @@ export function BuildingDetailPage() {
 
   function handleCancel() {
     if (batiment) {
-      setFormData({
-        designation: batiment.designation || '',
-        type: batiment.type || '',
-        nb_etages: batiment.nb_etages?.toString() || '',
-        annee_construction: batiment.annee_construction?.toString() || '',
-        commentaire: batiment.commentaire || '',
-      })
-      setAddrForms((batiment.adresses ?? []).map((a: any) => ({
-        id: a.id, type: a.type, rue: a.rue || '', complement: a.complement || '',
-        code_postal: a.code_postal || '', ville: a.ville || '', latitude: a.latitude, longitude: a.longitude,
-      })))
+      setFormData(batimentToForm(batiment))
+      setAddrForms(batimentToAddrForms(batiment))
     }
     setEditing(false)
   }
@@ -204,6 +232,15 @@ export function BuildingDetailPage() {
             <Button variant="outline" size="sm" className="gap-1.5 border-border/60 hover:border-foreground/20 hover:bg-accent" onClick={() => setEditing(true)}>
               <PencilSimple className="h-3.5 w-3.5" /> Modifier
             </Button>
+          )}
+          {!batiment.est_archive && editing && (
+            <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleCancel} disabled={saving}>Annuler</Button>
+              <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving || !hasChanges}>
+                {saving ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Sauvegarder
+              </Button>
+            </>
           )}
           <Button variant="outline" size="sm"
             className={batiment.est_archive ? 'gap-1.5 border-border/60 hover:border-foreground/20 hover:bg-accent' : 'gap-1.5 border-destructive/30 text-destructive/80 hover:text-destructive hover:bg-destructive/5 hover:border-destructive/50'}
@@ -351,7 +388,7 @@ export function BuildingDetailPage() {
       </div>
 
       {/* Lots table */}
-      <div data-card className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
+      <div data-card className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised overflow-hidden">
         <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Lots ({lots?.length ?? 0})</h2>
           {!batiment.est_archive && (
@@ -361,6 +398,8 @@ export function BuildingDetailPage() {
           )}
         </div>
 
+       <div className="overflow-x-auto">
+        <div className="min-w-max">
         <div className="flex items-center gap-3 px-5 py-2.5 text-xs font-medium text-muted-foreground border-b border-border/50 select-none">
           <div className="relative shrink-0" style={{ width: lotCols.colWidths.designation, minWidth: 40 }}>
             Désignation<ResizeHandle colId="designation" onResizeStart={lotCols.onResizeStart} onResize={lotCols.onResize} />
@@ -402,10 +441,15 @@ export function BuildingDetailPage() {
         ) : (
           <div className="py-10 text-center text-muted-foreground text-sm">Aucun lot</div>
         )}
+        </div>
+       </div>
       </div>
 
+      {/* Missions table */}
+      <BatimentMissionsTable batimentId={batiment.id} />
+
       <CreateLotModal open={showCreateLot} onOpenChange={setShowCreateLot} preselectedBatimentId={id} onCreated={(lotId) => navigate(`/app/patrimoine/lots/${lotId}`)} />
-      <FloatingSaveBar visible={editing} onSave={handleSave} onCancel={handleCancel} saving={saving} />
+      <FloatingSaveBar visible={editing} hasChanges={hasChanges} onSave={handleSave} onCancel={handleCancel} saving={saving} />
       <ConfirmDialog
         open={addrDeleteIdx !== null}
         onOpenChange={(open) => { if (!open && !addrDeleting) setAddrDeleteIdx(null) }}
@@ -573,3 +617,274 @@ function InfoRow({ label, value, editing, children }: { label: string; value: Re
     </div>
   )
 }
+
+/* ─── Missions Table — aligned with /app/missions table ─── */
+const BATIMENT_MISSIONS_PREF_KEY = 'batiment_missions_list'
+const BATIMENT_MISSIONS_PREFS_DEFAULTS = {
+  visible_columns: MISSION_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id),
+  column_order: MISSION_COLUMNS.map((c) => c.id),
+  filters: { period: 'all' as PeriodFilter, statut: 'all', rdv: 'all' },
+  sort: { col: 'date', dir: 'desc' as SortDir },
+}
+
+function BatimentMissionsTable({ batimentId }: { batimentId: string }) {
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [dynamicFilters, setDynamicFilters] = useState<ActiveFilter[]>([])
+
+  const { config: prefs, loaded: prefsLoaded, update: updatePrefs } = usePagePreference<typeof BATIMENT_MISSIONS_PREFS_DEFAULTS>(
+    BATIMENT_MISSIONS_PREF_KEY,
+    BATIMENT_MISSIONS_PREFS_DEFAULTS,
+  )
+
+  const [filters, setFiltersState] = useState(BATIMENT_MISSIONS_PREFS_DEFAULTS.filters)
+  const [sort, setSortState] = useState(BATIMENT_MISSIONS_PREFS_DEFAULTS.sort)
+  const [visibleCols, setVisibleColsState] = useState<string[]>(BATIMENT_MISSIONS_PREFS_DEFAULTS.visible_columns)
+  const [columnOrder, setColumnOrderState] = useState<string[]>(BATIMENT_MISSIONS_PREFS_DEFAULTS.column_order)
+
+  const syncedRef = useRef(false)
+  useEffect(() => {
+    if (!prefsLoaded || syncedRef.current) return
+    syncedRef.current = true
+    setFiltersState({ ...BATIMENT_MISSIONS_PREFS_DEFAULTS.filters, ...(prefs.filters || {}) })
+    setSortState({ ...BATIMENT_MISSIONS_PREFS_DEFAULTS.sort, ...(prefs.sort || {}) })
+    if (Array.isArray(prefs.visible_columns)) setVisibleColsState(prefs.visible_columns)
+    if (Array.isArray(prefs.column_order)) setColumnOrderState(prefs.column_order)
+  }, [prefsLoaded, prefs])
+
+  function updateFilters(partial: Partial<typeof BATIMENT_MISSIONS_PREFS_DEFAULTS.filters>) {
+    setFiltersState((prev) => {
+      const next = { ...prev, ...partial }
+      updatePrefs({ filters: next })
+      return next
+    })
+  }
+  function updateSort(next: { col: string; dir: SortDir }) { setSortState(next); updatePrefs({ sort: next }) }
+  function setVisibleCols(next: string[]) { setVisibleColsState(next); updatePrefs({ visible_columns: next }) }
+  function setColumnOrder(next: string[]) { setColumnOrderState(next); updatePrefs({ column_order: next }) }
+
+  const periodDates = useMemo(() => getPeriodDates(filters.period), [filters.period])
+
+  const { data: techData } = useWorkspaceTechnicians()
+  const technicians = techData ?? []
+
+  const filterFields: FilterField[] = useMemo(() => [
+    { id: 'reference', label: 'Référence', type: 'text' },
+    { id: 'lot_designation', label: 'Lot', type: 'text' },
+    {
+      id: 'technicien', label: 'Technicien', type: 'select',
+      options: technicians.map((t) => ({ value: t.id, label: `${t.prenom} ${t.nom}` })),
+      getValue: (m: Mission) => m.technicien?.user_id,
+    },
+    {
+      id: 'statut', label: 'Statut', type: 'select',
+      options: [
+        { value: 'a_traiter', label: 'À traiter' },
+        { value: 'prete', label: 'Prête' },
+        { value: 'terminee', label: 'Terminée' },
+        { value: 'annulee', label: 'Annulée' },
+      ],
+      getValue: (m: Mission) => getStatutMission(m),
+    },
+    {
+      id: 'statut_rdv', label: 'Statut RDV', type: 'select',
+      options: [
+        { value: 'a_confirmer', label: 'À confirmer' },
+        { value: 'confirme', label: 'Confirmé' },
+        { value: 'reporte', label: 'Reporté' },
+      ],
+    },
+    { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean', getValue: (m: Mission) => m.avec_inventaire },
+    { id: 'date_planifiee', label: 'Date mission', type: 'date' },
+    { id: 'created_at', label: 'Créée le', type: 'date' },
+    { id: 'commentaire', label: 'Commentaire', type: 'text' },
+  ], [technicians])
+
+  const { data: missionsData, isLoading } = useMissions({
+    batiment_id: batimentId,
+    search: search || undefined,
+    statut_affichage: filters.statut !== 'all' ? (filters.statut as StatutMission) : undefined,
+    statut_rdv: filters.rdv !== 'all' ? (filters.rdv as any) : undefined,
+    ...periodDates,
+    limit: 100,
+  })
+
+  const missionsRaw = missionsData?.data ?? []
+  const missions = useMemo(
+    () => applyDynamicFilters(missionsRaw, dynamicFilters, filterFields),
+    [missionsRaw, dynamicFilters, filterFields],
+  )
+
+  const { colWidths, onResizeStart, onResize } = useResizableColumns(DEFAULT_COL_WIDTHS)
+
+  function handleSort(col: string) {
+    if (!SORTABLE[col]) return
+    if (sort.col === col) updateSort({ col, dir: sort.dir === 'asc' ? 'desc' : 'asc' })
+    else updateSort({ col, dir: col === 'date' || col === 'created_at' ? 'desc' : 'asc' })
+  }
+
+  const sortedMissions = useMemo(() => {
+    const accessor = SORTABLE[sort.col]
+    if (!accessor) return missions
+    return [...missions].sort((a, b) => {
+      const av = accessor(a) || ''
+      const bv = accessor(b) || ''
+      const cmp = av.localeCompare(bv, 'fr', { numeric: true })
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }, [missions, sort])
+
+  const effectiveOrder: string[] = useMemo(() => {
+    const knownIds = MISSION_COLUMNS.map((c) => c.id)
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const id of columnOrder) {
+      if (knownIds.includes(id) && !seen.has(id)) { out.push(id); seen.add(id) }
+    }
+    for (const id of knownIds) if (!seen.has(id)) out.push(id)
+    return out
+  }, [columnOrder])
+
+  const visibleOrdered = effectiveOrder.filter((id) => visibleCols.includes(id))
+
+  const hasActiveFilters =
+    !!search ||
+    filters.statut !== 'all' ||
+    filters.rdv !== 'all' ||
+    filters.period !== 'all' ||
+    dynamicFilters.length > 0
+
+  return (
+    <div data-card className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
+      <div className="px-5 py-4 border-b border-border/60 flex items-center gap-2">
+        <ClipboardText className="h-4 w-4 text-muted-foreground/60" />
+        <h2 className="text-sm font-semibold text-foreground">Missions</h2>
+        {missions.length > 0 && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary">{missions.length}</span>}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap px-5 py-3 border-b border-border/40">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+          <Input
+            placeholder="Rechercher une mission..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
+        <Select value={filters.period} onValueChange={(v) => updateFilters({ period: v as PeriodFilter })}>
+          <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Période" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tout</SelectItem>
+            <SelectItem value="today">Aujourd'hui</SelectItem>
+            <SelectItem value="week">Cette semaine</SelectItem>
+            <SelectItem value="month">Ce mois</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.statut} onValueChange={(v) => updateFilters({ statut: v })}>
+          <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="a_traiter">À traiter</SelectItem>
+            <SelectItem value="prete">Prête</SelectItem>
+            <SelectItem value="terminee">Terminée</SelectItem>
+            <SelectItem value="annulee">Annulée</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.rdv} onValueChange={(v) => updateFilters({ rdv: v })}>
+          <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Statut RDV" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les RDV</SelectItem>
+            <SelectItem value="a_confirmer">À confirmer</SelectItem>
+            <SelectItem value="confirme">Confirmé</SelectItem>
+            <SelectItem value="reporte">Reporté</SelectItem>
+          </SelectContent>
+        </Select>
+        <DynamicFilter fields={filterFields} filters={dynamicFilters} onChange={setDynamicFilters} />
+        <div className="flex-1" />
+        <ColumnConfig
+          page={BATIMENT_MISSIONS_PREF_KEY}
+          columns={MISSION_COLUMNS}
+          visibleColumns={visibleCols}
+          onColumnsChange={setVisibleCols}
+          order={effectiveOrder}
+          onOrderChange={setColumnOrder}
+        />
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ minWidth: 'max-content' }}>
+          <thead>
+            <tr className="border-b border-border/30 group/thead bg-muted/20">
+              <th className="w-[3%] px-2 py-3" />
+              {visibleOrdered.map((id, idx) => {
+                const def = MISSION_COLUMNS.find((c) => c.id === id)
+                if (!def) return null
+                const sortKey = SORTABLE[id] ? id : ''
+                const last = idx === visibleOrdered.length - 1
+                return (
+                  <MissionTh
+                    key={id}
+                    col={sortKey}
+                    label={def.label}
+                    w={colWidths[id] ?? 120}
+                    sortable={!!sortKey}
+                    sortCol={sort.col}
+                    sortDir={sort.dir}
+                    onSort={handleSort}
+                    colId={id}
+                    onResizeStart={onResizeStart}
+                    onResize={onResize}
+                    last={last}
+                  />
+                )
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && [1,2,3,4].map(i => (
+              <tr key={i} className="border-b border-border/20">
+                <td className="px-2 py-3" /><td colSpan={Math.max(1, visibleOrdered.length)} className="px-3 py-3"><Skeleton className="h-4 w-full rounded-lg" /></td>
+              </tr>
+            ))}
+            {!isLoading && missions.length === 0 && (
+              <tr><td colSpan={visibleOrdered.length + 1} className="py-16 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted/60 mb-3">
+                  <ClipboardText className="h-5 w-5 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {hasActiveFilters ? 'Aucune mission trouvée' : 'Aucune mission pour ce bâtiment'}
+                </p>
+                {hasActiveFilters && <p className="text-[11px] text-muted-foreground/60 mt-1">Essayez avec d'autres critères</p>}
+              </td></tr>
+            )}
+            {!isLoading && sortedMissions.map((mission) => {
+              const pending = getPendingActions(mission)
+              return (
+                <tr
+                  key={mission.id}
+                  className="border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 group"
+                  onClick={() => navigate(`/app/missions/${mission.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: mission.reference }] } })}
+                >
+                  <td className="px-2 py-3 text-center">
+                    {pending.length > 0 && (
+                      <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                        <div className="w-2 h-2 rounded-full bg-orange-500 mx-auto" />
+                      </TooltipTrigger><TooltipContent side="right" className="text-xs">
+                        {pending.map((a, i) => <div key={i}>{a}</div>)}
+                      </TooltipContent></Tooltip></TooltipProvider>
+                    )}
+                  </td>
+                  {visibleOrdered.map((id) => <MissionTd key={id} colId={id} mission={mission} />)}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
