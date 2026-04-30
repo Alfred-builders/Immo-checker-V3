@@ -1,9 +1,14 @@
 // ── Mission Status Enums ──
+//
+// Modèle de statuts mission — Cadrage Flat Checker (28/04/2026).
+//   • Statut MISSION (4 valeurs SQL) : planifiee / terminee / infructueuse / annulee
+//   • Statut UI dérivé (5 valeurs) : a_planifier / planifie / finalisee / infructueuse / annulee
+//     — "a_planifier" = mission planifiee sans date confirmée (date_planifiee IS NULL).
+//     — "finalisee" = SQL terminee, label FR "Finalisée".
+//   • Statut INVITATION technicien : en_attente (Invité) / accepte / refuse
+//   • PAS de statut RDV locataire en V1 (suppression — pas d'app locataire).
 
-// Cycle de vie pur de la mission. La réponse du technicien vit dans
-// mission_technicien.statut_invitation, la confirmation du locataire dans statut_rdv.
-export type MissionStatut = 'planifiee' | 'terminee' | 'annulee'
-export type StatutRdv = 'a_confirmer' | 'confirme' | 'reporte'
+export type MissionStatut = 'planifiee' | 'terminee' | 'infructueuse' | 'annulee'
 export type StatutInvitation = 'en_attente' | 'accepte' | 'refuse'
 export type SensEDL = 'entree' | 'sortie'
 export type StatutEDL = 'brouillon' | 'signe' | 'infructueux'
@@ -12,65 +17,41 @@ export type TypeCle = 'cle_principale' | 'badge' | 'boite_aux_lettres' | 'parkin
 export type StatutCle = 'remise' | 'a_deposer' | 'deposee'
 export type TypeBail = 'individuel' | 'collectif'
 
-// Statut unique d'affichage SIMPLIFIÉ dérivé des 3 axes (4 valeurs).
-// Source de vérité PRIMAIRE pour les badges UI quotidienne (calendrier, drawer,
-// modale du jour, colonne tableau, filtre tableau). Décision Notion :
-// "Incohérence statut mission — Calendrier".
-//
-// Pour la granularité (où ça bloque exactement), voir la fiche détail mission
-// qui affiche les 3 axes bruts séparés, et la sidebar "Actions en attente"
-// qui décompose via getPendingActions().
-export type StatutMission = 'a_traiter' | 'prete' | 'terminee' | 'annulee'
-
-// Statut d'affichage DÉTAILLÉ à 8 valeurs. Conservé pour la sidebar "Actions
-// en attente" et certaines vues secondaires (map, tiers/lot detail). Pour le
-// badge primaire, utiliser StatutMission / getStatutMission / MissionStatusBadge.
-export type StatutAffichage =
-  | 'a_assigner'
-  | 'invitation_envoyee'
-  | 'refusee'
-  | 'rdv_a_confirmer'
-  | 'reportee'
-  | 'prete'
-  | 'terminee'
-  | 'annulee'
+// Statut UI dérivé — source de vérité unique pour tous les badges, filtres,
+// couleurs cartes, etc. Les anciens StatutMission (4 valeurs a_traiter/prete/...)
+// et StatutAffichage (9 valeurs) ont été supprimés au profit de ce modèle plat.
+export type StatutMission = 'a_planifier' | 'planifie' | 'finalisee' | 'infructueuse' | 'annulee'
 
 // ── Labels ──
 
 export const missionStatutLabels: Record<MissionStatut, string> = {
   planifiee: 'Planifiée',
-  terminee: 'Terminée',
+  terminee: 'Finalisée',
+  infructueuse: 'Infructueuse',
   annulee: 'Annulée',
 }
 
 export const statutMissionLabels: Record<StatutMission, string> = {
-  a_traiter: 'À traiter',
-  prete: 'Prête',
-  terminee: 'Terminée',
+  a_planifier: 'À planifier',
+  planifie: 'Planifié',
+  finalisee: 'Finalisée',
+  infructueuse: 'Infructueuse',
   annulee: 'Annulée',
 }
 
-export const statutAffichageLabels: Record<StatutAffichage, string> = {
-  a_assigner: 'À assigner',
-  invitation_envoyee: 'Invitation envoyée',
-  refusee: 'Refusée — à réassigner',
-  rdv_a_confirmer: 'RDV à confirmer',
-  reportee: 'Reportée',
-  prete: 'Prête',
-  terminee: 'Terminée',
-  annulee: 'Annulée',
-}
-
-export const statutRdvLabels: Record<StatutRdv, string> = {
-  a_confirmer: 'À confirmer',
-  confirme: 'Confirmé',
-  reporte: 'Reporté',
-}
-
+// "En attente" → "Invité" (cf. cadrage : terminologie côté agence). Conservé en
+// version courte pour les pills compactes ; version longue pour les contextes
+// ambigus (Tony §3.5).
 export const statutInvitationLabels: Record<StatutInvitation, string> = {
-  en_attente: 'En attente',
+  en_attente: 'Invité',
   accepte: 'Accepté',
   refuse: 'Refusé',
+}
+
+export const statutInvitationLabelsLong: Record<StatutInvitation, string> = {
+  en_attente: 'Technicien invité — en attente de réponse',
+  accepte: 'Technicien a accepté',
+  refuse: 'Technicien a refusé',
 }
 
 export const sensLabels: Record<SensEDL, string> = {
@@ -96,69 +77,57 @@ export const statutCleLabels: Record<StatutCle, string> = {
 
 // ── Colors ──
 
-// Raw statut colors — 3 valeurs du cycle de vie pur. À n'utiliser que quand on veut afficher
-// le statut BRUT (ex. export CSV, API debug). Pour l'UI utilisateur : préférer getStatutAffichage().
+// Raw statut colors — 4 valeurs SQL. Préférer statutMissionColors (UI dérivé).
 export const missionStatutColors: Record<MissionStatut, string> = {
   planifiee: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  terminee: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+  terminee: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  infructueuse: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
   annulee: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
-// Badge couleurs (fond + texte) pour le 4-valeurs primaire.
+// Badge couleurs (fond + texte + bordure) pour les 5 valeurs UI.
 export const statutMissionColors: Record<StatutMission, string> = {
-  a_traiter: 'bg-orange-50 text-orange-700 border-orange-200/60 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
-  prete: 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
-  terminee: 'bg-muted/50 text-muted-foreground border-border/40',
-  annulee: 'bg-red-50 text-red-700 border-red-200/60 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
+  a_planifier:  'bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  planifie:     'bg-sky-50 text-sky-700 border-sky-200/60 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800',
+  finalisee:    'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+  infructueuse: 'bg-orange-50 text-orange-700 border-orange-200/60 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800',
+  annulee:      'bg-red-50 text-red-700 border-red-200/60 dark:bg-red-950 dark:text-red-300 dark:border-red-800',
 }
 
 // Petit dot de couleur (utilisé dans badge + cartes calendrier).
 export const statutMissionDotColors: Record<StatutMission, string> = {
-  a_traiter: 'bg-orange-500',
-  prete: 'bg-emerald-500',
-  terminee: 'bg-muted-foreground/30',
-  annulee: 'bg-red-400',
+  a_planifier:  'bg-amber-500',
+  planifie:     'bg-sky-500',
+  finalisee:    'bg-emerald-500',
+  infructueuse: 'bg-orange-500',
+  annulee:      'bg-red-400',
 }
 
 // Fond pastel des cartes du calendrier (avec bordure).
 export const statutMissionCardColors: Record<StatutMission, string> = {
-  a_traiter: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
-  prete: 'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
-  terminee: 'bg-muted/30 border-border/30',
-  annulee: 'bg-red-50/40 border-red-200/30 opacity-60',
+  a_planifier:  'bg-amber-50 border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800',
+  planifie:     'bg-sky-50 border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800',
+  finalisee:    'bg-emerald-50 border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800',
+  infructueuse: 'bg-orange-50 border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800',
+  annulee:      'bg-red-50/40 border-red-200/30 opacity-60',
 }
 
-export const statutAffichageColors: Record<StatutAffichage, string> = {
-  a_assigner: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  invitation_envoyee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  refusee: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  rdv_a_confirmer: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  reportee: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  prete: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
-  terminee: 'bg-muted/50 text-muted-foreground',
-  annulee: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
+// Pastilles markers pour la carte (mission-map).
+export const statutMissionMarkerColors: Record<StatutMission, string> = {
+  a_planifier:  '#f59e0b',
+  planifie:     '#0ea5e9',
+  finalisee:    '#10b981',
+  infructueuse: '#f97316',
+  annulee:      '#ef4444',
 }
 
-export const statutAffichageBorderColors: Record<StatutAffichage, string> = {
-  a_assigner: 'border-l-orange-500',
-  invitation_envoyee: 'border-l-amber-500',
-  refusee: 'border-l-orange-500',
-  rdv_a_confirmer: 'border-l-amber-500',
-  reportee: 'border-l-amber-500',
-  prete: 'border-l-emerald-500',
-  terminee: 'border-l-muted-foreground',
-  annulee: 'border-l-red-500',
-}
-
-export const statutAffichageMarkerColors: Record<StatutAffichage, string> = {
-  a_assigner: '#f97316',
-  invitation_envoyee: '#f59e0b',
-  refusee: '#f97316',
-  rdv_a_confirmer: '#f59e0b',
-  reportee: '#f59e0b',
-  prete: '#10b981',
-  terminee: '#9ca3af',
-  annulee: '#ef4444',
+// Bordure verticale (utilisée dans certaines listes / cartes minimalistes).
+export const statutMissionBorderColors: Record<StatutMission, string> = {
+  a_planifier:  'border-l-amber-500',
+  planifie:     'border-l-sky-500',
+  finalisee:    'border-l-emerald-500',
+  infructueuse: 'border-l-orange-500',
+  annulee:      'border-l-red-500',
 }
 
 export const sensColors: Record<SensEDL, string> = {
@@ -181,6 +150,7 @@ export interface MissionTechnicien {
   est_principal: boolean
   statut_invitation: StatutInvitation
   email?: string | null
+  avatar_url?: string | null
   assigned_at?: string | null
   invitation_updated_at?: string | null
 }
@@ -234,15 +204,15 @@ export interface Mission {
   lot_type_bien: string
   batiment_designation: string
   adresse: string | null
-  date_planifiee: string
+  date_planifiee: string | null
   heure_debut: string | null
   heure_fin: string | null
   statut: MissionStatut
-  statut_rdv: StatutRdv
   avec_inventaire: boolean
   type_bail: TypeBail | null
   commentaire: string | null
   motif_annulation: string | null
+  motif_infructueux: string | null
   technicien: MissionTechnicien | null
   edl_types: string[] // ['entree', 'sortie', 'inventaire']
   has_pending_actions: boolean
@@ -250,6 +220,10 @@ export interface Mission {
   locataires_noms?: string[]
   has_signed_document?: boolean
   created_at: string
+  // Timestamps de transition pour le feed d'activité
+  terminee_at?: string | null
+  infructueuse_at?: string | null
+  annulee_at?: string | null
 }
 
 export interface MissionDetail extends Mission {
@@ -309,7 +283,13 @@ export interface TechnicianConflicts {
     date_planifiee: string
     heure_debut: string | null
     heure_fin: string | null
-    lot?: { id: string; designation: string } | null
+    lot?: {
+      id: string
+      designation: string | null
+      type_bien?: string | null
+      nb_pieces?: string | null
+      meuble?: boolean | null
+    } | null
     adresse?: string | null
   }>
   indisponibilites: Array<{ id: string; date_debut: string; date_fin: string; motif: string | null }>
@@ -317,48 +297,33 @@ export interface TechnicianConflicts {
 
 // ── Helpers ──
 
-// Source de vérité PRIMAIRE pour le badge mission dans l'UI quotidienne (4 valeurs).
-// Combine les 3 axes (mission.statut, statut_invitation, statut_rdv) en À traiter / Prête / Terminée / Annulée.
-// Décision Notion "Incohérence statut mission — Calendrier".
-export function getStatutMission(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutMission {
-  if (mission.statut === 'terminee') return 'terminee'
+// Source de vérité unique pour les badges UI : transforme le statut SQL brut
+// + l'absence de date en l'un des 5 statuts UI.
+export function getStatutMission(mission: Pick<Mission, 'statut' | 'date_planifiee'>): StatutMission {
   if (mission.statut === 'annulee') return 'annulee'
-  const hasPendingAction =
-    !mission.technicien ||
-    mission.technicien.statut_invitation !== 'accepte' ||
-    mission.statut_rdv === 'a_confirmer' ||
-    mission.statut_rdv === 'reporte'
-  return hasPendingAction ? 'a_traiter' : 'prete'
+  if (mission.statut === 'infructueuse') return 'infructueuse'
+  if (mission.statut === 'terminee') return 'finalisee'
+  if (!mission.date_planifiee) return 'a_planifier'
+  return 'planifie'
 }
 
-// Statut DÉTAILLÉ à 8 valeurs — granularité pour la sidebar "Actions en attente"
-// et certaines vues secondaires. Pour le badge primaire, préférer getStatutMission.
-export function getStatutAffichage(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): StatutAffichage {
-  if (mission.statut === 'annulee') return 'annulee'
-  if (mission.statut === 'terminee') return 'terminee'
-  if (!mission.technicien) return 'a_assigner'
-  if (mission.technicien.statut_invitation === 'en_attente') return 'invitation_envoyee'
-  if (mission.technicien.statut_invitation === 'refuse') return 'refusee'
-  if (mission.statut_rdv === 'a_confirmer') return 'rdv_a_confirmer'
-  if (mission.statut_rdv === 'reporte') return 'reportee'
-  return 'prete'
+// "Action requise" = mission planifiée mais incomplète (pas de date OU pas de
+// technicien OU technicien pas accepté). Sert à la stat card "Actions en
+// attente" du dashboard et au filtre sidebar.
+export function hasPendingActions(mission: Pick<Mission, 'statut' | 'technicien' | 'date_planifiee'>): boolean {
+  if (mission.statut !== 'planifiee') return false
+  if (!mission.date_planifiee) return true
+  if (!mission.technicien) return true
+  if (mission.technicien.statut_invitation !== 'accepte') return true
+  return false
 }
 
-// Statuts "actions en attente" = dashboard stat card + bloc US-841 + filtre sous-sélection.
-const PENDING_AFFICHAGE: StatutAffichage[] = [
-  'a_assigner', 'invitation_envoyee', 'refusee', 'rdv_a_confirmer', 'reportee',
-]
-
-export function hasPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): boolean {
-  return PENDING_AFFICHAGE.includes(getStatutAffichage(mission))
-}
-
-export function getPendingActions(mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>): string[] {
-  if (mission.statut === 'terminee' || mission.statut === 'annulee') return []
+export function getPendingActions(mission: Pick<Mission, 'statut' | 'technicien' | 'date_planifiee'>): string[] {
+  if (mission.statut !== 'planifiee') return []
   const actions: string[] = []
+  if (!mission.date_planifiee) actions.push('À planifier')
   if (!mission.technicien) actions.push('À assigner')
-  else if (mission.technicien.statut_invitation === 'en_attente') actions.push('Invitation technicien en attente')
-  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Invitation technicien refusée')
-  if (mission.statut_rdv === 'a_confirmer') actions.push('RDV à confirmer')
+  else if (mission.technicien.statut_invitation === 'en_attente') actions.push('Inv. tech en attente')
+  else if (mission.technicien.statut_invitation === 'refuse') actions.push('Inv. tech refusée')
   return actions
 }

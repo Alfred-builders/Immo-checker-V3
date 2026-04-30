@@ -44,6 +44,7 @@ export interface WorkspaceDetails {
   couleur_primaire: string | null
   couleur_fond: string | null
   fond_style: string | null
+  dashboard_metrics: string[]
   created_at: string
   updated_at: string
 }

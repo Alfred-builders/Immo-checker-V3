@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import {
-  MagnifyingGlass, Plus, SpinnerGap, Package, Lock, X, Tag, CaretRight, Archive,
+  MagnifyingGlass, Plus, SpinnerGap, Package, Lock, X, Tag, CaretRight, Trash,
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
 import { Label } from 'src/components/ui/label'
@@ -13,13 +14,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from 'src/components/ui/sheet'
 import { Separator } from 'src/components/ui/separator'
 import {
-  useCatalogueItems,
+  useCatalogueItemsInfinite,
   useCatalogueItemDetail,
   useCreateCatalogueItem,
   useArchiveCatalogueItem,
   useAddItemValeur,
   useRemoveItemValeur,
 } from '../api'
+import { LoadMoreFooter } from 'src/components/shared/load-more-footer'
 import type { CatalogueItem, CatalogueContexte, CatalogueCategorie, CritereType } from '../types'
 import { catalogueCategorieLabels } from '../types'
 
@@ -63,17 +65,28 @@ export function CataloguePage() {
   const [showCreate, setShowCreate] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
-  const { data: items, isLoading } = useCatalogueItems({
+  const {
+    data: itemsData,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useCatalogueItemsInfinite({
     contexte: tab,
     categorie: filterCat === 'all' ? undefined : filterCat,
     search: search || undefined,
   })
 
+  const items = useMemo(
+    () => itemsData?.pages.flatMap((p) => p.data) ?? [],
+    [itemsData],
+  )
+
   // Only show top-level items (not sous-items)
-  const topLevelItems = useMemo(() => {
-    if (!items) return []
-    return items.filter((item) => !item.parent_item_id)
-  }, [items])
+  const topLevelItems = useMemo(
+    () => items.filter((item) => !item.parent_item_id),
+    [items],
+  )
 
   const tabs: { key: CatalogueContexte; label: string }[] = [
     { key: 'edl', label: 'EDL' },
@@ -196,7 +209,7 @@ export function CataloguePage() {
                 {item.nom}
               </p>
               {item.est_archive && (
-                <span className="text-[11px] text-muted-foreground/50">Archivé</span>
+                <span className="text-[11px] text-muted-foreground/50">Supprimé</span>
               )}
             </div>
 
@@ -247,6 +260,16 @@ export function CataloguePage() {
             </div>
           </div>
         ))}
+
+        {!isLoading && topLevelItems.length > 0 && (
+          <LoadMoreFooter
+            currentCount={topLevelItems.length}
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            noun={['item', 'items']}
+          />
+        )}
       </div>
     </div>
   )
@@ -358,9 +381,12 @@ function ItemDetailDrawer({
 
   function handleArchive() {
     if (!itemId || !detail) return
-    archiveMutation.mutate(itemId, {
-      onSuccess: () => { toast.success(`"${detail.nom}" archivé`); onClose() },
-      onError: () => toast.error('Erreur'),
+    const targetId = itemId
+    const name = detail.nom
+    onClose()
+    undoableToast({
+      message: `"${name}" supprimé`,
+      run: () => archiveMutation.mutateAsync(targetId),
     })
   }
 
@@ -463,8 +489,8 @@ function ItemDetailDrawer({
                   onClick={handleArchive}
                   disabled={archiveMutation.isPending}
                 >
-                  {archiveMutation.isPending ? <SpinnerGap className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Archive className="h-3.5 w-3.5 mr-1.5" />}
-                  Archiver cet item
+                  {archiveMutation.isPending ? <SpinnerGap className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Trash className="h-3.5 w-3.5 mr-1.5" />}
+                  Supprimer cet item
                 </Button>
               )}
             </div>
@@ -507,13 +533,10 @@ function TagSection({
   }
 
   function handleRemove(valeurId: string) {
-    removeMutation.mutate(
-      { itemId, valeurId },
-      {
-        onSuccess: () => toast.success('Valeur supprimée'),
-        onError: () => toast.error('Erreur'),
-      }
-    )
+    undoableToast({
+      message: 'Valeur supprimée',
+      run: () => removeMutation.mutateAsync({ itemId, valeurId }),
+    })
   }
 
   return (

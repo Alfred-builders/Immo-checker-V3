@@ -25,7 +25,7 @@ import { MissionMap } from './mission-map'
 import { MissionCalendar } from './mission-calendar'
 import type { Mission, StatutMission } from '../types'
 import {
-  statutRdvLabels, statutInvitationLabels,
+  statutInvitationLabels,
   sensLabels, sensColors,
   getPendingActions, getStatutMission,
 } from '../types'
@@ -40,8 +40,7 @@ export const MISSION_COLUMNS: ColumnDef[] = [
   { id: 'proprietaire', label: 'Propriétaire', defaultVisible: false },
   { id: 'locataires', label: 'Locataire(s)', defaultVisible: false },
   { id: 'statut', label: 'Statut mission', defaultVisible: true },
-  { id: 'statut_rdv', label: 'Statut RDV', defaultVisible: true },
-  { id: 'invitation', label: 'Invitation', defaultVisible: false },
+  { id: 'invitation', label: 'Invitation tech.', defaultVisible: true },
   { id: 'documents', label: 'Documents', defaultVisible: true },
   { id: 'created_at', label: 'Créée le', defaultVisible: false },
 ]
@@ -49,7 +48,7 @@ export const MISSION_COLUMNS: ColumnDef[] = [
 export const DEFAULT_COL_WIDTHS: Record<string, number> = {
   reference: 130, lot: 220, date: 110, types: 130, technicien: 150,
   proprietaire: 160, locataires: 180,
-  statut: 130, statut_rdv: 110, invitation: 110, documents: 100, created_at: 110,
+  statut: 130, invitation: 110, documents: 100, created_at: 110,
 }
 
 // Sort accessor per column id. Columns missing here are non-sortable.
@@ -59,7 +58,6 @@ export const SORTABLE: Record<string, (m: Mission) => string> = {
   date: (m) => m.date_planifiee || '',
   technicien: (m) => (m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : ''),
   statut: (m) => getStatutMission(m),
-  statut_rdv: (m) => m.statut_rdv || '',
   created_at: (m) => m.created_at || '',
 }
 
@@ -74,7 +72,6 @@ interface MissionsPrefs {
   filters: {
     period: PeriodFilter
     statut: string
-    rdv: string
   }
   sort: { col: string; dir: SortDir }
 }
@@ -82,7 +79,7 @@ interface MissionsPrefs {
 const PREF_DEFAULTS: MissionsPrefs = {
   visible_columns: MISSION_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id),
   column_order: MISSION_COLUMNS.map((c) => c.id),
-  filters: { period: 'all', statut: 'all', rdv: 'all' },
+  filters: { period: 'all', statut: 'all' },
   sort: { col: 'date', dir: 'desc' },
 }
 
@@ -231,22 +228,13 @@ export function MissionsPage() {
       label: 'Statut',
       type: 'select',
       options: [
-        { value: 'a_traiter', label: 'À traiter' },
-        { value: 'prete', label: 'Prête' },
-        { value: 'terminee', label: 'Terminée' },
+        { value: 'a_planifier', label: 'À planifier' },
+        { value: 'planifie', label: 'Planifié' },
+        { value: 'finalisee', label: 'Finalisée' },
+        { value: 'infructueuse', label: 'Infructueuse' },
         { value: 'annulee', label: 'Annulée' },
       ],
       getValue: (m: Mission) => getStatutMission(m),
-    },
-    {
-      id: 'statut_rdv',
-      label: 'Statut RDV',
-      type: 'select',
-      options: [
-        { value: 'a_confirmer', label: 'À confirmer' },
-        { value: 'confirme', label: 'Confirmé' },
-        { value: 'reporte', label: 'Reporté' },
-      ],
     },
     { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean', getValue: (m: Mission) => m.avec_inventaire },
     { id: 'date_planifiee', label: 'Date mission', type: 'date' },
@@ -263,7 +251,6 @@ export function MissionsPage() {
   } = useMissionsInfinite({
     search: search || undefined,
     statut_affichage: filters.statut !== 'all' ? (filters.statut as StatutMission) : undefined,
-    statut_rdv: filters.rdv !== 'all' ? (filters.rdv as any) : undefined,
     ...periodDates,
   })
 
@@ -326,8 +313,10 @@ export function MissionsPage() {
         updateFilters({ period: 'today', statut: 'all' })
         break
       case 'pending':
-        // "À traiter" couvre déjà les missions avec actions en attente.
-        updateFilters({ period: 'all', statut: 'a_traiter' })
+        // "À planifier" filtre les missions sans date confirmée — porte d'entrée
+        // typique des actions en attente. Les autres cas (tech non assigné, refus)
+        // se voient via les badges Invitation tech sur le tableau.
+        updateFilters({ period: 'all', statut: 'a_planifier' })
         break
       case 'upcoming':
         updateFilters({ period: 'all', statut: 'all' })
@@ -358,13 +347,12 @@ export function MissionsPage() {
   const hasActiveFilters =
     !!search ||
     filters.statut !== 'all' ||
-    filters.rdv !== 'all' ||
     filters.period !== 'all' ||
     !!customDate ||
     dynamicFilters.length > 0
 
   return (
-    <div className="px-8 py-6 max-w-[1400px] mx-auto space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <CreateMissionModal open={showCreate} onOpenChange={setShowCreate} />
 
       {/* Header */}
@@ -438,27 +426,16 @@ export function MissionsPage() {
         )}
 
         <Select value={filters.statut} onValueChange={(v) => updateFilters({ statut: v })}>
-          <SelectTrigger className="h-10 w-[150px] text-sm">
+          <SelectTrigger className="h-10 w-[160px] text-sm">
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="a_traiter">À traiter</SelectItem>
-            <SelectItem value="prete">Prête</SelectItem>
-            <SelectItem value="terminee">Terminée</SelectItem>
+            <SelectItem value="a_planifier">À planifier</SelectItem>
+            <SelectItem value="planifie">Planifié</SelectItem>
+            <SelectItem value="finalisee">Finalisée</SelectItem>
+            <SelectItem value="infructueuse">Infructueuse</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={filters.rdv} onValueChange={(v) => updateFilters({ rdv: v })}>
-          <SelectTrigger className="h-10 w-[150px] text-sm">
-            <SelectValue placeholder="Statut RDV" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les RDV</SelectItem>
-            <SelectItem value="a_confirmer">À confirmer</SelectItem>
-            <SelectItem value="confirme">Confirmé</SelectItem>
-            <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
 
@@ -492,9 +469,12 @@ export function MissionsPage() {
       </div>
 
       {/* Table view */}
-      {view === 'table' && (
+      {view === 'table' && (() => {
+        // Distribute available width proportionally to colWidths so columns fill the table
+        const totalColWidth = visibleOrdered.reduce((acc, id) => acc + (colWidths[id] ?? 120), 0)
+        return (
         <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 'max-content' }}>
+          <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: totalColWidth + 60 }}>
             <thead>
               <tr className="border-b border-border/30 group/thead bg-muted/20">
                 <th className="w-[3%] px-2 py-3.5" />
@@ -503,12 +483,15 @@ export function MissionsPage() {
                   if (!def) return null
                   const sortKey = SORTABLE[id] ? id : ''
                   const last = idx === visibleOrdered.length - 1
+                  const w = colWidths[id] ?? 120
+                  const widthPct = (w / totalColWidth) * 97  // 97% = 100% - 3% du chevron
                   return (
                     <MissionTh
                       key={id}
                       col={sortKey}
                       label={def.label}
-                      w={colWidths[id] ?? 120}
+                      w={w}
+                      widthPct={widthPct}
                       sortable={!!sortKey}
                       sortCol={sort.col}
                       sortDir={sort.dir}
@@ -580,7 +563,8 @@ export function MissionsPage() {
             />
           )}
         </div>
-      )}
+        )
+      })()}
 
       {/* Calendar view */}
       {view === 'calendrier' && (
@@ -596,8 +580,8 @@ export function MissionsPage() {
 }
 
 /* ── Table header cell with separator + sort arrows ── */
-export function MissionTh({ col, label, w, sortable = true, last, sortCol, sortDir, onSort, colId, onResizeStart, onResize }: {
-  col: string; label: string; w: number; sortable?: boolean; last?: boolean
+export function MissionTh({ col, label, w, widthPct, sortable = true, last, sortCol, sortDir, onSort, colId, onResizeStart, onResize }: {
+  col: string; label: string; w: number; widthPct?: number; sortable?: boolean; last?: boolean
   sortCol: string | null; sortDir: 'asc' | 'desc'; onSort: (col: string) => void
   colId: string; onResizeStart: () => void; onResize: (id: string, delta: number) => void
 }) {
@@ -605,7 +589,7 @@ export function MissionTh({ col, label, w, sortable = true, last, sortCol, sortD
   return (
     <th
       className={`text-left font-medium text-[11px] text-muted-foreground px-3 py-3.5 relative select-none transition-colors ${sortable ? 'cursor-pointer hover:text-foreground' : ''}`}
-      style={{ width: w, minWidth: 40 }}
+      style={widthPct !== undefined ? { width: `${widthPct}%`, minWidth: w } : { width: w, minWidth: 40 }}
       onClick={() => sortable && col && onSort(col)}
     >
       <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
@@ -636,9 +620,15 @@ export function MissionTd({ colId, mission }: { colId: string; mission: Mission 
       )
     case 'date':
       return (
-        <td className="px-3 py-3 text-[13px] text-muted-foreground">
-          {formatDate(mission.date_planifiee)}
-          {mission.heure_debut && <div className="text-[11px] text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}
+        <td className="px-3 py-3 text-[13px]">
+          {mission.date_planifiee ? (
+            <>
+              <span className="text-muted-foreground">{formatDate(mission.date_planifiee)}</span>
+              {mission.heure_debut && <div className="text-[11px] text-muted-foreground/40">{formatTime(mission.heure_debut)}</div>}
+            </>
+          ) : (
+            <span className="italic text-orange-600 dark:text-orange-400">À planifier</span>
+          )}
         </td>
       )
     case 'types':
@@ -663,14 +653,6 @@ export function MissionTd({ colId, mission }: { colId: string; mission: Mission 
       return <td className="px-3 py-3 text-[13px] text-muted-foreground truncate" title={mission.locataires_noms?.join(', ') || ''}>{mission.locataires_noms && mission.locataires_noms.length > 0 ? mission.locataires_noms.join(', ') : <span className="text-muted-foreground/30">—</span>}</td>
     case 'statut':
       return <td className="px-3 py-3"><MissionStatusBadge mission={mission} variant="compact" /></td>
-    case 'statut_rdv':
-      return (
-        <td className="px-3 py-3">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-            {statutRdvLabels[mission.statut_rdv]}
-          </span>
-        </td>
-      )
     case 'invitation':
       return (
         <td className="px-3 py-3">

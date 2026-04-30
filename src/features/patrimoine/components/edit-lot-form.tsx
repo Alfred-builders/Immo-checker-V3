@@ -16,7 +16,7 @@ interface Props {
 const NONE_VALUE = '__none__'
 
 export function EditLotForm({ lot, onSave, onCancel }: Props) {
-  const [designation, setDesignation] = useState(lot.designation)
+  const [designation, setDesignation] = useState(lot.designation ?? '')
   const [referenceInterne, setReferenceInterne] = useState(lot.reference_interne || '')
   const [typeBien, setTypeBien] = useState(lot.type_bien)
   const [etage, setEtage] = useState(lot.etage || '')
@@ -33,7 +33,7 @@ export function EditLotForm({ lot, onSave, onCancel }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     onSave({
-      designation,
+      designation: designation.trim() || undefined,
       reference_interne: referenceInterne || undefined,
       type_bien: typeBien,
       etage: etage || undefined,
@@ -52,10 +52,10 @@ export function EditLotForm({ lot, onSave, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
-        {/* Désignation */}
+        {/* Désignation — optionnelle */}
         <div className="col-span-2 space-y-2">
-          <Label>Désignation *</Label>
-          <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Appartement 201" required />
+          <Label>Désignation</Label>
+          <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Appartement 201 (optionnel)" />
         </div>
 
         {/* Référence interne */}
@@ -116,6 +116,16 @@ export function EditLotForm({ lot, onSave, onCancel }: Props) {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Annexes — rattachées à l'identification du lot */}
+        <div className="space-y-2">
+          <Label>N° cave</Label>
+          <Input value={numCave} onChange={(e) => setNumCave(e.target.value)} placeholder="C12" />
+        </div>
+        <div className="space-y-2">
+          <Label>N° parking</Label>
+          <Input value={numParking} onChange={(e) => setNumParking(e.target.value)} placeholder="P05" />
+        </div>
       </div>
 
       {/* Meuble switch */}
@@ -159,21 +169,6 @@ export function EditLotForm({ lot, onSave, onCancel }: Props) {
                 <SelectItem value="G">G</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Annexes */}
-      <div className="border-t border-border/60 pt-4">
-        <p className="text-sm font-medium mb-3">Annexes</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>N cave</Label>
-            <Input value={numCave} onChange={(e) => setNumCave(e.target.value)} placeholder="C12" />
-          </div>
-          <div className="space-y-2">
-            <Label>N parking</Label>
-            <Input value={numParking} onChange={(e) => setNumParking(e.target.value)} placeholder="P05" />
           </div>
         </div>
       </div>

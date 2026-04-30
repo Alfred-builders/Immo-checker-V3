@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, PushPin, CaretUpDown, Check, ArrowLeft } from '@phosphor-icons/react'
+import { SquaresFour, ClipboardText, BuildingOffice, Buildings, UsersThree, Gear, SignOut, CaretRight, PushPin, CaretUpDown, Check, ArrowLeft, List, X } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/use-auth'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api-client'
 import { BellDropdown } from '../features/notifications/components/bell-dropdown'
 import { GlobalSearchBar } from '../features/search/components/global-search-bar'
+import { Sheet, SheetContent, SheetTitle } from '../components/ui/sheet'
 
 const SIDEBAR_COLLAPSED_W = 64
 const SIDEBAR_EXPANDED_W = 240
@@ -115,9 +116,15 @@ export function MainLayout() {
   const { user, workspace, logout } = useAuth()
   const [hovered, setHovered] = useState(false)
   const [pinned, setPinned] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const expanded = pinned || hovered
   const breadcrumbs = useBreadcrumbs()
+
+  // Auto-close mobile drawer on route change
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     if (workspace?.couleur_primaire) {
@@ -151,12 +158,12 @@ export function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar */}
+      {/* Sidebar — desktop only */}
       <aside
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{ width: sidebarWidth }}
-        className="fixed left-0 top-0 bottom-0 bg-card border-r border-border/50 flex flex-col z-30 transition-[width] duration-200 ease-in-out overflow-hidden group/sidebar"
+        className="fixed left-0 top-0 bottom-0 bg-card border-r border-border/50 hidden md:flex flex-col z-30 transition-[width] duration-200 ease-in-out overflow-hidden group/sidebar"
       >
         <div className={`h-14 flex items-center ${ICON_PL} pr-3 border-b border-border/50 shrink-0`}>
           <Link to="/app/dashboard" className="flex items-center gap-3 group">
@@ -229,31 +236,59 @@ export function MainLayout() {
         </div>
       </aside>
 
+      {/* Mobile sidebar drawer */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" showCloseButton={false} className="w-[260px] p-0 bg-card md:hidden">
+          <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+          <MobileSidebarContent
+            user={user}
+            workspace={workspace}
+            initials={initials}
+            onLogout={handleLogout}
+            onClose={() => setMobileOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+
       {/* Main content */}
-      <div style={{ marginLeft: sidebarWidth }} className="min-h-screen transition-[margin-left] duration-200 ease-in-out flex flex-col">
+      <div
+        style={{ '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties}
+        className="min-h-screen transition-[margin-left] duration-200 ease-in-out flex flex-col ml-0 md:ml-[var(--sidebar-width)]"
+      >
         {/* Header */}
-        <header className="h-14 border-b border-border/50 bg-card/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-2">
+        <header className="h-14 border-b border-border/50 bg-card/80 backdrop-blur-sm flex items-center justify-between px-3 md:px-6 shrink-0 sticky top-0 z-20 gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* Mobile hamburger menu */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="h-9 w-9 rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-colors md:hidden shrink-0"
+              title="Menu"
+              aria-label="Ouvrir le menu"
+            >
+              <List size={20} weight="regular" />
+            </button>
             {isDetailPage && (
-              <button onClick={() => navigate(-1)} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" title="Retour">
+              <button onClick={() => navigate(-1)} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0" title="Retour">
                 <ArrowLeft size={16} />
               </button>
             )}
-            <nav className="flex items-center gap-1.5 text-[13px]">
+            <nav className="flex items-center gap-1.5 text-[13px] min-w-0 overflow-hidden">
               {breadcrumbs.map((b, i) => (
-                <span key={i} className="flex items-center gap-1.5">
-                  {i > 0 && <CaretRight className="h-3 w-3 text-muted-foreground/40" />}
+                <span key={i} className="flex items-center gap-1.5 min-w-0">
+                  {i > 0 && <CaretRight className="h-3 w-3 text-muted-foreground/40 shrink-0" />}
                   {i < breadcrumbs.length - 1 && b.href ? (
-                    <Link to={b.href} className="text-muted-foreground hover:text-foreground transition-colors">{b.label}</Link>
+                    <Link to={b.href} className="text-muted-foreground hover:text-foreground transition-colors truncate">{b.label}</Link>
                   ) : (
-                    <span className="text-foreground font-medium">{b.label}</span>
+                    <span className="text-foreground font-medium truncate">{b.label}</span>
                   )}
                 </span>
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
-            <GlobalSearchBar />
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="hidden sm:block">
+              <GlobalSearchBar />
+            </div>
             <BellDropdown />
           </div>
         </header>
@@ -265,6 +300,120 @@ export function MainLayout() {
             </motion.div>
           </AnimatePresence>
         </main>
+      </div>
+    </div>
+  )
+}
+
+/* ── Mobile Sidebar Content ── */
+function MobileSidebarContent({
+  user,
+  workspace,
+  initials,
+  onLogout,
+  onClose,
+}: {
+  user: any
+  workspace: any
+  initials: string
+  onLogout: () => void
+  onClose: () => void
+}) {
+  const location = useLocation()
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="h-14 flex items-center pl-4 pr-3 border-b border-border/50 shrink-0">
+        <Link to="/app/dashboard" onClick={onClose} className="flex items-center gap-3 group flex-1 min-w-0">
+          {workspace?.logo_url ? (
+            <img
+              src={workspace.logo_url}
+              alt={workspace.nom}
+              className="w-8 h-8 rounded-xl object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#2d526c' }}>
+              <Buildings size={18} weight="fill" className="text-white" />
+            </div>
+          )}
+          <span className="text-[15px] font-semibold tracking-tight text-foreground truncate">
+            {workspace?.nom || 'ImmoChecker'}
+          </span>
+        </Link>
+        <button
+          onClick={onClose}
+          className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+          aria-label="Fermer le menu"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4 space-y-5">
+        {navigation.map((group) => (
+          <section key={group.group}>
+            <div className="px-4 mb-1.5">
+              <h3 className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider">{group.group}</h3>
+            </div>
+            <div className="flex flex-col">
+              {group.items.map((item) => {
+                const isActive = location.pathname.startsWith(item.href)
+                if (item.disabled) {
+                  return (
+                    <div key={item.href} className="flex items-center gap-3 py-2.5 mx-2 px-3 rounded-lg text-muted-foreground/35 cursor-not-allowed">
+                      <item.icon size={18} className="shrink-0" />
+                      <span className="text-[14px] font-medium">{item.label}</span>
+                      <span className="ml-auto text-[11px] font-medium bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground/40">Bientôt</span>
+                    </div>
+                  )
+                }
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 py-2.5 mx-2 px-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                    }`}
+                  >
+                    <item.icon size={18} className="shrink-0" />
+                    <span className="text-[14px]">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </nav>
+
+      {/* Footer — user + actions */}
+      <div className="border-t border-border/50 py-3 px-3 space-y-2">
+        <Link
+          to="/app/profil"
+          onClick={onClose}
+          className="flex items-center gap-3 px-1 py-1 rounded-md hover:bg-accent/50 transition-colors"
+        >
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt={`${user.prenom} ${user.nom}`} className="w-8 h-8 rounded-xl object-cover shrink-0 border border-border/40" />
+          ) : (
+            <div className="w-8 h-8 rounded-xl bg-primary/8 flex items-center justify-center text-primary font-semibold text-[11px] shrink-0">{initials}</div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-medium text-foreground truncate">{user?.prenom} {user?.nom}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
+          </div>
+        </Link>
+        <button
+          onClick={() => { onClose(); onLogout() }}
+          className="w-full flex items-center gap-2 px-2 py-2 text-[13px] text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-md transition-colors"
+        >
+          <SignOut size={16} />
+          <span>Déconnexion</span>
+        </button>
       </div>
     </div>
   )

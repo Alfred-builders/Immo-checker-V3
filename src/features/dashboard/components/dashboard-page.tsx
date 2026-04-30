@@ -1,7 +1,9 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react'
-import { Plus, CalendarBlank, Clock, WarningCircle, CaretRight, CaretUp, CaretDown, FileText, SquaresFour, ChartLine, CheckCircle, MapPin, User } from '@phosphor-icons/react'
+import { Plus, CalendarBlank, Clock, WarningCircle, CaretRight, CaretUp, CaretDown, FileText, SquaresFour, ChartLine, MapPin, User } from '@phosphor-icons/react'
+import { useWorkspaceDetails } from '../../admin/api'
+import { METRIC_CATALOG, METRIC_BY_ID, DEFAULT_METRICS, type MetricColor } from '../metric-catalog'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Label, Line, LineChart, Pie, PieChart, Sector, XAxis } from 'recharts'
 import type { PieSectorShapeProps } from 'recharts/types/polar/Pie'
 import { Button } from 'src/components/ui/button'
@@ -17,7 +19,7 @@ import {
 } from 'src/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from 'src/components/ui/sheet'
-import { useDashboardStats, useDashboardActivity } from '../api'
+import { useDashboardStats, useDashboardActivity, type DashboardStats } from '../api'
 import { useMissions } from '../../missions/api'
 import { CreateMissionModal } from '../../missions/components/create-mission-modal'
 import { UnavailabilityModal } from '../../missions/components/unavailability-modal'
@@ -31,9 +33,9 @@ import { cn } from 'src/lib/cn'
 import type { Mission, MissionStatut } from '../../missions/types'
 import {
   missionStatutLabels, missionStatutColors,
-  statutAffichageLabels, statutAffichageColors,
+  statutMissionLabels, statutMissionColors,
   sensLabels, sensColors,
-  getPendingActions, getStatutAffichage,
+  getPendingActions, getStatutMission,
 } from '../../missions/types'
 
 // ── Chart configs (data comes from API) ──
@@ -52,10 +54,11 @@ const monthlyTrendConfig: ChartConfig = {
 
 // ── Donut — statuts config ──
 const statutChartConfig: ChartConfig = {
-  count:     { label: 'Missions' },
-  planifiee: { label: 'Planifiée', color: 'var(--chart-1)' },
-  terminee:  { label: 'Terminée',  color: 'var(--chart-2)' },
-  annulee:   { label: 'Annulée',   color: 'var(--chart-3)' },
+  count:        { label: 'Missions' },
+  planifiee:    { label: 'Planifiée',    color: 'var(--chart-1)' },
+  terminee:     { label: 'Finalisée',    color: 'var(--chart-2)' },
+  infructueuse: { label: 'Infructueuse', color: 'var(--chart-4)' },
+  annulee:      { label: 'Annulée',      color: 'var(--chart-3)' },
 }
 
 type DashTab = 'overview' | 'analytics'
@@ -66,6 +69,10 @@ export function DashboardPage() {
   const { data: stats } = useDashboardStats()
   const { data: missionsData } = useMissions({ limit: 100 })
   const missions = missionsData?.data ?? []
+  const { data: workspace } = useWorkspaceDetails()
+  // null/undefined → defaults; explicit [] → hide the row.
+  const activeMetricIds = workspace?.dashboard_metrics ?? DEFAULT_METRICS
+  const activeMetrics = activeMetricIds.map((id) => METRIC_BY_ID[id]).filter(Boolean)
 
   // Date windows — match exactly the SQL in GET /api/dashboard/stats
   const today = useMemo(() => new Date().toISOString().split('T')[0], [])
@@ -154,7 +161,7 @@ export function DashboardPage() {
   )
 
   // Metric detail sheet
-  type MetricType = 'edl' | 'pending' | 'upcoming' | 'completed' | null
+  type MetricType = 'edl' | 'pending' | 'upcoming' | null
   const [metricSheet, setMetricSheet] = useState<MetricType>(null)
   const [metricFilter, setMetricFilter] = useState('all')
 
@@ -166,7 +173,7 @@ export function DashboardPage() {
     switch (metricSheet) {
       // EDL du mois — missions planifiées ce mois (proxy pour edl_inventaire.created_at >= firstOfMonth)
       case 'edl':
-        return missions.filter(m => m.date_planifiee >= firstOfMonth)
+        return missions.filter(m => !!m.date_planifiee && m.date_planifiee >= firstOfMonth)
       // Actions en attente — same logic as pending_actions SQL (statut actif + action requise)
       case 'pending':
         return pendingMissions
@@ -174,12 +181,10 @@ export function DashboardPage() {
       case 'upcoming':
         return missions.filter(m =>
           m.statut === 'planifiee' &&
+          !!m.date_planifiee &&
           m.date_planifiee >= today &&
           m.date_planifiee <= in7days
         )
-      // Taux de complétion — statut = 'terminee' AND date_planifiee >= firstOfMonth
-      case 'completed':
-        return missions.filter(m => m.statut === 'terminee' && m.date_planifiee >= firstOfMonth)
       default: return []
     }
   })()
@@ -192,8 +197,8 @@ export function DashboardPage() {
         if (metricFilter === 'inventaire') return m.edl_types.includes('inventaire')
         if (metricFilter === 'a_assigner') return !m.technicien
         if (metricFilter === 'invitation') return m.technicien?.statut_invitation !== 'accepte'
-        if (metricFilter === 'rdv') return m.statut_rdv === 'a_confirmer'
-        if (metricFilter === 'planifiee' || metricFilter === 'terminee') return m.statut === metricFilter
+        if (metricFilter === 'a_planifier') return m.statut === 'planifiee' && !m.date_planifiee
+        if (metricFilter === 'planifiee' || metricFilter === 'terminee' || metricFilter === 'infructueuse') return m.statut === metricFilter
         return true
       })
 
@@ -207,18 +212,13 @@ export function DashboardPage() {
     ],
     pending: [
       { value: 'all', label: 'Toutes' },
+      { value: 'a_planifier', label: 'À planifier' },
       { value: 'a_assigner', label: 'À assigner' },
       { value: 'invitation', label: 'Invitation' },
-      { value: 'rdv', label: 'RDV à confirmer' },
     ],
     upcoming: [
       { value: 'all', label: 'Toutes' },
       { value: 'planifiee', label: 'Planifiées' },
-    ],
-    completed: [
-      { value: 'all', label: 'Toutes' },
-      { value: 'entree', label: 'Entrées' },
-      { value: 'sortie', label: 'Sorties' },
     ],
   }
 
@@ -226,7 +226,6 @@ export function DashboardPage() {
     edl: { title: 'EDL du mois', color: 'text-primary' },
     pending: { title: 'Actions en attente', color: 'text-amber-600' },
     upcoming: { title: 'À venir (7 jours)', color: 'text-foreground' },
-    completed: { title: 'Terminées ce mois', color: 'text-green-600' },
   }
 
   function handleMissionClick(id: string) { setDrawerMissionId(id) }
@@ -273,7 +272,7 @@ export function DashboardPage() {
 
           {/* Metric detail sheet — wide with table */}
           <Sheet open={!!metricSheet} onOpenChange={() => setMetricSheet(null)}>
-            <SheetContent side="right" className="w-[600px] sm:w-[680px] lg:w-[750px] overflow-y-auto p-0">
+            <SheetContent side="right" className="w-full sm:max-w-[920px] lg:max-w-[1040px] overflow-y-auto p-0">
               {metricSheet && (
                 <div>
                   <SheetHeader className="px-6 pt-5 pb-3 border-b border-border/30 space-y-3">
@@ -304,16 +303,26 @@ export function DashboardPage() {
                   {metricMissions.length === 0 ? (
                     <div className="px-6 py-16 text-center text-sm text-muted-foreground/50">Aucun élément</div>
                   ) : (
-                    <div>
+                    <div className="overflow-x-auto">
                       <table className="w-full table-fixed">
+                        <colgroup>
+                          <col className="w-[96px]" />
+                          <col />
+                          <col className="w-[128px]" />
+                          <col className="w-[140px]" />
+                          <col className="w-[72px]" />
+                          <col className="w-[156px]" />
+                          {metricSheet === 'pending' && <col className="w-[160px]" />}
+                        </colgroup>
                         <thead>
                           <tr className="bg-surface-sunken text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                            <th className="text-left px-4 py-2.5 w-24">Ref.</th>
-                            <th className="text-left px-4 py-2.5">Lot / Adresse</th>
-                            <th className="text-left px-4 py-2.5 w-28">Date</th>
-                            <th className="text-left px-4 py-2.5 w-20">Type</th>
-                            <th className="text-left px-4 py-2.5 w-44">Statut</th>
-                            {metricSheet === 'pending' && <th className="text-left px-4 py-2.5 w-[130px]">Actions</th>}
+                            <th className="text-left px-3 py-2.5">Ref.</th>
+                            <th className="text-left px-3 py-2.5">Lot / Adresse</th>
+                            <th className="text-left px-3 py-2.5">Date</th>
+                            <th className="text-left px-3 py-2.5">Technicien</th>
+                            <th className="text-left px-3 py-2.5">Type</th>
+                            <th className="text-left px-3 py-2.5">Statut</th>
+                            {metricSheet === 'pending' && <th className="text-left px-3 py-2.5">Actions</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -325,34 +334,38 @@ export function DashboardPage() {
                                 className={`hover:bg-primary/[0.03] cursor-pointer transition-colors text-[13px] ${idx % 2 === 1 ? 'bg-surface-sunken/30' : ''}`}
                                 onClick={() => { setMetricSheet(null); handleMissionClick(m.id) }}
                               >
-                                <td className="px-4 py-3">
+                                <td className="px-3 py-3 align-top">
                                   <span className="font-mono text-[12px] font-medium text-muted-foreground">{m.reference}</span>
                                 </td>
-                                <td className="px-4 py-3">
-                                  <div className="font-medium text-foreground truncate max-w-[200px]">{m.lot_designation}</div>
+                                <td className="px-3 py-3 align-top">
+                                  <div className="font-medium text-foreground truncate" title={m.lot_designation || ''}>{m.lot_designation}</div>
                                   {(m.adresse || m.batiment_designation) && (
-                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 truncate max-w-[200px] mt-0.5">
+                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5 min-w-0">
                                       <MapPin className="h-2.5 w-2.5 shrink-0" />
-                                      <span className="truncate">{m.adresse || m.batiment_designation}</span>
+                                      <span className="truncate" title={m.adresse || m.batiment_designation || ''}>{m.adresse || m.batiment_designation}</span>
                                     </div>
                                   )}
                                 </td>
-                                <td className="px-4 py-3">
-                                  <div className="text-[12px] text-muted-foreground">{formatDate(m.date_planifiee)}</div>
+                                <td className="px-3 py-3 align-top">
+                                  <div className={`text-[12px] ${m.date_planifiee ? 'text-muted-foreground' : 'italic text-orange-600 dark:text-orange-400'}`}>{m.date_planifiee ? formatDate(m.date_planifiee) : 'À planifier'}</div>
                                   {m.heure_debut && (
                                     <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5">
                                       <Clock className="h-2.5 w-2.5 shrink-0" />
-                                      <span>{formatTime(m.heure_debut)}{m.heure_fin ? `–${formatTime(m.heure_fin)}` : ''}</span>
-                                    </div>
-                                  )}
-                                  {m.technicien && (
-                                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70 mt-0.5">
-                                      <User className="h-2.5 w-2.5 shrink-0" />
-                                      <span className="truncate">{m.technicien.prenom} {m.technicien.nom}</span>
+                                      <span className="truncate">{formatTime(m.heure_debut)}{m.heure_fin ? `–${formatTime(m.heure_fin)}` : ''}</span>
                                     </div>
                                   )}
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="px-3 py-3 align-top">
+                                  {m.technicien ? (
+                                    <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground min-w-0">
+                                      <User className="h-3 w-3 shrink-0" />
+                                      <span className="truncate" title={`${m.technicien.prenom} ${m.technicien.nom}`}>{m.technicien.prenom} {m.technicien.nom}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[11px] italic text-muted-foreground/50">Non assigné</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-3 align-top">
                                   <div className="flex flex-wrap gap-1">
                                     {m.edl_types.map(type => (
                                       <span key={type} className={`px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${
@@ -363,15 +376,15 @@ export function DashboardPage() {
                                     ))}
                                   </div>
                                 </td>
-                                <td className="px-4 py-3">
-                                  {(() => { const a = getStatutAffichage(m); return (
-                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${statutAffichageColors[a]}`}>
-                                      {statutAffichageLabels[a]}
+                                <td className="px-3 py-3 align-top">
+                                  {(() => { const a = getStatutMission(m); return (
+                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${statutMissionColors[a]}`}>
+                                      {statutMissionLabels[a]}
                                     </span>
                                   ) })()}
                                 </td>
                                 {metricSheet === 'pending' && (
-                                  <td className="px-4 py-3">
+                                  <td className="px-3 py-3 align-top">
                                     <div className="flex flex-wrap gap-1">
                                       {actions.map((a, i) => (
                                         <span key={i} className="px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
@@ -443,13 +456,8 @@ export function DashboardPage() {
           {/* ═══════════════════════════════════════ */}
           {tab === 'overview' && (
             <>
-              {/* US-837: 4 Stat cards — same as Tab 2, all clickable */}
-              <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-                <StatMetricCard label="EDL du mois" value={stats?.edl_month ?? 0} tag="+8 ce mois" footerText="Entrées + sorties" tagIcon={<IconTrendingUp className="size-3" />} onClick={() => openMetric('edl')} />
-                <StatMetricCard label="Actions en attente" value={stats?.pending_actions ?? 0} color="amber" tag="urgent" footerText="À traiter" tagIcon={<WarningCircle className="size-3" weight="fill" />} onClick={() => openMetric('pending')} />
-                <StatMetricCard label="À venir (7 jours)" value={stats?.upcoming_7d ?? 0} color="sky" tag="cette semaine" footerText="Planifiées" tagIcon={<CalendarBlank className="size-3" />} onClick={() => openMetric('upcoming')} />
-                <StatMetricCard label="Taux de complétion" value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} ce mois (hors annulées)`} color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
-              </div>
+              {/* US-837: Stat cards — configurable in /app/parametres?tab=dashboard */}
+              <MetricsRow stats={stats} metrics={activeMetrics} openMetric={openMetric} />
 
               {/* Onboarding section — admin only, auto-hides when workspace is fully configured */}
               <OnboardingChecklistCard />
@@ -492,6 +500,10 @@ export function DashboardPage() {
                         )}
                         {pendingMissions.slice(0, 10).map((m) => {
                           const actions = getPendingActions(m)
+                          // Convention identique au calendrier : propriétaire principal,
+                          // fallback sur le lot puis la référence (l'adresse est déjà
+                          // affichée en sous-ligne, on évite donc de la mettre en titre).
+                          const title = m.proprietaire_nom || m.lot_designation || m.reference
                           return (
                             <div
                               key={m.id}
@@ -501,7 +513,7 @@ export function DashboardPage() {
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="text-[12px] font-semibold truncate">{m.reference}</div>
+                                  <div className="text-[12px] font-semibold truncate" title={m.reference}>{title}</div>
                                   <div className="flex flex-wrap gap-1 justify-end shrink-0">
                                     {actions.map((a, i) => (
                                       <span key={i} className="px-1.5 py-0 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">{a}</span>
@@ -540,13 +552,8 @@ export function DashboardPage() {
           {/* ═══════════════════════════════════════ */}
           {tab === 'analytics' && (
             <>
-              {/* 4 stat cards — same metrics as Tab 1, all clickable */}
-              <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-                <StatMetricCard label="EDL du mois" value={stats?.edl_month ?? 0} tag="+8 ce mois" footerText="Entrées + sorties" tagIcon={<IconTrendingUp className="size-3" />} onClick={() => openMetric('edl')} />
-                <StatMetricCard label="Actions en attente" value={stats?.pending_actions ?? 0} color="amber" tag="urgent" footerText="À traiter" tagIcon={<WarningCircle className="size-3" weight="fill" />} onClick={() => openMetric('pending')} />
-                <StatMetricCard label="À venir (7 jours)" value={stats?.upcoming_7d ?? 0} color="sky" tag="cette semaine" footerText="Planifiées" tagIcon={<CalendarBlank className="size-3" />} onClick={() => openMetric('upcoming')} />
-                <StatMetricCard label="Taux de complétion" value={stats?.total_month ? `${Math.round(((stats.completed_month ?? 0) / stats.total_month) * 100)}%` : '—'} tag={`${stats?.completed_month ?? 0} terminées`} footerText={`${stats?.completed_month ?? 0} / ${stats?.total_month ?? 0} ce mois (hors annulées)`} color="emerald" tagIcon={<CheckCircle className="size-3" />} onClick={() => openMetric('completed')} />
-              </div>
+              {/* Stat cards — same configurable set as Tab 1 */}
+              <MetricsRow stats={stats} metrics={activeMetrics} openMetric={openMetric} />
 
               {/* Area chart */}
               <div className="px-4 lg:px-6">
@@ -804,7 +811,7 @@ function MissionsTable({ missions, navigate }: { missions: Mission[]; navigate: 
           <tr key={m.id} className="border-b border-border/30 last:border-0 hover:bg-accent/50 cursor-pointer transition-colors" onClick={() => navigate(`/app/missions/${m.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: m.reference || 'Mission' }] } })}>
             <td className="px-3 py-3 font-medium">{m.reference}</td>
             <td className="px-3 py-3 text-muted-foreground truncate">{m.lot_designation}</td>
-            <td className="px-3 py-3 text-muted-foreground">{formatDate(m.date_planifiee)}</td>
+            <td className="px-3 py-3">{m.date_planifiee ? <span className="text-muted-foreground">{formatDate(m.date_planifiee)}</span> : <span className="italic text-orange-600 dark:text-orange-400">À planifier</span>}</td>
             <td className="px-3 py-3">
               <div className="flex gap-1">
                 {m.edl_types?.map((t) => (
@@ -814,7 +821,7 @@ function MissionsTable({ missions, navigate }: { missions: Mission[]; navigate: 
                 ))}
               </div>
             </td>
-            <td className="px-3 py-3">{(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}</td>
+            <td className="px-3 py-3">{(() => { const a = getStatutMission(m); return <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutMissionColors[a]}`}>{statutMissionLabels[a]}</span> })()}</td>
             <td className="px-3 py-3 text-muted-foreground">{m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : '—'}</td>
           </tr>
         ))}
@@ -824,11 +831,83 @@ function MissionsTable({ missions, navigate }: { missions: Mission[]; navigate: 
 }
 
 /* ── Stat Metric Card — tag top-right, text footer bottom ── */
-const metricColorMap: Record<string, { text: string; badge: string; footer: string }> = {
+const metricColorMap: Record<MetricColor, { text: string; badge: string; footer: string }> = {
   default: { text: 'text-foreground', badge: '', footer: 'text-muted-foreground' },
   amber: { text: 'text-amber-600', badge: 'text-amber-600 border-amber-200 bg-amber-50', footer: 'text-amber-600' },
   sky: { text: 'text-sky-600', badge: 'text-sky-600 border-sky-200 bg-sky-50', footer: 'text-sky-600' },
   emerald: { text: 'text-emerald-600', badge: 'text-emerald-600 border-emerald-200 bg-emerald-50', footer: 'text-emerald-600' },
+  red: { text: 'text-red-600', badge: 'text-red-600 border-red-200 bg-red-50', footer: 'text-red-600' },
+  violet: { text: 'text-violet-600', badge: 'text-violet-600 border-violet-200 bg-violet-50', footer: 'text-violet-600' },
+}
+
+/* Map metric IDs that have a detail sheet to their MetricType key (see openMetric). */
+const METRIC_SHEET_KEY: Record<string, 'edl' | 'pending' | 'upcoming'> = {
+  edl_month: 'edl',
+  pending_actions: 'pending',
+  upcoming_7d: 'upcoming',
+}
+
+type MetricsRowProps = {
+  stats: DashboardStats | undefined
+  metrics: typeof METRIC_CATALOG
+  openMetric: (m: 'edl' | 'pending' | 'upcoming' | null) => void
+}
+
+/**
+ * Adaptive grid columns based on metric count, so cards fill the row regardless
+ * of how many are configured (no empty space for 3 cards on a wide screen).
+ * Tailwind needs full literal class strings to detect them at build time.
+ */
+const GRID_BASE: Record<number, string> = {
+  1: 'grid-cols-1',
+  2: 'grid-cols-2',
+  3: 'grid-cols-2',
+  4: 'grid-cols-2',
+  5: 'grid-cols-2',
+  6: 'grid-cols-2',
+}
+const GRID_MD: Record<number, string> = {
+  1: 'md:grid-cols-1',
+  2: 'md:grid-cols-2',
+  3: 'md:grid-cols-3',
+  4: 'md:grid-cols-4',
+  5: 'md:grid-cols-4',
+  6: 'md:grid-cols-4',
+}
+const GRID_XL: Record<number, string> = {
+  1: 'xl:grid-cols-1',
+  2: 'xl:grid-cols-2',
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+  5: 'xl:grid-cols-5',
+  6: 'xl:grid-cols-6',
+}
+
+function MetricsRow({ stats, metrics, openMetric }: MetricsRowProps) {
+  if (metrics.length === 0) return null
+  const count = Math.min(metrics.length, 6) as 1 | 2 | 3 | 4 | 5 | 6
+  return (
+    <div
+      className={`grid gap-4 px-4 lg:px-6 ${GRID_BASE[count]} ${GRID_MD[count]} ${GRID_XL[count]} *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card`}
+    >
+      {metrics.map((m) => {
+        const sheetKey = METRIC_SHEET_KEY[m.id]
+        const Icon = m.icon
+        return (
+          <StatMetricCard
+            key={m.id}
+            label={m.label}
+            value={m.getValue(stats)}
+            tag={m.tag}
+            footerText={m.footerText}
+            color={m.color}
+            tagIcon={<Icon className="size-3" weight="fill" />}
+            onClick={sheetKey ? () => openMetric(sheetKey) : undefined}
+          />
+        )
+      })}
+    </div>
+  )
 }
 
 function StatMetricCard({ label, value, tag, footerText, color = 'default', tagIcon, onClick }: {
@@ -836,14 +915,18 @@ function StatMetricCard({ label, value, tag, footerText, color = 'default', tagI
   value: string | number
   tag: string
   footerText: string
-  color?: string
+  color?: MetricColor
   tagIcon?: React.ReactNode
-  onClick: () => void
+  onClick?: () => void
 }) {
   const c = metricColorMap[color] || metricColorMap.default
+  const interactive = !!onClick
 
   return (
-    <Card className="@container/card cursor-pointer hover:shadow-elevation-raised-hover transition-all" onClick={onClick}>
+    <Card
+      className={`@container/card transition-all ${interactive ? 'cursor-pointer hover:shadow-elevation-raised-hover' : ''}`}
+      onClick={onClick}
+    >
       <CardHeader>
         <CardDescription>{label}</CardDescription>
         <CardTitle className={`text-2xl font-semibold tabular-nums ${c.text} @[250px]/card:text-3xl`}>{value}</CardTitle>

@@ -15,26 +15,54 @@ info:
     ## Permissions (scopes)
     Chaque clé API a un scope :
     - **`read`** — lecture seule (tous les `GET`)
-    - **`read_write`** — lecture + écriture (`POST`, `PATCH`, `DELETE`)
+    - **`write`** — lecture + écriture (`POST`, `PATCH`, `DELETE`)
 
     Une écriture avec une clé `read` renvoie un `403 FORBIDDEN_SCOPE`.
+
+    ## Identifiants acceptés (`{id}`)
+    Pour les ressources qui ont une clé métier lisible, l'API accepte indifféremment :
+
+    | Ressource | UUID | Clé métier alternative |
+    |-----------|------|------------------------|
+    | `mission` | `c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f` | `M-2026-0042` (`reference`) |
+    | `lot`     | `f47ac10b-58cc-4372-a567-0e02b2c3d479` | `BAIL-2025-0302` (`reference_interne`) |
+    | `batiment`| `b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8` | `BAT-VH-001` (`reference_interne`) |
+    | `edl-inventaire` | UUID uniquement | — |
+
+    Les deux formats sont équivalents : `GET /missions/M-2026-0042` ↔ `GET /missions/c3d4e5f6-...`.
+    La clé métier est résolue côté serveur dans le contexte du workspace de la clé API.
 
     ## Rate Limiting
     100 requêtes par minute par clé API. Les headers `RateLimit-*` indiquent les limites restantes.
     Dépassement → `429 RATE_LIMIT`.
 
     ## Pagination
-    Toutes les listes sont paginées avec un curseur :
+    Toutes les listes sont paginées avec un curseur opaque (base64url) :
     ```
-    GET /missions?limit=25&cursor=<id>
+    GET /missions?limit=25&cursor=<opaque-cursor>
     ```
-    La réponse contient `meta.cursor` (prochain curseur, `null` si fin de liste) et `meta.has_more`.
-    `limit` par défaut = 25, max = 100.
+    La réponse contient `meta.cursor` (curseur à passer pour la page suivante, `null` si fin de
+    liste), `meta.has_more`, et éventuellement `meta.total` (si demandé). `limit` par défaut = 25,
+    max = 100. Le curseur encode (clé d'ordre + id) et **n'est pas un UUID** — ne le construisez
+    pas à la main, repassez tel quel celui reçu dans la réponse précédente.
 
     ## Webhooks
-    Les webhooks (`mission.creee`, `mission.annulee`, `edl.signe`, …) ne se configurent pas via cette
-    API publique mais depuis **Paramètres → API & Intégrations** (session admin). Pour la documentation
-    du payload et de la signature HMAC, consulter le panneau Webhooks dans le back-office.
+    Les webhooks ne se configurent pas via cette API publique mais depuis **Paramètres → API &
+    Intégrations** (session admin). Events émis (au moment de l'écriture) :
+
+    | Event | Déclenchement |
+    |-------|---------------|
+    | `mission.creee` | Création d'une mission |
+    | `mission.assignee` | Technicien (re)assigné |
+    | `mission.annulee` | Annulation d'une mission |
+    | `mission.terminee` | Tous les EDL d'une mission sont signés |
+    | `edl.signe` | EDL passé en `signe` |
+    | `edl.infructueux` | EDL passé en `infructueux` |
+    | `cle.deposee` | Clé déposée à l'agence |
+
+    Le payload est un JSON `{ event, workspace_id, data, occurred_at }`. La signature HMAC SHA-256
+    est dans le header `X-Webhook-Signature` (clé secrète configurée à la création du webhook).
+    Schéma de référence : `WebhookPayload` (composants).
 
     ## ⚠️ Try it out
     Le bouton « Try it out » envoie les requêtes **depuis votre navigateur**. N'utilisez jamais une
@@ -64,11 +92,22 @@ components:
         cursor:
           type: string
           nullable: true
-          description: Curseur pour la page suivante (`null` si fin de liste)
-          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          description: |
+            Curseur opaque (base64url) à passer pour récupérer la page suivante. `null` si fin de
+            liste. Ne pas tenter de le décoder ou le construire — le format est interne et peut
+            évoluer.
+          example: "MjAyNi0wNC0xOHxhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTA"
         has_more:
           type: boolean
           example: true
+        total:
+          type: integer
+          nullable: true
+          description: |
+            Nombre total d'éléments correspondant aux filtres (avant pagination). Présent
+            uniquement si l'endpoint le supporte et que l'appelant l'a demandé via
+            `?include_total=true` (coût d'un `COUNT(*)` supplémentaire).
+          example: 142
 
     Error:
       type: object
@@ -95,6 +134,7 @@ components:
           example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
         designation:
           type: string
+          nullable: true
           example: "Appartement T3 — Lot 302"
         type_bien:
           type: string
@@ -121,7 +161,12 @@ components:
               example: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
             designation:
               type: string
+              nullable: true
               example: "Résidence Victor Hugo"
+            num_batiment:
+              type: string
+              nullable: true
+              example: "A"
             adresse:
               type: string
               example: "12 rue Victor Hugo, 75016 Paris"
@@ -135,7 +180,12 @@ components:
           example: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
         designation:
           type: string
+          nullable: true
           example: "Résidence Victor Hugo"
+        num_batiment:
+          type: string
+          nullable: true
+          example: "A"
         type:
           type: string
           example: "immeuble"
@@ -177,7 +227,12 @@ components:
           example: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
         reference:
           type: string
+          description: Référence métier auto-générée `M-{YYYY}-{XXXX}`
           example: "M-2026-0042"
+        lot_id:
+          type: string
+          format: uuid
+          example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
         date_planifiee:
           type: string
           format: date
@@ -192,23 +247,76 @@ components:
           example: "11:30"
         statut:
           type: string
-          enum: [planifiee, terminee, annulee]
+          enum: [planifiee, terminee, infructueuse, annulee]
+          description: |
+            Cycle de vie pur. La réponse du technicien vit dans `technicien.statut_invitation`.
+            Une mission passe automatiquement à `terminee` quand tous ses EDL sont signés.
+            "À planifier" est dérivé côté UI quand `statut=planifiee` et `date_planifiee=null`.
           example: "planifiee"
-        statut_rdv:
-          type: string
-          enum: [a_confirmer, confirme, reporte]
-          example: "a_confirmer"
         avec_inventaire:
           type: boolean
           example: false
         commentaire:
           type: string
           nullable: true
-          example: "RDV confirmé par le locataire"
+          example: "Notes mission"
+        motif_annulation:
+          type: string
+          nullable: true
+          description: Renseigné uniquement si `statut = annulee`
+          example: null
+        motif_infructueux:
+          type: string
+          nullable: true
+          description: Renseigné uniquement si `statut = infructueuse` (motif optionnel saisi par le tech)
+          example: null
+        terminee_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        annulee_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-10T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-04-15T10:23:00Z"
         lot:
           $ref: '#/components/schemas/Lot'
+        technicien:
+          nullable: true
+          type: object
+          properties:
+            user_id:
+              type: string
+              format: uuid
+              example: "5e8f9d3a-7b6c-4a1e-9f2d-3c4b5a6e7f8d"
+            nom:
+              type: string
+              example: "Martin"
+            prenom:
+              type: string
+              nullable: true
+              example: "Marc"
+            email:
+              type: string
+              nullable: true
+              example: "marc.martin@example.com"
+            statut_invitation:
+              type: string
+              enum: [en_attente, accepte, refuse]
+              example: "accepte"
         edls:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/EDL'
 
@@ -289,11 +397,7 @@ components:
         commentaire:
           type: string
           nullable: true
-          example: "Reporté à la demande du locataire"
-        statut_rdv:
-          type: string
-          enum: [a_confirmer, confirme, reporte]
-          example: "confirme"
+          example: "Notes mission"
 
     CancelMissionInput:
       type: object
@@ -445,6 +549,42 @@ components:
           items: { $ref: '#/components/schemas/Batiment' }
         meta: { $ref: '#/components/schemas/Meta' }
 
+    WebhookPayload:
+      type: object
+      description: |
+        Enveloppe envoyée par POST sur l'URL configurée du webhook. Header
+        `X-Webhook-Signature: sha256=<hex>` contient le HMAC SHA-256 du body brut signé avec le
+        `secret` du webhook (généré à la création).
+      required: [event, workspace_id, occurred_at, data]
+      properties:
+        event:
+          type: string
+          enum:
+            - mission.creee
+            - mission.assignee
+            - mission.annulee
+            - mission.terminee
+            - edl.signe
+            - edl.infructueux
+            - cle.deposee
+          example: "mission.creee"
+        workspace_id:
+          type: string
+          format: uuid
+          example: "9b8c7d6e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+        occurred_at:
+          type: string
+          format: date-time
+          example: "2026-04-18T09:00:00Z"
+        data:
+          type: object
+          description: Payload spécifique à l'event. Pour `mission.creee` → `{ mission_id, reference, lot_id, statut }`.
+          example:
+            mission_id: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
+            reference: "M-2026-0042"
+            lot_id: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+            statut: "planifiee"
+
   responses:
     Unauthorized:
       description: Clé API manquante ou invalide
@@ -460,13 +600,13 @@ components:
               value: { error: "Clé API invalide", code: "INVALID_API_KEY" }
 
     Forbidden:
-      description: Clé valide mais scope insuffisant (ex. `read` tentant un POST)
+      description: Clé valide mais scope insuffisant (clé `read` tentant un POST/PATCH/DELETE)
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           examples:
             readOnly:
-              value: { error: "Clé API en lecture seule", code: "FORBIDDEN_SCOPE" }
+              value: { error: "Cette clé API est en lecture seule", code: "FORBIDDEN_SCOPE" }
 
     NotFound:
       description: Ressource introuvable
@@ -513,6 +653,73 @@ components:
                 details:
                   - path: ["date_planifiee"]
                     message: "Invalid date"
+
+  # Reusable path parameters. Each accepts both a UUID and a human-readable
+  # business key (resolved server-side). `format: uuid` is intentionally NOT
+  # set so Swagger UI doesn't reject business keys client-side. The `examples`
+  # block populates a dropdown in Try it out.
+  parameters:
+    MissionId:
+      name: id
+      in: path
+      required: true
+      description: |
+        Identifiant mission. Accepte :
+        - un **UUID** (`c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f`)
+        - une **référence métier** `M-YYYY-XXXX` (`M-2026-0042`)
+      schema: { type: string, minLength: 1 }
+      examples:
+        reference:
+          summary: "Par référence — M-2026-0042"
+          value: "M-2026-0042"
+        uuid:
+          summary: "Par UUID"
+          value: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
+
+    LotId:
+      name: id
+      in: path
+      required: true
+      description: |
+        Identifiant lot. Accepte :
+        - un **UUID** (`f47ac10b-58cc-4372-a567-0e02b2c3d479`)
+        - une **référence interne** (`BAIL-2025-0302`, valeur de `lot.reference_interne`)
+      schema: { type: string, minLength: 1 }
+      examples:
+        reference:
+          summary: "Par référence interne — BAIL-2025-0302"
+          value: "BAIL-2025-0302"
+        uuid:
+          summary: "Par UUID"
+          value: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+
+    BatimentId:
+      name: id
+      in: path
+      required: true
+      description: |
+        Identifiant bâtiment. Accepte :
+        - un **UUID** (`b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8`)
+        - une **référence interne** (`BAT-VH-001`, valeur de `batiment.reference_interne`)
+      schema: { type: string, minLength: 1 }
+      examples:
+        reference:
+          summary: "Par référence interne — BAT-VH-001"
+          value: "BAT-VH-001"
+        uuid:
+          summary: "Par UUID"
+          value: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
+
+    EdlId:
+      name: id
+      in: path
+      required: true
+      description: Identifiant EDL — UUID uniquement (pas de clé métier alternative).
+      schema: { type: string, format: uuid, minLength: 36, maxLength: 36 }
+      examples:
+        uuid:
+          summary: "UUID d'EDL signé"
+          value: "e9d8c7b6-a5f4-3e2d-1c0b-9a8b7c6d5e4f"
 
 paths:
   /missions:
@@ -584,10 +791,7 @@ paths:
       operationId: getMission
       tags: [Missions]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/MissionId'
       responses:
         '200':
           description: Détail mission avec EDLs
@@ -602,10 +806,7 @@ paths:
       operationId: patchMission
       tags: [Missions]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/MissionId'
       requestBody:
         required: true
         content:
@@ -634,10 +835,7 @@ paths:
       operationId: cancelMission
       tags: [Missions]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/MissionId'
       requestBody:
         required: true
         content:
@@ -652,6 +850,14 @@ paths:
                 type: object
                 properties:
                   cancelled: { type: boolean, example: true }
+        '400':
+          description: Mission déjà annulée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                alreadyCancelled:
+                  value: { error: "Mission déjà annulée", code: "ALREADY_CANCELLED" }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Impossible d'annuler une mission avec des EDL signés
@@ -669,10 +875,7 @@ paths:
       operationId: getMissionEdls
       tags: [Missions]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/MissionId'
       responses:
         '200':
           description: Liste des EDL de la mission
@@ -692,7 +895,15 @@ paths:
       parameters:
         - in: query
           name: mission_id
-          schema: { type: string, format: uuid }
+          description: UUID ou référence métier `M-YYYY-XXXX`. Filtre les EDL d'une mission.
+          schema: { type: string }
+          examples:
+            reference:
+              summary: Par référence
+              value: "M-2026-0042"
+            uuid:
+              summary: Par UUID
+              value: "c3d4e5f6-a1b2-4c5d-8e9f-0a1b2c3d4e5f"
         - in: query
           name: statut
           schema:
@@ -718,10 +929,7 @@ paths:
       operationId: getEDL
       tags: [EDL]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/EdlId'
       responses:
         '200':
           description: EDL avec locataires, clés et URLs PDF/web
@@ -737,10 +945,7 @@ paths:
       operationId: downloadEDLPdf
       tags: [EDL]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/EdlId'
       responses:
         '302':
           description: |
@@ -770,7 +975,15 @@ paths:
           schema: { type: string }
         - in: query
           name: batiment_id
-          schema: { type: string, format: uuid }
+          description: UUID ou `reference_interne` du bâtiment.
+          schema: { type: string }
+          examples:
+            reference:
+              summary: Par référence interne
+              value: "BAT-VH-001"
+            uuid:
+              summary: Par UUID
+              value: "b23f1a2c-9d8e-4b3a-a1c2-d3e4f5a6b7c8"
         - in: query
           name: cursor
           schema: { type: string }
@@ -791,10 +1004,7 @@ paths:
       operationId: getLot
       tags: [Référentiel]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/LotId'
       responses:
         '200':
           description: Lot
@@ -810,10 +1020,7 @@ paths:
       operationId: getLotEdls
       tags: [Référentiel]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/LotId'
         - in: query
           name: statut
           schema:
@@ -863,10 +1070,7 @@ paths:
       operationId: getBatiment
       tags: [Référentiel]
       parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/BatimentId'
       responses:
         '200':
           description: Bâtiment

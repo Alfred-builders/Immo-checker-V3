@@ -3,6 +3,8 @@ import { query } from '../../db/index.js'
 import { sendSuccess, sendError } from '../../utils/response.js'
 import { NotFoundError, AppError } from '../../utils/errors.js'
 import { presignPdfUrl } from '../../services/s3-presign-service.js'
+import { encodeCursor, decodeCursor } from '../../utils/cursor.js'
+import { resolveId } from '../../utils/resolve-id.js'
 
 const router = Router()
 
@@ -39,9 +41,22 @@ router.get('/', async (req, res) => {
     let where = 'WHERE ei.workspace_id = $1'
     let idx = 2
 
-    if (mission_id) { where += ` AND ei.mission_id = $${idx++}`; params.push(mission_id) }
+    if (mission_id) {
+      const resolvedMissionId = await resolveId({
+        table: 'mission', alternateColumn: 'reference', identifier: mission_id,
+        workspaceId, entityName: 'Mission',
+      })
+      where += ` AND ei.mission_id = $${idx++}`
+      params.push(resolvedMissionId)
+    }
     if (statut) { where += ` AND ei.statut = $${idx++}`; params.push(statut) }
-    if (cursor) { where += ` AND ei.id > $${idx++}`; params.push(cursor) }
+    if (cursor) {
+      const c = decodeCursor(cursor)
+      if (c) {
+        where += ` AND (ei.created_at, ei.id) < ($${idx}, $${idx + 1})`
+        params.push(c.orderKey, c.id); idx += 2
+      }
+    }
 
     params.push(limit + 1)
     const result = await query(
@@ -50,14 +65,15 @@ router.get('/', async (req, res) => {
               ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        ${where}
-       ORDER BY ei.created_at DESC
+       ORDER BY ei.created_at DESC, ei.id DESC
        LIMIT $${idx}`,
       params
     )
 
     const has_more = result.rows.length > limit
     const rows = (has_more ? result.rows.slice(0, limit) : result.rows).map(projectEdlUrls)
-    const nextCursor = has_more ? rows[rows.length - 1].id : undefined
+    const last = rows[rows.length - 1]
+    const nextCursor = has_more && last ? encodeCursor(last.created_at, last.id) : null
 
     sendSuccess(res, { data: rows, meta: { cursor: nextCursor, has_more } })
   } catch (error) {

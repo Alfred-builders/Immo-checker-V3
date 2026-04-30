@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Plus, Trash } from '@phosphor-icons/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
@@ -14,10 +15,14 @@ interface Props {
   onOpenChange: (open: boolean) => void
   onCreated?: (id: string) => void
   onMaisonCreated?: (batimentId: string) => void
+  /** Texte tapé dans la recherche d'origine — pré-remplit l'autocomplete
+   * d'adresse pour éviter à l'utilisateur de retaper. */
+  initialQuery?: string
 }
 
-export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCreated }: Props) {
+export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCreated, initialQuery }: Props) {
   const [designation, setDesignation] = useState('')
+  const [numBatiment, setNumBatiment] = useState('')
   const [type, setType] = useState<string>('immeuble')
   const [rue, setRue] = useState('')
   const [codePostal, setCodePostal] = useState('')
@@ -38,20 +43,22 @@ export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCre
   const createMutation = useCreateBatiment()
 
   function reset() {
-    setDesignation(''); setType('immeuble'); setRue(''); setCodePostal(''); setVille('')
+    setDesignation(''); setNumBatiment(''); setType('immeuble'); setRue(''); setCodePostal(''); setVille('')
     setComplement(''); setNbEtages(''); setAnneeConstruction(''); setCommentaire('')
     setLatitude(undefined); setLongitude(undefined)
     setShowSecondary(false); setSecRue(''); setSecCodePostal(''); setSecVille('')
+    setSecLat(undefined); setSecLng(undefined)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!designation.trim()) { toast.error('Désignation requise'); return }
+    if (!rue.trim() || !codePostal.trim() || !ville.trim()) { toast.error('Adresse requise'); return }
     if (nbEtages && (isNaN(parseInt(nbEtages)) || parseInt(nbEtages) < 0)) { toast.error('Nombre d\'étages invalide'); return }
-    if (anneeConstruction && (isNaN(parseInt(anneeConstruction)) || parseInt(anneeConstruction) < 1800 || parseInt(anneeConstruction) > new Date().getFullYear() + 5)) { toast.error('Année de construction invalide'); return }
+    if (anneeConstruction && (isNaN(parseInt(anneeConstruction)) || parseInt(anneeConstruction) < 1800 || parseInt(anneeConstruction) > new Date().getFullYear() + 5)) { toast.error('Année invalide'); return }
     try {
       const result = await createMutation.mutateAsync({
-        designation,
+        designation: designation.trim() || undefined,
+        num_batiment: numBatiment.trim() || undefined,
         type,
         nb_etages: nbEtages ? parseInt(nbEtages) : undefined,
         annee_construction: anneeConstruction ? parseInt(anneeConstruction) : undefined,
@@ -61,7 +68,7 @@ export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCre
           ...(showSecondary && secRue ? [{ type: 'secondaire', rue: secRue, code_postal: secCodePostal, ville: secVille, latitude: secLat, longitude: secLng }] : []),
         ],
       })
-      toast.success(`Bâtiment "${designation}" créé`)
+      toast.success('Bâtiment créé')
       reset()
       onOpenChange(false)
       if (type === 'maison' && onMaisonCreated) {
@@ -80,106 +87,105 @@ export function CreateBuildingModal({ open, onOpenChange, onCreated, onMaisonCre
         <DialogHeader>
           <DialogTitle>Nouveau bâtiment</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Identification */}
-          <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+
+          {/* 1. Adresse — en premier, c'est le pivot */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Adresse *</Label>
+            <AddressAutocomplete
+              value={initialQuery}
+              placeholder="12 rue des Lilas, 75019 Paris…"
+              onChange={(addr) => {
+                if (addr) {
+                  setRue(addr.rue); setCodePostal(addr.code_postal); setVille(addr.ville)
+                  setLatitude(addr.latitude); setLongitude(addr.longitude)
+                }
+              }}
+            />
+          </div>
+
+          {/* 2. Identification compacte sur 3 colonnes */}
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Désignation *</Label>
-              <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Résidence Les Lilas" required className="h-9" />
+              <Label className="text-xs">Numéro</Label>
+              <Input value={numBatiment} onChange={(e) => setNumBatiment(e.target.value)} placeholder="A, B, 1…" maxLength={50} className="h-9" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Type *</Label>
-                <Select value={type} onValueChange={setType}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="immeuble">Immeuble</SelectItem>
-                    <SelectItem value="maison">Maison</SelectItem>
-                    <SelectItem value="local_commercial">Local commercial</SelectItem>
-                    <SelectItem value="mixte">Mixte</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nb étages</Label>
-                <Input type="number" value={nbEtages} onChange={(e) => setNbEtages(e.target.value)} placeholder="5" className="h-9" />
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Type *</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="immeuble">Immeuble</SelectItem>
+                  <SelectItem value="maison">Maison</SelectItem>
+                  <SelectItem value="local_commercial">Local commercial</SelectItem>
+                  <SelectItem value="mixte">Mixte</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nb étages</Label>
+              <Input type="number" value={nbEtages} onChange={(e) => setNbEtages(e.target.value)} placeholder="5" className="h-9" />
             </div>
           </div>
 
-          {/* Adresse principale */}
-          <div className="border-t border-border/60 pt-4 space-y-3">
-            <p className="text-xs font-medium text-muted-foreground tracking-normal">Adresse principale</p>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Adresse *</Label>
-              <AddressAutocomplete
-                onChange={(addr) => {
-                  if (addr) {
-                    setRue(addr.rue); setCodePostal(addr.code_postal); setVille(addr.ville)
-                    setLatitude(addr.latitude); setLongitude(addr.longitude)
-                  }
-                }}
-                placeholder="Rechercher une adresse..."
-              />
+          {/* 3. Désignation + Année sur 2 colonnes */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <Label className="text-xs">Désignation</Label>
+              <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Les Lilas, Résidence du Parc…" className="h-9" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Complément</Label>
-              <Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Bât. A, Entrée 2, N° bâtiment..." className="h-9" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Code postal</Label>
-                <Input value={codePostal} readOnly tabIndex={-1} className="h-9 bg-muted/50 text-muted-foreground cursor-default" placeholder="Rempli automatiquement" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Ville</Label>
-                <Input value={ville} readOnly tabIndex={-1} className="h-9 bg-muted/50 text-muted-foreground cursor-default" placeholder="Rempli automatiquement" />
-              </div>
+              <Label className="text-xs">Année</Label>
+              <Input type="number" value={anneeConstruction} onChange={(e) => setAnneeConstruction(e.target.value)} placeholder="1990" className="h-9" />
             </div>
           </div>
 
-          {/* Adresse secondaire */}
+          {/* 4. Complément + adresse secondaire (toggle) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Complément d'adresse</Label>
+            <Input value={complement} onChange={(e) => setComplement(e.target.value)} placeholder="Entrée 2, escalier C…" className="h-9" />
+          </div>
+
           {!showSecondary ? (
-            <button type="button" onClick={() => setShowSecondary(true)} className="text-xs text-primary hover:text-primary/80 font-medium">
-              + Ajouter une adresse secondaire
+            <button
+              type="button"
+              onClick={() => setShowSecondary(true)}
+              className="inline-flex items-center gap-1.5 text-[12px] text-primary hover:text-primary/80 font-semibold"
+            >
+              <Plus className="h-3.5 w-3.5" weight="bold" /> Ajouter une adresse secondaire
             </button>
           ) : (
-            <div className="border-t border-border/60 pt-3 space-y-3">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-muted-foreground tracking-normal">Adresse secondaire</p>
-                <button type="button" onClick={() => { setShowSecondary(false); setSecRue('') }} className="text-xs text-muted-foreground hover:text-destructive">Retirer</button>
+                <Label className="text-xs">Adresse secondaire</Label>
+                <button
+                  type="button"
+                  onClick={() => { setShowSecondary(false); setSecRue('') }}
+                  className="text-[11px] text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                >
+                  <Trash className="h-3 w-3" /> Retirer
+                </button>
               </div>
               <AddressAutocomplete
+                placeholder="Rechercher une adresse secondaire…"
                 onChange={(addr) => {
                   if (addr) { setSecRue(addr.rue); setSecCodePostal(addr.code_postal); setSecVille(addr.ville); setSecLat(addr.latitude); setSecLng(addr.longitude) }
                 }}
-                placeholder="Rechercher adresse secondaire..."
               />
-              <div className="grid grid-cols-2 gap-3">
-                <Input value={secCodePostal} readOnly tabIndex={-1} className="h-9 bg-muted/50 text-muted-foreground cursor-default" placeholder="Auto" />
-                <Input value={secVille} readOnly tabIndex={-1} className="h-9 bg-muted/50 text-muted-foreground cursor-default" placeholder="Auto" />
-              </div>
             </div>
           )}
 
-          {/* Infos complémentaires */}
-          <div className="border-t border-border/60 pt-4 space-y-3">
-            <p className="text-xs font-medium text-muted-foreground tracking-normal">Informations complémentaires</p>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Année de construction</Label>
-              <Input type="number" value={anneeConstruction} onChange={(e) => setAnneeConstruction(e.target.value)} placeholder="1990" className="h-9" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Commentaire</Label>
-              <Textarea value={commentaire} onChange={(e) => setCommentaire(e.target.value)} placeholder="Notes..." rows={2} />
-            </div>
+          {/* 5. Commentaire */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Commentaire</Label>
+            <Textarea value={commentaire} onChange={(e) => setCommentaire(e.target.value)} placeholder="Notes…" rows={2} />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
             <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Création...' : 'Créer'}
+              {createMutation.isPending ? 'Création…' : 'Créer le bâtiment'}
             </Button>
           </div>
         </form>

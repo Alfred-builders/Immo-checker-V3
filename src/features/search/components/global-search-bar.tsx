@@ -28,15 +28,17 @@ const TYPE_BIEN_LABELS: Record<string, string> = {
 }
 
 const STATUT_COLORS: Record<string, string> = {
-  planifiee: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  terminee: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-  annulee: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+  planifiee:    'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
+  terminee:     'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+  infructueuse: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  annulee:      'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
 const STATUT_LABELS: Record<string, string> = {
-  planifiee: 'Planifiée',
-  terminee: 'Terminée',
-  annulee: 'Annulée',
+  planifiee:    'Planifiée',
+  terminee:     'Finalisée',
+  infructueuse: 'Infructueuse',
+  annulee:      'Annulée',
 }
 
 const SEARCH_SUGGESTIONS_FALLBACK = [
@@ -46,6 +48,11 @@ const SEARCH_SUGGESTIONS_FALLBACK = [
   'Rue de Paris',
   'SCI Patrimoine',
 ]
+
+// Nombre max d'éléments « Récemment consultés » affichés par défaut dans la
+// modale Cmd+K. Le hook stocke jusqu'à 10 entrées, on en montre les 4 plus
+// récentes pour garder la liste compacte.
+const RECENT_ITEMS_VISIBLE = 4
 
 // Icônes par type d'item récent — alignées sur les rows de résultats.
 const RECENT_TYPE_ICON: Record<RecentItemType, { Icon: typeof BuildingOffice; bg: string; color: string }> = {
@@ -198,7 +205,7 @@ export function GlobalSearchBar() {
                 statiques d'exemple à la place. */}
             {!hasQuery && recentItems.length > 0 && (
               <CommandGroup heading="Récemment consultés">
-                {recentItems.map((item) => (
+                {recentItems.slice(0, RECENT_ITEMS_VISIBLE).map((item) => (
                   <RecentItemRow key={`${item.type}-${item.id}`} item={item} onSelect={() => go(item.to)} />
                 ))}
               </CommandGroup>

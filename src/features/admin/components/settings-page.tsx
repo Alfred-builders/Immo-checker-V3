@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
-import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple, ArrowSquareOut } from '@phosphor-icons/react'
+import { useEffect, useMemo, useState } from 'react'
+import { UsersThree, Envelope, PaperPlaneTilt, SpinnerGap, Shield, BuildingOffice, UserPlus, Clock, CheckCircle, WarningCircle, Copy, X, MapPin, Phone, At, Hash, Palette, CaretRight, Globe, GridFour, BookOpen, Sliders, Code, Key, Trash, Plus, Eye, EyeSlash, Bell, ArrowClockwise, Warning, LinkSimple, ArrowSquareOut, ChartLine, ArrowUp, ArrowDown, ArrowCounterClockwise, DotsSixVertical } from '@phosphor-icons/react'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import { useAuth } from '../../../hooks/use-auth'
 import { usePermissions } from '../../../hooks/use-permissions'
 import { Badge } from 'src/components/ui/badge'
@@ -15,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 's
 import { useWorkspaceDetails, useUpdateWorkspace, useWorkspaceUsers, useInvitations, useSendInvitation, useChangeRole, useSetUserStatus, useResendInvitation, useCancelInvitation, useApiKeys, useCreateApiKey, useRevokeApiKey, useUpdateApiKey, useWebhooks, useCreateWebhook, useUpdateWebhook, useDeleteWebhook, useTestWebhook, useWebhookDeliveries } from '../api'
 import type { WorkspaceUser, Invitation, ApiKey, CreateApiKeyResult, WebhookConfig, WebhookDelivery, WebhookEvent } from '../api'
 import { api } from '../../../lib/api-client'
+import { METRIC_CATALOG, METRIC_GROUPS, MAX_METRICS, DEFAULT_METRICS, type MetricColor } from '../../dashboard/metric-catalog'
+import { EmailsSection } from './emails-section'
 
 const ROLES = ['admin', 'gestionnaire', 'technicien'] as const
 type Role = (typeof ROLES)[number]
@@ -29,11 +32,20 @@ const typeLabels: Record<string, string> = {
   societe_edl: 'Société EDL', bailleur: 'Bailleur', agence: 'Agence immobilière',
 }
 
-type Section = 'general' | 'users' | 'invitations' | 'api'
+type Section = 'general' | 'users' | 'invitations' | 'emails' | 'apparence' | 'api'
 
-const NAV_ITEMS: { key: Section; label: string; icon: typeof BuildingOffice; description: string }[] = [
+const NAV_ITEMS: {
+  key: Section
+  label: string
+  icon: typeof BuildingOffice
+  description: string
+  disabled?: boolean
+  note?: string
+}[] = [
   { key: 'general', label: 'Général', icon: BuildingOffice, description: 'Informations du workspace' },
   { key: 'users', label: 'Membres', icon: UsersThree, description: 'Utilisateurs & invitations' },
+  { key: 'emails', label: 'Modèles d\'emails', icon: Envelope, description: 'Personnalise les emails transactionnels' },
+  { key: 'apparence', label: 'Apparence', icon: Palette, description: 'Couleurs, logo et tableau de bord', note: '(désactivé en v1)' },
   { key: 'api', label: 'API & Intégrations', icon: Code, description: 'Clés API et webhooks' },
 ]
 
@@ -48,7 +60,7 @@ export function SettingsPage() {
   const { isAdmin, canManageTemplates } = usePermissions()
   const initialTab = (searchParams.get('tab') as Section | null) ?? 'general'
   const [section, setSection] = useState<Section>(
-    initialTab === 'invitations' ? 'users' : ['general', 'users', 'api'].includes(initialTab) ? initialTab : 'general'
+    initialTab === 'invitations' ? 'users' : ['general', 'users', 'emails', 'apparence', 'api'].includes(initialTab) ? initialTab : 'general'
   )
   const navigate = useNavigate()
 
@@ -62,36 +74,53 @@ export function SettingsPage() {
   const visibleNavItems = isAdmin ? NAV_ITEMS : []
 
   return (
-    <div className="px-8 py-6 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[1400px] mx-auto">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">Paramètres</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {isAdmin ? 'Configurez votre workspace et gérez votre équipe' : 'Configuration du référentiel EDL'}
         </p>
       </div>
 
-      <div className="flex gap-8">
-        {/* Left sidebar nav */}
-        <nav className="w-56 shrink-0">
-          <div className="space-y-1 sticky top-20">
-            {visibleNavItems.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setSection(key)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  section === key
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </button>
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
+        {/* Sidebar nav — vertical on desktop, horizontal scroll on mobile */}
+        <nav className="md:w-56 md:shrink-0">
+          <div className="flex md:flex-col gap-1 md:sticky md:top-20 overflow-x-auto md:overflow-visible -mx-4 md:mx-0 px-4 md:px-0 pb-2 md:pb-0 scrollbar-hide">
+            {visibleNavItems.map(({ key, label, icon: Icon, disabled, note }) => (
+              disabled ? (
+                <div
+                  key={key}
+                  title="Bientôt disponible"
+                  className="shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground/40 cursor-not-allowed select-none whitespace-nowrap"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">{label}</span>
+                  <span className="text-[11px] font-semibold tracking-wider uppercase bg-muted/50 text-muted-foreground/60 px-1.5 py-0.5 rounded">À venir</span>
+                </div>
+              ) : (
+                <button
+                  key={key}
+                  onClick={() => setSection(key)}
+                  className={`shrink-0 md:w-full flex items-center gap-2 md:gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                    section === key
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{label}</span>
+                  {note && (
+                    <span className="text-[11px] font-normal text-muted-foreground/60 normal-case">
+                      {note}
+                    </span>
+                  )}
+                </button>
+              )
             ))}
 
             {/* EPIC 4 sub-pages — Config EDL — disabled until backend + UI are fully shipped */}
             {canManageTemplates && (
-              <div className={visibleNavItems.length > 0 ? 'pt-4 mt-4 border-t border-border/60' : ''}>
+              <div className={`hidden md:block ${visibleNavItems.length > 0 ? 'pt-4 mt-4 border-t border-border/60' : ''}`}>
                 <p className="text-[11px] font-medium text-muted-foreground/50 uppercase tracking-wider px-3 mb-2">Configuration EDL</p>
                 {NAV_LINKS.map(({ label, icon: Icon, href }) => (
                   <div
@@ -113,6 +142,8 @@ export function SettingsPage() {
         <div className="flex-1 min-w-0">
           {isAdmin && section === 'general' && <GeneralSection />}
           {isAdmin && section === 'users' && <MembresSection />}
+          {isAdmin && section === 'emails' && <EmailsSection />}
+          {isAdmin && section === 'apparence' && <ApparenceSection />}
           {isAdmin && section === 'api' && <ApiSection />}
           {!isAdmin && <GestionnaireEmptyState />}
         </div>
@@ -156,6 +187,226 @@ function GestionnaireEmptyState() {
   )
 }
 
+// ── Apparence Section (preview, désactivée en V1) ──
+type ApparenceTab = 'colors' | 'logo' | 'dashboard'
+
+function ApparenceSection() {
+  const [tab, setTab] = useState<ApparenceTab>('colors')
+  const tabs: { key: ApparenceTab; label: string; icon: typeof Palette; hint: string }[] = [
+    { key: 'colors', label: 'Couleurs', icon: Palette, hint: 'Couleur primaire & fond' },
+    { key: 'logo', label: 'Logo & favicon', icon: BuildingOffice, hint: 'Identité visuelle' },
+    { key: 'dashboard', label: 'Dashboard', icon: ChartLine, hint: 'Métriques affichées' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Bandeau global "désactivé en V1" */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 dark:bg-amber-950/40 dark:border-amber-800/60">
+        <div className="flex items-start gap-3">
+          <Warning className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" weight="fill" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+              Personnalisation désactivée en V1
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-0.5">
+              Les options d'apparence sont visibles en aperçu uniquement — toutes les modifications sont bloquées.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1 p-1 rounded-xl bg-muted/40 border border-border/40 w-fit">
+        {tabs.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === key
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'colors' && <ApparenceColorsTab />}
+      {tab === 'logo' && <ApparenceLogoTab />}
+      {tab === 'dashboard' && <ApparenceDashboardTab />}
+    </div>
+  )
+}
+
+// — Sous-tab Couleurs —
+function ApparenceColorsTab() {
+  const { data: ws } = useWorkspaceDetails()
+  const primary = ws?.couleur_primaire || '#0066ff'
+  const fond = ws?.couleur_fond || '#f5f7fa'
+  const fondStyle = ws?.fond_style || 'gradient'
+
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised p-6 space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Couleurs de la marque</h3>
+        <p className="text-[11px] text-muted-foreground">Appliquées au back-office, aux emails et aux rapports PDF.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs">Couleur primaire</Label>
+          <div className="flex items-center gap-3">
+            <div
+              className="h-10 w-10 rounded-lg border border-border/60 shadow-sm shrink-0"
+              style={{ backgroundColor: primary }}
+            />
+            <Input value={primary} disabled className="font-mono text-sm" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">Couleur de fond</Label>
+          <div className="flex items-center gap-3">
+            <div
+              className="h-10 w-10 rounded-lg border border-border/60 shadow-sm shrink-0"
+              style={{ backgroundColor: fond }}
+            />
+            <Input value={fond} disabled className="font-mono text-sm" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs">Style de fond</Label>
+        <div className="grid grid-cols-3 gap-2 max-w-md">
+          {(['plat', 'gradient', 'mesh'] as const).map((style) => (
+            <button
+              key={style}
+              disabled
+              className={`relative h-16 rounded-lg border-2 cursor-not-allowed transition-all ${
+                fondStyle === style ? 'border-primary' : 'border-border/40 opacity-50'
+              }`}
+              style={{
+                background: style === 'plat' ? fond
+                  : style === 'gradient' ? `linear-gradient(135deg, ${primary}33, ${fond})`
+                  : `radial-gradient(circle at 30% 30%, ${primary}55, ${fond})`,
+              }}
+            >
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[11px] font-semibold capitalize bg-card/80 px-1.5 py-0.5 rounded">
+                {style}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border/60 p-4 bg-muted/20">
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <Warning className="h-3 w-3" /> Édition désactivée en V1.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// — Sous-tab Logo & favicon —
+function ApparenceLogoTab() {
+  const { data: ws } = useWorkspaceDetails()
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised p-6 space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Logo & favicon</h3>
+        <p className="text-[11px] text-muted-foreground">Affichés sur la page de connexion, les emails et les PDF d'EDL.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs">Logo principal</Label>
+          <div className="h-32 rounded-xl border-2 border-dashed border-border/60 bg-muted/20 flex items-center justify-center overflow-hidden">
+            {ws?.logo_url ? (
+              <img src={ws.logo_url} alt="Logo workspace" className="max-h-24 max-w-[80%] object-contain" />
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
+                <BuildingOffice className="h-8 w-8" />
+                <span className="text-[11px]">Aucun logo</span>
+              </div>
+            )}
+          </div>
+          <Button variant="outline" size="sm" disabled className="w-full">Téléverser un logo</Button>
+          <p className="text-[11px] text-muted-foreground/70">PNG, JPG ou SVG · 2 MB max · 400×120 recommandé</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs">Favicon</Label>
+          <div className="h-32 rounded-xl border-2 border-dashed border-border/60 bg-muted/20 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2 text-muted-foreground/60">
+              <Globe className="h-8 w-8" />
+              <span className="text-[11px]">Aucun favicon</span>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" disabled className="w-full">Téléverser un favicon</Button>
+          <p className="text-[11px] text-muted-foreground/70">ICO, PNG carré · 64×64 minimum</p>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border/60 p-4 bg-muted/20">
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <Warning className="h-3 w-3" /> Téléversements désactivés en V1.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// — Sous-tab Dashboard —
+function ApparenceDashboardTab() {
+  const { data: ws } = useWorkspaceDetails()
+  const metrics = (ws?.dashboard_metrics?.length ? ws.dashboard_metrics : DEFAULT_METRICS).slice(0, MAX_METRICS)
+
+  return (
+    <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised p-6 space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Métriques du tableau de bord</h3>
+        <p className="text-[11px] text-muted-foreground">
+          Sélection actuelle ({metrics.length} / {MAX_METRICS}) — affichées sur la page d'accueil.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {metrics.map((id, idx) => {
+          const meta = METRIC_CATALOG.find((m) => m.id === id)
+          if (!meta) return null
+          return (
+            <div
+              key={id}
+              className="relative rounded-xl border border-border/40 bg-muted/10 p-4 cursor-not-allowed select-none"
+            >
+              <span className="absolute top-2 right-2 text-[11px] font-mono text-muted-foreground/50">#{idx + 1}</span>
+              <p className="text-sm font-semibold text-foreground/80 pr-6">{meta.label}</p>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{meta.description}</p>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="border-t border-border/40 pt-4 flex items-center justify-between gap-3">
+        <p className="text-[11px] text-muted-foreground">
+          Catalogue complet : <span className="font-semibold text-foreground/80">{METRIC_CATALOG.length}</span> métriques disponibles.
+        </p>
+        <Button variant="outline" size="sm" disabled>Modifier la sélection</Button>
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border/60 p-4 bg-muted/20">
+        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+          <Warning className="h-3 w-3" /> Édition désactivée en V1.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── General Section ──
 function GeneralSection() {
   const { data: ws, isLoading } = useWorkspaceDetails()
@@ -170,10 +421,6 @@ function GeneralSection() {
   const [adresse, setAdresse] = useState('')
   const [codePostal, setCodePostal] = useState('')
   const [ville, setVille] = useState('')
-  const [couleurPrimaire, setCouleurPrimaire] = useState('')
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-  const [couleurFond, setCouleurFond] = useState('')
-  const [fondStyle, setFondStyle] = useState('gradient')
 
   function startEdit() {
     if (!ws) return
@@ -184,23 +431,7 @@ function GeneralSection() {
     setAdresse(ws.adresse || '')
     setCodePostal(ws.code_postal || '')
     setVille(ws.ville || '')
-    setCouleurPrimaire(ws.couleur_primaire || '')
-    setLogoUrl(ws.logo_url)
-    setCouleurFond(ws.couleur_fond || '')
-    setFondStyle(ws.fond_style || 'gradient')
     setEditing(true)
-  }
-
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 512 * 1024) {
-      toast.error('Le logo ne doit pas dépasser 512 Ko')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => setLogoUrl(reader.result as string)
-    reader.readAsDataURL(file)
   }
 
   async function handleSave() {
@@ -210,10 +441,6 @@ function GeneralSection() {
       await updateMutation.mutateAsync({
         nom, siret: siret || null, email: email || null, telephone: telephone || null,
         adresse: adresse || null, code_postal: codePostal || null, ville: ville || null,
-        couleur_primaire: couleurPrimaire || null,
-        couleur_fond: couleurFond || null,
-        logo_url: logoUrl || null,
-        fond_style: fondStyle || 'gradient',
       } as any)
       await refreshWorkspace()
       toast.success('Workspace mis à jour')
@@ -237,14 +464,14 @@ function GeneralSection() {
   if (!ws) return <p className="text-muted-foreground">Workspace introuvable</p>
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Section header + actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Informations générales</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Identité et coordonnées de votre workspace</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="ghost" size="sm" onClick={handleRelaunchOnboarding} className="text-muted-foreground">
             Relancer l'onboarding
           </Button>
@@ -328,104 +555,6 @@ function GeneralSection() {
         )}
       </SettingsBlock>
 
-      {/* Branding block */}
-      <SettingsBlock title="Apparence" icon={Palette}>
-        {editing ? (
-          <div className="space-y-4">
-            <FieldRow label="Couleur primaire">
-              <div className="flex items-center gap-3">
-                <input type="color" value={couleurPrimaire || '#2563eb'} onChange={(e) => setCouleurPrimaire(e.target.value)} className="h-9 w-12 rounded-lg border border-border/60 cursor-pointer" />
-                <Input value={couleurPrimaire} onChange={(e) => setCouleurPrimaire(e.target.value)} placeholder="#2563eb" className="max-w-[140px] font-mono text-sm" />
-              </div>
-            </FieldRow>
-            <FieldRow label="Couleur de fond">
-              <div className="flex items-center gap-3">
-                <input type="color" value={couleurFond || '#f8f8f6'} onChange={(e) => setCouleurFond(e.target.value)} className="h-9 w-12 rounded-lg border border-border/60 cursor-pointer" />
-                <Input value={couleurFond} onChange={(e) => setCouleurFond(e.target.value)} placeholder="Par défaut" className="max-w-[140px] font-mono text-sm" />
-                {couleurFond && <button type="button" onClick={() => setCouleurFond('')} className="text-xs text-muted-foreground hover:text-destructive">Reset</button>}
-              </div>
-            </FieldRow>
-            <FieldRow label="Logo">
-              <div className="flex items-center gap-4">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="h-12 w-12 rounded-xl object-cover border border-border/60" />
-                ) : (
-                  <div className="h-12 w-12 rounded-xl bg-muted/30 border border-dashed border-border/60 flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-muted-foreground/40" />
-                  </div>
-                )}
-                <div className="flex flex-col gap-1.5">
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 rounded-lg cursor-pointer transition-colors">
-                    Choisir un fichier
-                    <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={handleLogoChange} className="hidden" />
-                  </label>
-                  {logoUrl && (
-                    <button type="button" onClick={() => setLogoUrl(null)} className="text-xs text-destructive hover:text-destructive/80 text-left">
-                      Supprimer le logo
-                    </button>
-                  )}
-                  <p className="text-[11px] text-muted-foreground/50">PNG, JPG, SVG ou WebP — max 512 Ko</p>
-                </div>
-              </div>
-            </FieldRow>
-            <FieldRow label="Fond d'ecran">
-              <div className="flex gap-2">
-                {(['plat', 'gradient', 'mesh'] as const).map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => setFondStyle(style)}
-                    className={`relative w-20 h-14 rounded-xl border-2 transition-all overflow-hidden ${fondStyle === style ? 'border-primary shadow-sm' : 'border-border/40 hover:border-border/80'}`}
-                  >
-                    <div className={`absolute inset-0 ${
-                      style === 'plat' ? 'bg-background' :
-                      style === 'gradient' ? 'bg-background bg-gradient-to-br from-primary/5 to-transparent' :
-                      'bg-background bg-[radial-gradient(ellipse_at_top_left,var(--color-primary)/0.08,transparent),radial-gradient(ellipse_at_bottom_right,var(--color-primary)/0.05,transparent)]'
-                    }`} />
-                    <span className="relative text-[11px] font-semibold text-foreground/70 capitalize">{style}</span>
-                  </button>
-                ))}
-              </div>
-            </FieldRow>
-          </div>
-        ) : (
-          <div className="space-y-0 divide-y divide-border/50">
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-muted-foreground">Couleur primaire</span>
-              <div className="flex items-center gap-2.5">
-                <div className="h-6 w-6 rounded-md border border-border/60 shadow-xs" style={{ background: ws.couleur_primaire || '#2563eb' }} />
-                <span className="text-sm font-mono text-foreground/70">{ws.couleur_primaire || 'Par défaut'}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-muted-foreground">Couleur de fond</span>
-              <div className="flex items-center gap-2.5">
-                {ws.couleur_fond ? (
-                  <>
-                    <div className="h-6 w-6 rounded-md border border-border/60 shadow-xs" style={{ background: ws.couleur_fond }} />
-                    <span className="text-sm font-mono text-foreground/70">{ws.couleur_fond}</span>
-                  </>
-                ) : (
-                  <span className="text-sm text-foreground/70">Par défaut</span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-muted-foreground">Logo</span>
-              {ws.logo_url ? (
-                <img src={ws.logo_url} alt="Logo" className="h-8 w-8 rounded-lg object-cover border border-border/60" />
-              ) : (
-                <span className="text-sm text-foreground/70">Non configuré</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-muted-foreground">Fond d'écran</span>
-              <span className="text-sm text-foreground/70 capitalize">{ws.fond_style || 'gradient'}</span>
-            </div>
-          </div>
-        )}
-      </SettingsBlock>
-
       {/* Footer meta */}
       <p className="text-xs text-muted-foreground/60 pt-2">
         Créé le {new Date(ws.created_at).toLocaleDateString('fr-FR')} — Dernière modification le {new Date(ws.updated_at).toLocaleDateString('fr-FR')}
@@ -446,33 +575,33 @@ function GeneralSection() {
 function SettingsBlock({ title, icon: Icon, children }: { title: string; icon: typeof BuildingOffice; children: React.ReactNode }) {
   return (
     <div className="bg-card rounded-2xl border border-border/60 shadow-elevation-raised">
-      <div className="flex items-center gap-2.5 px-6 py-4 border-b border-border/60">
-        <div className="h-7 w-7 rounded-xl bg-muted/50 flex items-center justify-center">
+      <div className="flex items-center gap-2.5 px-4 sm:px-6 py-3 sm:py-4 border-b border-border/60">
+        <div className="h-7 w-7 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       </div>
-      <div className="px-6 py-4">{children}</div>
+      <div className="px-4 sm:px-6 py-4">{children}</div>
     </div>
   )
 }
 
 function FieldRow({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-6">
-      <Label className="text-sm text-muted-foreground w-36 pt-2 shrink-0">
+    <div className="flex flex-col sm:flex-row sm:items-start gap-1.5 sm:gap-6">
+      <Label className="text-sm text-muted-foreground sm:w-36 sm:pt-2 shrink-0">
         {label}{required && <span className="text-destructive ml-0.5">*</span>}
       </Label>
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 min-w-0">{children}</div>
     </div>
   )
 }
 
 function DisplayRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-3">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value || <span className="text-muted-foreground/40">—</span>}</span>
+    <div className="flex items-center justify-between gap-3 py-3">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm font-medium text-foreground text-right truncate">{value || <span className="text-muted-foreground/40">—</span>}</span>
     </div>
   )
 }
@@ -745,13 +874,13 @@ function InvitationsSection() {
                       <>
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground" onClick={() => copyInviteLink(inv.token)}><Copy className="h-3 w-3 mr-1" /> Lien</Button>
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary" onClick={() => resendInvitation.mutate(inv.id, { onSuccess: () => toast.success('Relance envoyée') })}><PaperPlaneTilt className="h-3 w-3 mr-1" /> Relancer</Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => cancelInvitation.mutate(inv.id, { onSuccess: () => toast.success('Annulée') })}><X className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => undoableToast({ message: 'Invitation annulée', run: () => cancelInvitation.mutateAsync(inv.id) })}><X className="h-3.5 w-3.5" /></Button>
                       </>
                     )}
                     {isExpired && !isPending && (
                       <>
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary" onClick={() => resendInvitation.mutate(inv.id, { onSuccess: () => toast.success('Relance envoyée') })}><PaperPlaneTilt className="h-3 w-3 mr-1" /> Relancer</Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => cancelInvitation.mutate(inv.id, { onSuccess: () => toast.success('Annulée') })}><X className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => undoableToast({ message: 'Invitation annulée', run: () => cancelInvitation.mutateAsync(inv.id) })}><X className="h-3.5 w-3.5" /></Button>
                       </>
                     )}
                   </div>
@@ -761,6 +890,278 @@ function InvitationsSection() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Dashboard Section ──
+
+const METRIC_PREVIEW_TONES: Record<MetricColor, { value: string; tag: string }> = {
+  default: { value: 'text-foreground', tag: 'bg-muted/60 text-muted-foreground' },
+  amber:   { value: 'text-amber-600',   tag: 'bg-amber-50 text-amber-700 border-amber-200' },
+  sky:     { value: 'text-sky-600',     tag: 'bg-sky-50 text-sky-700 border-sky-200' },
+  emerald: { value: 'text-emerald-600', tag: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  red:     { value: 'text-red-600',     tag: 'bg-red-50 text-red-700 border-red-200' },
+  violet:  { value: 'text-violet-600',  tag: 'bg-violet-50 text-violet-700 border-violet-200' },
+}
+
+function DashboardSection() {
+  const { data: ws, isLoading } = useWorkspaceDetails()
+  const updateMutation = useUpdateWorkspace()
+  const { refreshWorkspace } = useAuth()
+
+  const [selected, setSelected] = useState<string[]>(DEFAULT_METRICS)
+  const [dirty, setDirty] = useState(false)
+
+  // Load remote pref into local state once available
+  useEffect(() => {
+    if (ws?.dashboard_metrics) {
+      setSelected(ws.dashboard_metrics.length > 0 ? ws.dashboard_metrics : DEFAULT_METRICS)
+      setDirty(false)
+    }
+  }, [ws?.dashboard_metrics])
+
+  const selectedSet = useMemo(() => new Set(selected), [selected])
+  const atLimit = selected.length >= MAX_METRICS
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= MAX_METRICS) return prev
+      return [...prev, id]
+    })
+    setDirty(true)
+  }
+
+  function move(id: string, dir: -1 | 1) {
+    setSelected((prev) => {
+      const i = prev.indexOf(id)
+      if (i < 0) return prev
+      const j = i + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+    setDirty(true)
+  }
+
+  function reset() {
+    setSelected(DEFAULT_METRICS)
+    setDirty(true)
+  }
+
+  async function handleSave() {
+    try {
+      await updateMutation.mutateAsync({ dashboard_metrics: selected } as any)
+      await refreshWorkspace()
+      toast.success('Tableau de bord mis à jour')
+      setDirty(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur')
+    }
+  }
+
+  if (isLoading) {
+    return <div className="space-y-6">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}</div>
+  }
+
+  return (
+    <div className="space-y-6 sm:space-y-8 pb-24">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Tableau de bord</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Choisissez les métriques affichées en haut du dashboard pour l'ensemble du workspace.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[11px]">
+            {selected.length} / {MAX_METRICS} sélectionnées
+          </Badge>
+          <Button variant="ghost" size="sm" onClick={reset} className="text-muted-foreground">
+            <ArrowCounterClockwise className="h-3.5 w-3.5 mr-1.5" />
+            Réinitialiser
+          </Button>
+        </div>
+      </div>
+
+      {/* Métriques actives — sélection + ordre dans un même bloc */}
+      <SettingsBlock title="Métriques affichées" icon={DotsSixVertical}>
+        {selected.length === 0 ? (
+          <p className="text-sm text-muted-foreground/70 py-2">
+            Aucune métrique sélectionnée — ajoute-en une depuis le catalogue ci-dessous.
+          </p>
+        ) : (
+          <ol className="space-y-1.5">
+            {selected.map((id, i) => {
+              const m = METRIC_CATALOG.find((x) => x.id === id)
+              if (!m) return null
+              const tone = METRIC_PREVIEW_TONES[m.color]
+              const Icon = m.icon
+              return (
+                <li
+                  key={id}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl border border-primary/30 bg-primary/[0.04]"
+                >
+                  <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className={`h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0`}>
+                    <Icon className={`h-4 w-4 ${tone.value}`} weight="duotone" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{m.label}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{m.description}</p>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => move(id, -1)}
+                      disabled={i === 0}
+                      title="Monter"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:bg-card hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(id, 1)}
+                      disabled={i === selected.length - 1}
+                      title="Descendre"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:bg-card hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggle(id)}
+                      title="Retirer"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+      </SettingsBlock>
+
+      {/* Catalogue — items disponibles seulement (les actifs sont dans le bloc ci-dessus) */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70">
+            Ajouter une métrique
+          </h3>
+          <span className="text-[11px] text-muted-foreground">
+            {METRIC_CATALOG.length - selected.length} disponible{METRIC_CATALOG.length - selected.length > 1 ? 's' : ''}
+          </span>
+        </div>
+        {METRIC_GROUPS.map((g) => {
+          const items = METRIC_CATALOG.filter((m) => m.group === g.id && !selectedSet.has(m.id))
+          if (items.length === 0) return null
+          return (
+            <div key={g.id}>
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-2">
+                {g.label}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {items.map((m) => {
+                  const disabled = atLimit
+                  const tone = METRIC_PREVIEW_TONES[m.color]
+                  const Icon = m.icon
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => !disabled && toggle(m.id)}
+                      disabled={disabled}
+                      className={`group relative flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                        disabled
+                          ? 'border-border/40 bg-card/50 opacity-50 cursor-not-allowed'
+                          : 'border-border/50 bg-card hover:border-primary/30 hover:bg-primary/[0.03]'
+                      }`}
+                    >
+                      <div className="h-8 w-8 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
+                        <Icon className={`h-4 w-4 text-muted-foreground group-hover:${tone.value}`} weight="duotone" />
+                      </div>
+                      <div className="flex-1 min-w-0 pr-6">
+                        <p className="text-sm font-medium text-foreground">{m.label}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{m.description}</p>
+                      </div>
+                      <div className="absolute top-3 right-3 h-5 w-5 rounded-md border border-border/60 bg-card group-hover:border-primary/50 group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                        <Plus className="h-3 w-3 text-muted-foreground group-hover:text-primary" weight="bold" />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+        {METRIC_CATALOG.length - selected.length === 0 && (
+          <p className="text-sm text-muted-foreground/70 py-2">
+            Toutes les métriques disponibles sont déjà affichées sur le tableau de bord.
+          </p>
+        )}
+      </div>
+
+      {atLimit && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2.5">
+          <Warning className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-800">
+            Limite atteinte ({MAX_METRICS} métriques max). Retire-en une pour en activer une autre.
+          </div>
+        </div>
+      )}
+
+      {/* Aperçu — rendu sous les options pour visualiser la sélection finale */}
+      <SettingsBlock title="Aperçu du tableau de bord" icon={ChartLine}>
+        {selected.length === 0 ? (
+          <p className="text-sm text-muted-foreground/70 py-2">
+            Aucune métrique sélectionnée — le bandeau du tableau de bord sera masqué.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {selected.map((id) => {
+              const m = METRIC_CATALOG.find((x) => x.id === id)
+              if (!m) return null
+              const tone = METRIC_PREVIEW_TONES[m.color]
+              const Icon = m.icon
+              return (
+                <div
+                  key={id}
+                  className="rounded-xl border border-border/50 bg-card px-3 py-2.5 shadow-elevation-raised flex flex-col gap-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Icon className={`h-3.5 w-3.5 shrink-0 ${tone.value}`} weight="duotone" />
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">{m.label}</span>
+                    </div>
+                    <span className={`text-[11px] px-1.5 py-0 rounded-full border ${tone.tag}`}>{m.tag}</span>
+                  </div>
+                  <div className={`text-xl font-semibold tabular-nums ${tone.value}`}>—</div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </SettingsBlock>
+
+      <FloatingSaveBar
+        visible={dirty}
+        onSave={handleSave}
+        onCancel={() => {
+          if (ws?.dashboard_metrics) {
+            setSelected(ws.dashboard_metrics.length > 0 ? ws.dashboard_metrics : DEFAULT_METRICS)
+          }
+          setDirty(false)
+        }}
+        saving={updateMutation.isPending}
+      />
     </div>
   )
 }
@@ -862,9 +1263,9 @@ function ApiKeysBlock() {
   }
 
   function handleRevoke(key: ApiKey) {
-    revokeKey.mutate(key.id, {
-      onSuccess: () => toast.success(`Clé "${key.name}" révoquée`),
-      onError: () => toast.error('Erreur lors de la révocation'),
+    undoableToast({
+      message: `Clé "${key.name}" révoquée`,
+      run: () => revokeKey.mutateAsync(key.id),
     })
   }
 
@@ -1026,9 +1427,9 @@ function WebhooksBlock() {
   }
 
   function handleDelete(wh: WebhookConfig) {
-    deleteWebhook.mutate(wh.id, {
-      onSuccess: () => toast.success('Webhook supprimé'),
-      onError: () => toast.error('Erreur'),
+    undoableToast({
+      message: 'Webhook supprimé',
+      run: () => deleteWebhook.mutateAsync(wh.id),
     })
   }
 

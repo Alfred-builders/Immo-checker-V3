@@ -50,6 +50,13 @@ export function AddressAutocomplete({ value, onChange, placeholder = 'Rechercher
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Au montage, si la valeur initiale ressemble à une adresse en cours de
+  // saisie, on lance directement la recherche pour proposer des suggestions.
+  useEffect(() => {
+    if (value && value.length >= 3) search(value)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const search = useCallback(async (query: string) => {
     if (!query || query.length < 3 || !MAPBOX_TOKEN) {
       setSuggestions([])

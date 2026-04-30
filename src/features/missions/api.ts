@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from 'src/lib/api-client'
 import type {
   Mission, MissionDetail, MissionStats, EDLInventaire,
   CleMission, IndisponibiliteTechnicien, TechnicianConflicts,
-  MissionStatut, StatutMission, StatutRdv, TypeCle, StatutCle, SensEDL, TypeEDL,
+  MissionStatut, StatutMission, TypeCle, StatutCle, SensEDL, TypeEDL,
 } from './types'
 
 // ── Missions CRUD ──
@@ -12,7 +12,6 @@ interface ListMissionsParams {
   search?: string
   statut?: MissionStatut
   statut_affichage?: StatutMission
-  statut_rdv?: StatutRdv
   technicien_id?: string
   date_from?: string
   date_to?: string
@@ -28,26 +27,41 @@ interface ListResponse<T> {
   meta: { cursor?: string; has_more: boolean; total?: number }
 }
 
+function buildMissionsQuery(params: ListMissionsParams, cursor?: string) {
+  const sp = new URLSearchParams()
+  if (params.search) sp.set('search', params.search)
+  if (params.statut) sp.set('statut', params.statut)
+  if (params.statut_affichage) sp.set('statut_affichage', params.statut_affichage)
+  if (params.technicien_id) sp.set('technicien_id', params.technicien_id)
+  if (params.date_from) sp.set('date_from', params.date_from)
+  if (params.date_to) sp.set('date_to', params.date_to)
+  if (params.pending_actions) sp.set('pending_actions', 'true')
+  if (params.lot_id) sp.set('lot_id', params.lot_id)
+  if (params.batiment_id) sp.set('batiment_id', params.batiment_id)
+  if (cursor ?? params.cursor) sp.set('cursor', (cursor ?? params.cursor) as string)
+  if (params.limit) sp.set('limit', String(params.limit))
+  return sp.toString()
+}
+
 export function useMissions(params: ListMissionsParams = {}) {
   return useQuery({
     queryKey: ['missions', params],
     queryFn: () => {
-      const sp = new URLSearchParams()
-      if (params.search) sp.set('search', params.search)
-      if (params.statut) sp.set('statut', params.statut)
-      if (params.statut_affichage) sp.set('statut_affichage', params.statut_affichage)
-      if (params.statut_rdv) sp.set('statut_rdv', params.statut_rdv)
-      if (params.technicien_id) sp.set('technicien_id', params.technicien_id)
-      if (params.date_from) sp.set('date_from', params.date_from)
-      if (params.date_to) sp.set('date_to', params.date_to)
-      if (params.pending_actions) sp.set('pending_actions', 'true')
-      if (params.lot_id) sp.set('lot_id', params.lot_id)
-      if (params.batiment_id) sp.set('batiment_id', params.batiment_id)
-      if (params.cursor) sp.set('cursor', params.cursor)
-      if (params.limit) sp.set('limit', String(params.limit))
-      const qs = sp.toString()
+      const qs = buildMissionsQuery(params)
       return api<ListResponse<Mission>>(`/missions${qs ? `?${qs}` : ''}`)
     },
+  })
+}
+
+export function useMissionsInfinite(params: Omit<ListMissionsParams, 'cursor'> = {}) {
+  return useInfiniteQuery({
+    queryKey: ['missions', 'infinite', params],
+    queryFn: ({ pageParam }) => {
+      const qs = buildMissionsQuery(params, pageParam as string | undefined)
+      return api<ListResponse<Mission>>(`/missions${qs ? `?${qs}` : ''}`)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
   })
 }
 
@@ -73,7 +87,7 @@ export function useCreateMission() {
       lot_id: string
       sens: SensEDL | 'entree_sortie'
       avec_inventaire: boolean
-      date_planifiee: string
+      date_planifiee?: string
       heure_debut?: string
       heure_fin?: string
       technicien_id?: string
@@ -92,7 +106,7 @@ export function useCreateMission() {
 export function useUpdateMission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: string; date_planifiee?: string; heure_debut?: string; heure_fin?: string; statut_rdv?: StatutRdv; commentaire?: string }) =>
+    mutationFn: ({ id, ...data }: { id: string; date_planifiee?: string; heure_debut?: string; heure_fin?: string; commentaire?: string }) =>
       api<Mission>(`/missions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['missions'] })

@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { Plus, X, Funnel } from '@phosphor-icons/react'
+import { Plus, X } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Input } from 'src/components/ui/input'
 import { Badge } from 'src/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from 'src/components/ui/popover'
+import { DatePicker } from 'src/components/shared/date-picker'
 
 export interface FilterField {
   id: string
   label: string
-  type: 'text' | 'select' | 'boolean' | 'number'
+  type: 'text' | 'select' | 'boolean' | 'number' | 'date'
   options?: { value: string; label: string }[]
+  // Custom accessor used when the record's shape doesn't match the filter id
+  // (e.g. nested objects like `mission.technicien.user_id`).
+  getValue?: (record: any) => string | number | boolean | null | undefined
 }
 
 export interface ActiveFilter {
@@ -43,13 +47,82 @@ const NUMBER_OPERATORS = [
   { value: 'lte', label: '<=' },
 ]
 
+const DATE_OPERATORS = [
+  { value: 'equals', label: 'est le' },
+  { value: 'before', label: 'avant le' },
+  { value: 'after', label: 'après le' },
+]
+
 function getOperators(type: FilterField['type']) {
   switch (type) {
     case 'select': return SELECT_OPERATORS
     case 'boolean': return BOOLEAN_OPERATORS
     case 'number': return NUMBER_OPERATORS
+    case 'date': return DATE_OPERATORS
     default: return TEXT_OPERATORS
   }
+}
+
+function formatDateLabel(iso: string): string {
+  if (!iso) return '...'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// Apply active filters against a record list using each field's `getValue`
+// accessor when present. Centralised so the matching logic stays consistent
+// with the operator dropdowns shown in the popover.
+export function applyDynamicFilters<T>(
+  records: T[],
+  filters: ActiveFilter[],
+  fields: FilterField[],
+): T[] {
+  if (filters.length === 0) return records
+  return records.filter((record) => {
+    for (const f of filters) {
+      const fieldDef = fields.find((fd) => fd.id === f.field)
+      if (!fieldDef) continue
+
+      const raw = fieldDef.getValue
+        ? fieldDef.getValue(record as any)
+        : (record as any)[f.field]
+
+      if (fieldDef.type === 'date') {
+        const recDate = raw ? String(raw).slice(0, 10) : ''
+        const filtDate = f.value ? f.value.slice(0, 10) : ''
+        if (!filtDate) continue
+        if (f.operator === 'equals' && recDate !== filtDate) return false
+        if (f.operator === 'before' && (!recDate || recDate >= filtDate)) return false
+        if (f.operator === 'after' && (!recDate || recDate <= filtDate)) return false
+        continue
+      }
+
+      if (fieldDef.type === 'number') {
+        const num = Number(raw)
+        const target = Number(f.value)
+        if (Number.isNaN(target)) continue
+        switch (f.operator) {
+          case 'equals': if (num !== target) return false; break
+          case 'gt': if (!(num > target)) return false; break
+          case 'lt': if (!(num < target)) return false; break
+          case 'gte': if (!(num >= target)) return false; break
+          case 'lte': if (!(num <= target)) return false; break
+        }
+        continue
+      }
+
+      const val = String(raw ?? '').toLowerCase()
+      const target = f.value.toLowerCase()
+      switch (f.operator) {
+        case 'contains': if (!val.includes(target)) return false; break
+        case 'equals': if (val !== target) return false; break
+        case 'not_equals': if (val === target) return false; break
+        case 'starts_with': if (!val.startsWith(target)) return false; break
+      }
+    }
+    return true
+  })
 }
 
 interface DynamicFilterProps {
@@ -97,7 +170,9 @@ export function DynamicFilter({ fields, filters, onChange }: DynamicFilterProps)
           ? fieldDef.options?.find(o => o.value === f.value)?.label || f.value
           : fieldDef?.type === 'boolean'
             ? f.value === 'true' ? 'Oui' : 'Non'
-            : f.value
+            : fieldDef?.type === 'date'
+              ? formatDateLabel(f.value)
+              : f.value
 
         return (
           <Badge key={i} variant="secondary" className="h-7 gap-1 pl-2 pr-1 text-xs font-normal bg-primary/10 text-primary border-primary/20">
@@ -121,7 +196,7 @@ export function DynamicFilter({ fields, filters, onChange }: DynamicFilterProps)
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-3 space-y-3">
           {filters.length === 0 && (
-            <p className="text-xs text-muted-foreground mb-2">Ajoutez un filtre pour affiner les resultats</p>
+            <p className="text-[11px] text-muted-foreground mb-2">Ajoutez un filtre pour affiner les resultats</p>
           )}
 
           {filters.map((f, i) => {
@@ -149,7 +224,7 @@ export function DynamicFilter({ fields, filters, onChange }: DynamicFilterProps)
                 {/* Value */}
                 {fieldDef?.type === 'select' ? (
                   <Select value={f.value} onValueChange={(v) => updateFilter(i, { value: v })}>
-                    <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Valeur..." /></SelectTrigger>
+                    <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Valeur..." /></SelectTrigger>
                     <SelectContent>
                       {fieldDef.options?.map(o => <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>)}
                     </SelectContent>
@@ -158,10 +233,24 @@ export function DynamicFilter({ fields, filters, onChange }: DynamicFilterProps)
                   <Select value={f.value} onValueChange={(v) => updateFilter(i, { value: v })}>
                     <SelectTrigger className="w-24 h-8 text-xs"><SelectValue placeholder="..." /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="true" className="text-xs">Oui</SelectItem>
-                      <SelectItem value="false" className="text-xs">Non</SelectItem>
+                      <SelectItem value="true" className="text-[11px]">Oui</SelectItem>
+                      <SelectItem value="false" className="text-[11px]">Non</SelectItem>
                     </SelectContent>
                   </Select>
+                ) : fieldDef?.type === 'date' ? (
+                  <DatePicker
+                    value={f.value}
+                    onChange={(v) => updateFilter(i, { value: v })}
+                    className="w-36 h-8 text-xs"
+                  />
+                ) : fieldDef?.type === 'number' ? (
+                  <Input
+                    type="number"
+                    value={f.value}
+                    onChange={(e) => updateFilter(i, { value: e.target.value })}
+                    placeholder="Valeur..."
+                    className="w-32 h-8 text-xs"
+                  />
                 ) : (
                   <Input
                     value={f.value}

@@ -5,10 +5,9 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Mission } from '../types'
 import {
-  getStatutAffichage,
-  statutAffichageMarkerColors,
-  statutAffichageLabels,
-  statutRdvLabels,
+  getStatutMission,
+  statutMissionMarkerColors,
+  statutMissionLabels,
   sensLabels,
 } from '../types'
 import { formatDate, formatTime } from 'src/lib/formatters'
@@ -36,8 +35,13 @@ function buildGeoJSON(missions: Mission[]): GeoJSON.FeatureCollection {
     const lng = (m as any).longitude
     if (!lat || !lng) continue
 
-    const affichage = getStatutAffichage(m)
-    const color = statutAffichageMarkerColors[affichage]
+    const statutUI = getStatutMission(m)
+    const color = statutMissionMarkerColors[statutUI]
+    const techPrenom = m.technicien?.prenom ?? ''
+    const techNom = m.technicien?.nom ?? ''
+    const techInitials = m.technicien
+      ? `${techPrenom[0] ?? ''}${techNom[0] ?? ''}`.toUpperCase()
+      : ''
 
     features.push({
       type: 'Feature',
@@ -51,9 +55,9 @@ function buildGeoJSON(missions: Mission[]): GeoJSON.FeatureCollection {
         date_planifiee: m.date_planifiee,
         heure_debut: m.heure_debut || '',
         statut: m.statut,
-        statut_affichage: affichage,
-        statut_rdv: m.statut_rdv,
-        technicien_nom: m.technicien ? `${m.technicien.prenom} ${m.technicien.nom}` : '',
+        statut_ui: statutUI,
+        technicien_nom: m.technicien ? `${techPrenom} ${techNom}`.trim() : '',
+        technicien_initials: techInitials,
         edl_types: JSON.stringify(m.edl_types),
         color,
       },
@@ -178,9 +182,10 @@ export function MissionMap({ missions }: Props) {
     // Status tab config
     const statusTabs = [
       { key: 'all', label: 'Tout', color: '#6b7280' },
-      { key: 'a_traiter', label: 'À traiter', color: '#f97316' },
-      { key: 'prete', label: 'Prête', color: '#10b981' },
-      { key: 'terminee', label: 'Terminée', color: '#9ca3af' },
+      { key: 'a_planifier', label: 'À planifier', color: '#f59e0b' },
+      { key: 'planifie', label: 'Planifié', color: '#0ea5e9' },
+      { key: 'finalisee', label: 'Finalisée', color: '#10b981' },
+      { key: 'infructueuse', label: 'Infructueuse', color: '#f97316' },
       { key: 'annulee', label: 'Annulée', color: '#ef4444' },
     ]
 
@@ -198,7 +203,7 @@ export function MissionMap({ missions }: Props) {
     function singleMissionHtml(props: any) {
       const dateStr = props?.date_planifiee ? formatDate(props.date_planifiee) : ''
       const timeStr = props?.heure_debut ? ` a ${formatTime(props.heure_debut)}` : ''
-      const statusLabel = props?.statut_affichage ? statutAffichageLabels[props.statut_affichage as keyof typeof statutAffichageLabels] : ''
+      const statusLabel = props?.statut_ui ? statutMissionLabels[props.statut_ui as keyof typeof statutMissionLabels] : ''
       const techStr = props?.technicien_nom || 'Non assigne'
       const color = props?.color ?? '#9ca3af'
       return `
@@ -226,34 +231,49 @@ export function MissionMap({ missions }: Props) {
     function missionRowHtml(p: any) {
       const dateStr = p?.date_planifiee ? formatDate(p.date_planifiee) : ''
       const timeStr = p?.heure_debut ? ` a ${formatTime(p.heure_debut)}` : ''
-      const statusLabel = p?.statut_affichage ? statutAffichageLabels[p.statut_affichage as keyof typeof statutAffichageLabels] : ''
+      const statusLabel = p?.statut_ui ? statutMissionLabels[p.statut_ui as keyof typeof statutMissionLabels] : ''
       const color = p?.color ?? '#9ca3af'
+      const adresse = p?.adresse || p?.batiment_designation || ''
+      const initials = p?.technicien_initials ?? ''
+      const techTitle = p?.technicien_nom || 'Non assigné'
+      const avatarHtml = initials
+        ? `<div title="${techTitle}" style="width: 24px; height: 24px; border-radius: 50%; background: rgba(99, 102, 241, 0.12); color: #6366f1; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${initials}</div>`
+        : `<div title="Non assigné" style="width: 24px; height: 24px; border-radius: 50%; background: #f3f4f6; color: #9ca3af; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">·</div>`
+      const tab = p?.statut_ui ?? 'planifie'
       return `
-        <div class="immo-mission-row" data-tab="${(() => { const a = p?.statut_affichage ?? ''; return (a === 'terminee' || a === 'annulee' || a === 'prete') ? a : 'a_traiter' })()}" onclick="window.__missionMapNav__('${p?.id}','${p?.reference ?? ''}')" style="display: flex; align-items: center; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
+        <div class="immo-mission-row" data-tab="${tab}" onclick="window.__missionMapNav__('${p?.id}','${p?.reference ?? ''}')" style="display: flex; align-items: center; gap: 8px; padding: 8px 6px; cursor: pointer; border-radius: 6px;">
           <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 11px; font-weight: 600; color: #6366f1;">${p?.reference ?? ''}</span>
               <span style="font-size: 11px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px; white-space: nowrap;">${statusLabel}</span>
             </div>
-            <div style="font-size: 11px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">${p?.lot_designation ?? ''} — ${dateStr}${timeStr}</div>
+            <div style="font-size: 11px; color: #111827; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">${p?.lot_designation ?? ''}</div>
+            <div style="font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${adresse}</div>
+            <div style="font-size: 11px; color: #374151; margin-top: 1px;">${dateStr}${timeStr}</div>
           </div>
+          ${avatarHtml}
         </div>`
     }
 
     // Build multi-mission card with status tabs, sorted by date proximity
     function multiMissionHtml(featuresList: any[]) {
       const sorted = sortByDateProximity(featuresList)
-      const first = sorted[0].properties
-      const addrStr = first?.adresse ?? first?.batiment_designation ?? ''
 
-      // Count per tab — regrouper les 5 statuts d'affichage "en attente" dans a_traiter
+      // Count per tab — chaque statut UI est sa propre catégorie (5 valeurs).
       const counts: Record<string, number> = { all: sorted.length }
       for (const f of sorted) {
-        const a = f.properties?.statut_affichage ?? ''
-        const tab = (a === 'terminee' || a === 'annulee' || a === 'prete') ? a : 'a_traiter'
-        counts[tab] = (counts[tab] || 0) + 1
+        const a = f.properties?.statut_ui ?? 'planifie'
+        counts[a] = (counts[a] || 0) + 1
       }
+
+      // Sous-titre : adresse commune si toutes identiques, sinon "N adresses différentes"
+      const uniqueAddresses = new Set(
+        sorted.map(f => (f.properties?.adresse || f.properties?.batiment_designation || '').trim()).filter(Boolean),
+      )
+      const subtitle = uniqueAddresses.size === 1
+        ? Array.from(uniqueAddresses)[0]
+        : `${uniqueAddresses.size} adresses différentes`
 
       // Tabs: only show tabs that have missions
       const tabs = statusTabs
@@ -270,7 +290,7 @@ export function MissionMap({ missions }: Props) {
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <div>
               <div style="font-size: 13px; font-weight: 600; color: #111827;">${sorted.length} missions</div>
-              <div style="font-size: 11px; color: #6b7280;">${addrStr}</div>
+              <div style="font-size: 11px; color: #6b7280;">${subtitle}</div>
             </div>
             <button onclick="event.stopPropagation(); window.__missionMapPin__()" class="immo-pin-btn" title="Epingler" style="background: none; border: none; cursor: pointer; color: #9ca3af; padding: 2px; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
               ${pinSvg}

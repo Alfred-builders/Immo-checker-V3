@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Skeleton } from '../../../components/ui/skeleton'
+import { LoadMoreFooter } from '../../../components/shared/load-more-footer'
 import { formatDate } from '../../../lib/formatters'
 import type { SuperAdminUserRow } from '../types'
 
@@ -19,8 +20,14 @@ export function SuperAdminUsersListPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  const { data, isLoading } = useSuperAdminUsers(search || undefined)
-  const allUsers = data?.data ?? []
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useSuperAdminUsers(search || undefined)
+  const allUsers = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data])
 
   const users = useMemo(() => {
     let list = allUsers
@@ -159,6 +166,16 @@ export function SuperAdminUsersListPage() {
             </Link>
           )
         })}
+
+        {!isLoading && users.length > 0 && (
+          <LoadMoreFooter
+            currentCount={users.length}
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            noun={['utilisateur', 'utilisateurs']}
+          />
+        )}
       </div>
     </div>
   )

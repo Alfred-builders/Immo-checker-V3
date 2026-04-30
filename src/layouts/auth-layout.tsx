@@ -53,14 +53,14 @@ export function AuthLayout() {
       </div>
 
       {/* Right panel — form side */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 relative">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative">
         {/* Subtle background glow */}
         <div aria-hidden="true" className="pointer-events-none absolute -top-40 right-1/4 w-[400px] h-[400px] rounded-full bg-primary/[0.04] blur-[100px]" />
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 left-1/4 w-[350px] h-[350px] rounded-full bg-primary/[0.03] blur-[100px]" />
 
         <div className="relative z-10 w-full max-w-[420px]">
           {/* Mobile logo (hidden on desktop) */}
-          <div className="flex items-center justify-center mb-8 lg:hidden">
+          <div className="flex items-center justify-center mb-6 sm:mb-8 lg:hidden">
             <div className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Buildings className="h-5 w-5 text-primary" weight="fill" />
@@ -70,7 +70,7 @@ export function AuthLayout() {
           </div>
 
           {/* Card */}
-          <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-floating p-8 sm:p-10">
+          <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-floating p-6 sm:p-8 lg:p-10">
             <Outlet />
           </div>
         </div>

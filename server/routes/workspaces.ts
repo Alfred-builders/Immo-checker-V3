@@ -4,7 +4,7 @@ import { query } from '../db/index.js'
 import { verifyToken, requireRole } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendError } from '../utils/response.js'
-import { AppError } from '../utils/errors.js'
+import { ValidationError } from '../utils/errors.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -108,10 +108,17 @@ router.get('/current/onboarding-checklist', async (req, res) => {
 })
 
 // PATCH /api/workspaces/current — Update current workspace (admin only)
+const VALID_METRIC_IDS = new Set([
+  'edl_month', 'pending_actions', 'upcoming_7d', 'today',
+  'completed_month', 'total_month',
+  'overdue', 'cancelled_month', 'edl_signed_month',
+  'keys_pending', 'active_technicians',
+])
+
 router.patch('/current', requireRole('admin'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const allowedFields = ['nom', 'siret', 'email', 'telephone', 'adresse', 'code_postal', 'ville', 'logo_url', 'couleur_primaire', 'couleur_fond', 'fond_style']
+    const allowedFields = ['nom', 'siret', 'email', 'telephone', 'adresse', 'code_postal', 'ville', 'logo_url', 'couleur_primaire', 'couleur_fond', 'fond_style', 'dashboard_metrics']
 
     const fields: string[] = []
     const values: unknown[] = []
@@ -119,8 +126,25 @@ router.patch('/current', requireRole('admin'), async (req, res) => {
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        fields.push(`${field} = $${idx++}`)
-        values.push(req.body[field])
+        let value = req.body[field]
+        if (field === 'dashboard_metrics') {
+          if (!Array.isArray(value)) {
+            throw new ValidationError('dashboard_metrics doit être un tableau')
+          }
+          if (value.length > 6) {
+            throw new ValidationError('Maximum 6 métriques sur le tableau de bord')
+          }
+          const invalid = (value as unknown[]).find((v) => typeof v !== 'string' || !VALID_METRIC_IDS.has(v as string))
+          if (invalid !== undefined) {
+            throw new ValidationError(`Métrique inconnue : ${String(invalid)}`)
+          }
+          // Dedup while preserving order; pass as JSON string (cast to jsonb in SQL).
+          value = JSON.stringify([...new Set(value as string[])])
+          fields.push(`${field} = $${idx++}::jsonb`)
+        } else {
+          fields.push(`${field} = $${idx++}`)
+        }
+        values.push(value)
       }
     }
 
@@ -139,6 +163,33 @@ router.patch('/current', requireRole('admin'), async (req, res) => {
 
     sendSuccess(res, result.rows[0])
   } catch (error) {
+    // Self-heal: if dashboard_metrics column is missing (migration not yet run), create it on the fly and retry once.
+    const pgErr = error as { code?: string; column?: string; message?: string }
+    const missingColumn =
+      pgErr?.code === '42703' &&
+      (pgErr.column === 'dashboard_metrics' || pgErr.message?.includes('dashboard_metrics'))
+    if (missingColumn) {
+      console.warn('[workspaces.PATCH] dashboard_metrics column missing — creating it on the fly.')
+      try {
+        await query(
+          `ALTER TABLE workspace ADD COLUMN IF NOT EXISTS dashboard_metrics JSONB
+             NOT NULL DEFAULT '["edl_month","pending_actions","upcoming_7d"]'::jsonb`,
+        )
+        const result = await query(
+          `UPDATE workspace SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+          values,
+        )
+        sendSuccess(res, result.rows[0])
+        return
+      } catch (retryErr) {
+        console.error('[workspaces.PATCH] Self-heal failed:', retryErr)
+        sendError(
+          res,
+          new ValidationError("Impossible d'enregistrer les métriques — applique la migration : npm run db:migrate"),
+        )
+        return
+      }
+    }
     sendError(res, error)
   }
 })

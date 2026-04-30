@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select'
 import { Skeleton } from '../../../components/ui/skeleton'
+import { LoadMoreFooter } from '../../../components/shared/load-more-footer'
 import { CreateWorkspaceModal } from './create-workspace-modal'
 import { formatDate } from '../../../lib/formatters'
 import type { WorkspaceStatut, SuperAdminWorkspaceRow } from '../types'
@@ -34,14 +35,20 @@ export function SuperAdminWorkspacesListPage() {
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
-  const { data, isLoading } = useSuperAdminWorkspaces({
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useSuperAdminWorkspaces({
     search: search || undefined,
     type: type !== 'all' ? type : undefined,
     statut: statut !== 'all' ? statut : undefined,
   })
 
   const workspaces = useMemo(() => {
-    const list = data?.data ?? []
+    const list = data?.pages.flatMap((p) => p.data) ?? []
     return [...list].sort((a, b) => {
       const av = (a as any)[sortKey]
       const bv = (b as any)[sortKey]
@@ -179,6 +186,16 @@ export function SuperAdminWorkspacesListPage() {
             <div className="text-xs text-muted-foreground">{formatDate(w.created_at)}</div>
           </Link>
         ))}
+
+        {!isLoading && workspaces.length > 0 && (
+          <LoadMoreFooter
+            currentCount={workspaces.length}
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage()}
+            noun={['workspace', 'workspaces']}
+          />
+        )}
       </div>
     </div>
   )

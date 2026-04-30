@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulations — création lot/bâtiment</title>
+<meta name="viewport" content="width=1600" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg:        '#eef0f4',
+        card:      '#ffffff',
+        popover:   '#ffffff',
+        sunken:    '#f1f4f8',
+        border:    '#e3e7ed',
+        muted:     '#f1f4f8',
+        'muted-fg':'#64748b',
+        fg:        '#0f172a',
+        primary:   { DEFAULT: '#2563eb', fg: '#ffffff', soft: '#dbeafe' },
+        emerald:   { 600: '#059669', soft: '#d1fae5' },
+        amber:     { 600: '#d97706', soft: '#fef3c7' },
+        rose:      { 600: '#e11d48', soft: '#ffe4e6' },
+        violet:    { 600: '#7c3aed', soft: '#ede9fe' },
+        sky:       { 600: '#0284c7', soft: '#e0f2fe' },
+        slate:     { 50: '#f8fafc' },
+      },
+      borderRadius: { xxl: '18px' },
+    }
+  }
+}
+</script>
+<style>
+  body { font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,sans-serif; }
+  .input { display:flex; align-items:center; height:38px; width:100%; border:1px solid #e3e7ed; border-radius:.5rem; background:#fff; padding:0 .85rem; font-size:13.5px; color:#0f172a; }
+  .input.focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.14); }
+  .input.placeholder { color:#94a3b8; }
+  .label { font-size:11px; font-weight:600; color:#475569; letter-spacing:.01em; }
+  .helper { font-size:11px; color:#64748b; }
+  .pill { display:inline-flex; align-items:center; gap:.3rem; padding:.18rem .55rem; border-radius:9999px; font-size:11px; font-weight:600; }
+  .chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .6rem; border-radius:.5rem; font-size:12px; font-weight:600; }
+  .seg { display:inline-flex; padding:.18rem; background:#eef0f4; border-radius:.6rem; }
+  .seg button { padding:.4rem .8rem; font-size:12.5px; font-weight:600; border-radius:.45rem; color:#475569; background:transparent; }
+  .seg button.on { background:#fff; color:#0f172a; box-shadow:0 1px 2px rgba(15,23,42,.06); }
+  .switch { width:34px; height:20px; background:#cbd5e1; border-radius:9999px; position:relative; }
+  .switch.on { background:#2563eb; }
+  .switch::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:9999px; transition:left .15s; }
+  .switch.on::after { left:16px; }
+  .modal { background:#fff; border:1px solid #e3e7ed; border-radius:18px; box-shadow:0 24px 48px -12px rgba(15,23,42,.20), 0 12px 24px -16px rgba(15,23,42,.12); overflow:hidden; }
+  .scrim { background:rgba(15,23,42,.18); padding:30px; border-radius:24px; }
+  .section-divider { height:1px; background:linear-gradient(90deg,transparent,#e3e7ed,transparent); }
+  .dashed { border:1.5px dashed #c7cdd6; }
+  .ring-soft { box-shadow:0 0 0 1px rgba(37,99,235,.45), 0 1px 2px rgba(15,23,42,.05); }
+  .blink { animation:blink 1.05s steps(2,end) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .tag-entree { background:#dbeafe; color:#1d4ed8; }
+  .tag-sortie { background:#fed7aa; color:#c2410c; }
+  .tag-inv    { background:#ede9fe; color:#6d28d9; }
+  .grp-title { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
+  .nav-item.active { background:#fff; color:#0f172a; box-shadow:0 1px 2px rgba(15,23,42,.06); }
+  details > summary::-webkit-details-marker { display:none; }
+  /* sticky variant nav */
+  .stickynav { position:sticky; top:0; z-index:50; backdrop-filter:saturate(150%) blur(8px); background:rgba(238,240,244,.85); border-bottom:1px solid #e3e7ed; }
+</style>
+</head>
+<body class="bg-bg text-fg">
+
+<!-- ────────── Sticky nav ────────── -->
+<nav class="stickynav">
+  <div class="max-w-[1500px] mx-auto px-8 py-3 flex items-center gap-3">
+    <span class="text-[14px] font-bold">ImmoChecker · simulations création lot/bâtiment</span>
+    <span class="text-[12px] text-muted-fg ml-2">trois flux côte à côte — choisis-en un</span>
+    <div class="ml-auto seg">
+      <a href="#A" class="!no-underline"><button>A · Unifiée</button></a>
+      <a href="#B" class="!no-underline"><button>B · Empilées</button></a>
+      <a href="#C" class="!no-underline"><button>C · Recherche unique</button></a>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VARIANT A — UNIFIED LARGE MODAL                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="A" class="py-12">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-amber-soft text-amber-600">Variante A</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Modale unifiée — tout dans une fenêtre</h2>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <!-- BIG UNIFIED MODAL -->
+      <div class="modal mx-auto" style="max-width:980px;">
+
+        <!-- Header -->
+        <div class="px-7 py-5 border-b border-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-[18px] font-bold">Nouvelle mission</span>
+            <span class="pill bg-sky-soft text-sky-600">3 sections — saisie continue</span>
+          </div>
+          <span class="text-[20px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <!-- Body — 2 cols : main + summary side panel -->
+        <div class="grid" style="grid-template-columns: 1fr 280px;">
+
+          <!-- Main column -->
+          <div class="px-7 py-6 space-y-7" style="max-height:78vh; overflow:auto;">
+
+            <!-- ─── Section 1 : Bâtiment & adresse ─── -->
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="grp-title">① Bâtiment & adresse</span>
+                <span class="pill bg-emerald-soft text-emerald-600">complété</span>
+              </div>
+
+              <div class="space-y-4">
+                <!-- Address pinned -->
+                <div class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-sunken border border-border">
+                  <span>📍</span>
+                  <div class="text-[13px]"><b>12 rue des Lilas</b> · 75019 Paris</div>
+                  <span class="ml-auto text-[11px] text-primary cursor-pointer">↻ changer l'adresse</span>
+                </div>
+
+                <!-- Buildings list (3 cas illustrés en 1 vue : N matches, le 2e auto-sélectionné) -->
+                <div>
+                  <div class="label mb-2">3 bâtiments trouvés à cette adresse</div>
+                  <div class="space-y-1.5">
+                    <div class="rounded-lg border border-border bg-card px-3.5 py-3 flex items-start gap-3 cursor-pointer">
+                      <span class="mt-0.5">🏢</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[13px] font-semibold">Bât. A · Les Lilas</div>
+                        <div class="helper">8 lots · 1 mission à venir · dernier EDL il y a 12 j · M<sup>me</sup> Dupont</div>
+                      </div>
+                    </div>
+                    <div class="rounded-lg border-2 border-primary bg-primary-soft/40 px-3.5 py-3 flex items-start gap-3 ring-soft">
+                      <span class="mt-0.5">🏢</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[13px] font-semibold flex items-center gap-2">
+                          Bât. B · Les Lilas
+                          <span class="pill bg-emerald-soft text-emerald-600">✓ sélectionné</span>
+                        </div>
+                        <div class="helper">5 lots · 2 missions à venir · 11 EDL signés (90 j)</div>
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-border bg-card px-3.5 py-3 flex items-start gap-3 cursor-pointer">
+                      <span class="mt-0.5">🏢</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="text-[13px] font-semibold">Bât. C · annexe parking</div>
+                        <div class="helper">2 parkings · 0 mission à venir</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dashed rounded-lg px-3.5 py-2.5 mt-2 flex items-center gap-2 cursor-pointer">
+                    <span class="text-primary text-[16px]">+</span>
+                    <span class="text-[12.5px] font-semibold text-primary">Créer un nouveau bâtiment ici</span>
+                    <span class="text-[11px] text-muted-fg">— déroule le formulaire ci-dessous</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- ─── Section 2 : Lot ─── -->
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="grp-title">② Lot</span>
+                <span class="pill bg-amber-soft text-amber-600">en cours</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="label mb-1">Désignation</div>
+                  <div class="input"><span>Apt 201</span><span class="ml-auto blink">|</span></div>
+                  <p class="helper mt-1">Ex. « Apt 201 », « Lot 3 ».</p>
+                </div>
+                <div>
+                  <div class="label mb-1">Type de bien *</div>
+                  <div class="input">Appartement</div>
+                </div>
+                <div>
+                  <div class="label mb-1">Référence interne</div>
+                  <div class="input placeholder">Bail · code agence…</div>
+                </div>
+                <div>
+                  <div class="label mb-1">Nombre de pièces</div>
+                  <div class="input">T3</div>
+                </div>
+                <div>
+                  <div class="label mb-1">Étage</div>
+                  <div class="input">2</div>
+                </div>
+                <div>
+                  <div class="label mb-1">Emplacement palier</div>
+                  <div class="input placeholder">Porte gauche…</div>
+                </div>
+                <div>
+                  <div class="label mb-1">Surface (m²)</div>
+                  <div class="input">62</div>
+                </div>
+                <div class="flex items-end gap-3 pb-1">
+                  <span class="label">Meublé</span>
+                  <span class="switch on"></span>
+                </div>
+              </div>
+
+              <details class="mt-4 group">
+                <summary class="cursor-pointer flex items-center gap-2 text-[12px] text-muted-fg">
+                  <span class="group-open:hidden">▸</span><span class="hidden group-open:inline">▾</span>
+                  Énergie (DPE, GES, chauffage, eau chaude)
+                </summary>
+                <div class="grid grid-cols-2 gap-4 mt-3">
+                  <div><div class="label mb-1">DPE</div><div class="input">D</div></div>
+                  <div><div class="label mb-1">GES</div><div class="input">D</div></div>
+                  <div><div class="label mb-1">Chauffage</div><div class="input">Gaz · collectif</div></div>
+                  <div><div class="label mb-1">Eau chaude</div><div class="input">Gaz · collectif</div></div>
+                </div>
+              </details>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <!-- ─── Section 3 : Mission ─── -->
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="grp-title">③ Mission</span>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <div class="label mb-1">Type d'intervention *</div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <div class="rounded-lg border-2 border-primary bg-primary text-primary-fg text-[13px] font-semibold py-2 text-center">Entrée</div>
+                    <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Sortie</div>
+                    <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Entrée + Sortie</div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between py-1">
+                  <span class="label">Avec inventaire</span>
+                  <span class="switch"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <div class="label mb-1">Date *</div>
+                    <div class="input">29/04/2026</div>
+                  </div>
+                  <div>
+                    <div class="label mb-1">Heure début</div>
+                    <div class="input">09:00</div>
+                  </div>
+                  <div>
+                    <div class="label mb-1">Durée</div>
+                    <div class="input">1 h 30</div>
+                  </div>
+                </div>
+                <p class="helper">Heure de fin : <b>10:30</b></p>
+
+                <div>
+                  <div class="label mb-1">Locataires</div>
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-sunken">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-emerald-soft text-emerald-600 flex items-center justify-center text-[11px] font-bold">CR</div>
+                        <span class="text-[13px] font-medium">Camille Roux</span>
+                        <span class="pill bg-emerald-soft text-emerald-600">Entrant</span>
+                      </div>
+                      <span class="text-muted-fg cursor-pointer">×</span>
+                    </div>
+                    <div class="dashed rounded-lg px-3.5 py-2 flex items-center gap-2 cursor-pointer">
+                      <span class="text-primary">+</span>
+                      <span class="text-[12.5px] text-primary font-semibold">Ajouter un locataire</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="label mb-1">Technicien</div>
+                  <div class="input flex items-center gap-2.5">
+                    <div class="w-6 h-6 rounded-full bg-violet-soft text-violet-600 flex items-center justify-center text-[10px] font-bold">JM</div>
+                    <span>Jérôme Marchand</span>
+                    <span class="pill bg-amber-soft text-amber-600 ml-auto">Déjà 2 missions ce jour</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="label mb-1">Commentaire</div>
+                  <div class="input placeholder" style="height:64px; align-items:flex-start; padding-top:8px;">Instructions, notes…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side panel: live summary -->
+          <aside class="border-l border-border bg-sunken px-5 py-6 space-y-5" style="max-height:78vh; overflow:auto;">
+            <div>
+              <div class="grp-title mb-2">Récap en direct</div>
+              <div class="bg-card border border-border rounded-lg p-3 space-y-2">
+                <div class="flex items-start gap-2">
+                  <span>🏢</span>
+                  <div class="text-[12.5px]">
+                    <div class="font-semibold">Bât. B · Les Lilas</div>
+                    <div class="helper">12 rue des Lilas · 75019</div>
+                  </div>
+                </div>
+                <div class="section-divider"></div>
+                <div class="flex items-start gap-2">
+                  <span>🚪</span>
+                  <div class="text-[12.5px]">
+                    <div class="font-semibold">Apt 201 · T3 · 62 m²</div>
+                    <div class="helper">2<sup>e</sup> étage · meublé</div>
+                  </div>
+                </div>
+                <div class="section-divider"></div>
+                <div class="flex items-start gap-2">
+                  <span>📅</span>
+                  <div class="text-[12.5px]">
+                    <div class="font-semibold">29/04/2026 · 09:00–10:30</div>
+                    <div class="helper">Entrée · Camille Roux · Jérôme M.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="grp-title mb-2">Statut sections</div>
+              <ul class="space-y-1.5 text-[12px]">
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Bâtiment & adresse</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Lot — désignation en cours</li>
+                <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Mission — prête</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-7 py-4 border-t border-border bg-sunken flex items-center justify-between">
+          <span class="text-[12px] text-muted-fg">3 entités créées en 1 clic : <b>bâtiment</b>, <b>lot</b>, <b>mission</b>.</span>
+          <div class="flex items-center gap-2">
+            <span class="chip border border-border bg-card cursor-pointer">Annuler</span>
+            <span class="chip bg-primary text-primary-fg cursor-pointer">Créer la mission</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VARIANT B — TWO STACKED LARGE MODALS                         -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="B" class="py-12 bg-[#e9ecf1]">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-emerald-soft text-emerald-600">Variante B</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Modales empilées — mission ouvre une 2<sup>e</sup> modale lot+bâtiment</h2>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim relative" style="min-height:980px;">
+
+      <!-- Background : full-fledged mission modal, partially visible -->
+      <div class="modal absolute" style="top:30px; left:30px; right:30px; max-width:920px; margin-inline:auto; opacity:.55; transform:scale(.98);">
+        <div class="px-7 py-5 border-b border-border flex items-center justify-between">
+          <span class="text-[18px] font-bold">Nouvelle mission</span>
+          <span class="text-[20px] text-muted-fg">×</span>
+        </div>
+        <div class="px-7 py-6 space-y-4">
+          <div>
+            <div class="label mb-1">Lot *</div>
+            <div class="input placeholder">Rechercher un lot…</div>
+          </div>
+          <div>
+            <div class="label mb-1">Type d'intervention *</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-lg border-2 border-primary bg-primary text-primary-fg text-[13px] font-semibold py-2 text-center">Entrée</div>
+              <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Sortie</div>
+              <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Entrée + Sortie</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div><div class="label mb-1">Date *</div><div class="input">29/04/2026</div></div>
+            <div><div class="label mb-1">Début</div><div class="input">09:00</div></div>
+            <div><div class="label mb-1">Durée</div><div class="input">1 h 30</div></div>
+          </div>
+          <div><div class="label mb-1">Locataires</div><div class="input placeholder">Aucun ajouté</div></div>
+          <div><div class="label mb-1">Technicien</div><div class="input placeholder">Sélectionner…</div></div>
+          <div><div class="label mb-1">Commentaire</div><div class="input placeholder" style="height:60px;">Notes…</div></div>
+        </div>
+      </div>
+
+      <!-- Foreground : the lot+bâtiment modal -->
+      <div class="modal absolute" style="top:90px; left:50%; transform:translateX(-50%); max-width:780px; width:calc(100% - 80px);">
+        <div class="px-7 py-5 border-b border-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-[18px] font-bold">Nouveau lot</span>
+            <span class="pill bg-emerald-soft text-emerald-600">depuis « Nouvelle mission »</span>
+          </div>
+          <span class="text-[20px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <div class="px-7 py-6 space-y-6" style="max-height:75vh; overflow:auto;">
+
+          <!-- Bâtiment picker -->
+          <div>
+            <div class="label mb-2">Adresse du bien *</div>
+            <div class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-sunken border border-border">
+              <span>📍</span>
+              <div class="text-[13px]"><b>12 rue des Lilas</b> · 75019 Paris</div>
+              <span class="ml-auto text-[11px] text-primary cursor-pointer">↻ changer</span>
+            </div>
+
+            <div class="label mt-4 mb-2">3 bâtiments à cette adresse</div>
+            <div class="space-y-1.5">
+              <div class="rounded-lg border border-border bg-card px-3.5 py-3 flex items-start gap-3 cursor-pointer">
+                <span class="mt-0.5">🏢</span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-semibold">Bât. A · Les Lilas</div>
+                  <div class="helper">8 lots · 1 mission à venir · dernier EDL il y a 12 j · M<sup>me</sup> Dupont</div>
+                </div>
+              </div>
+              <div class="rounded-lg border-2 border-primary bg-primary-soft/40 px-3.5 py-3 flex items-start gap-3 ring-soft">
+                <span class="mt-0.5">🏢</span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-semibold flex items-center gap-2">
+                    Bât. B · Les Lilas
+                    <span class="pill bg-emerald-soft text-emerald-600">✓ sélectionné</span>
+                  </div>
+                  <div class="helper">5 lots · 2 missions à venir · 11 EDL signés (90 j)</div>
+                </div>
+              </div>
+              <div class="rounded-lg border border-border bg-card px-3.5 py-3 flex items-start gap-3 cursor-pointer">
+                <span class="mt-0.5">🏢</span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-semibold">Bât. C · annexe parking</div>
+                  <div class="helper">2 parkings · 0 mission à venir</div>
+                </div>
+              </div>
+            </div>
+            <div class="dashed rounded-lg px-3.5 py-2.5 mt-2 flex items-center gap-2 cursor-pointer">
+              <span class="text-primary text-[16px]">+</span>
+              <span class="text-[12.5px] font-semibold text-primary">Créer un nouveau bâtiment ici</span>
+              <span class="text-[11px] text-muted-fg">— numéro D, E…</span>
+            </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Lot fields -->
+          <div>
+            <div class="grp-title mb-3">Identification du lot</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><div class="label mb-1">Désignation</div><div class="input">Apt 201</div></div>
+              <div><div class="label mb-1">Type de bien *</div><div class="input">Appartement</div></div>
+              <div><div class="label mb-1">Référence interne</div><div class="input placeholder">Bail · code agence…</div></div>
+              <div><div class="label mb-1">Nombre de pièces</div><div class="input">T3</div></div>
+              <div><div class="label mb-1">Étage</div><div class="input">2</div></div>
+              <div><div class="label mb-1">Emplacement palier</div><div class="input placeholder">Porte gauche…</div></div>
+              <div><div class="label mb-1">Surface (m²)</div><div class="input">62</div></div>
+              <div class="flex items-end gap-3 pb-1"><span class="label">Meublé</span><span class="switch on"></span></div>
+            </div>
+          </div>
+
+          <details class="group">
+            <summary class="cursor-pointer flex items-center gap-2 text-[12px] text-muted-fg">
+              <span class="group-open:hidden">▸</span><span class="hidden group-open:inline">▾</span>
+              Énergie (DPE, GES, chauffage, eau chaude)
+            </summary>
+            <div class="grid grid-cols-2 gap-4 mt-3">
+              <div><div class="label mb-1">DPE</div><div class="input">D</div></div>
+              <div><div class="label mb-1">GES</div><div class="input">D</div></div>
+              <div><div class="label mb-1">Chauffage</div><div class="input">Gaz · collectif</div></div>
+              <div><div class="label mb-1">Eau chaude</div><div class="input">Gaz · collectif</div></div>
+            </div>
+          </details>
+
+          <div>
+            <div class="label mb-1">Commentaire</div>
+            <div class="input placeholder" style="height:64px; align-items:flex-start; padding-top:8px;">Notes complémentaires…</div>
+          </div>
+        </div>
+
+        <div class="px-7 py-4 border-t border-border bg-sunken flex justify-between items-center">
+          <span class="text-[12px] text-muted-fg">Le lot sera <b>pré-sélectionné</b> dans la mission après création — éditable plus tard depuis sa fiche.</span>
+          <div class="flex items-center gap-2">
+            <span class="chip border border-border bg-card cursor-pointer">Annuler</span>
+            <span class="chip bg-primary text-primary-fg cursor-pointer">Créer le lot</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VARIANT C — UNIVERSAL SEARCH INPUT (no separate address)     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="C" class="py-12">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-violet-soft text-violet-600">Variante C</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Recherche universelle — un seul champ pour adresse, bâtiment ou lot</h2>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <div class="modal mx-auto" style="max-width:920px;">
+
+        <div class="px-7 py-5 border-b border-border flex items-center justify-between">
+          <span class="text-[18px] font-bold">Nouvelle mission</span>
+          <span class="text-[20px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <div class="px-7 py-6 space-y-5">
+
+          <!-- The search input -->
+          <div>
+            <div class="label mb-1">Lot, bâtiment ou adresse *</div>
+            <div class="input focus" style="height:44px; font-size:14px;">
+              <span class="text-muted-fg mr-2">🔍</span>
+              <span><b>lilas 75019</b></span>
+              <span class="blink ml-0.5">|</span>
+              <span class="ml-auto pill bg-sunken text-muted-fg">3 lots · 2 bâts · 1 BAN</span>
+            </div>
+
+            <!-- Dropdown -->
+            <div class="border border-border rounded-xl mt-2 overflow-hidden bg-card" style="box-shadow:0 12px 24px -8px rgba(15,23,42,.10);">
+              <!-- Group: lots -->
+              <div class="px-4 py-2 bg-sunken/70 grp-title">Lots existants · 3</div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer">
+                <div class="w-8 h-8 rounded-lg bg-sky-soft flex items-center justify-center">🚪</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px]">Apt 201 · <b>Bât. A · Les <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span></b></div>
+                  <div class="helper">12 rue des Lilas · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> · 62 m² · T3 · meublé</div>
+                </div>
+                <span class="pill bg-emerald-soft text-emerald-600">↻ récent</span>
+              </div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer border-t border-border">
+                <div class="w-8 h-8 rounded-lg bg-sky-soft flex items-center justify-center">🚪</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px]">Apt 305 · <b>Bât. A · Les <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span></b></div>
+                  <div class="helper">12 rue des <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span> · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> · 48 m² · T2</div>
+                </div>
+              </div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer border-t border-border">
+                <div class="w-8 h-8 rounded-lg bg-sky-soft flex items-center justify-center">🚪</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px]">Apt 12 · <b>Bât. B · Les <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span></b></div>
+                  <div class="helper">12 rue des <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span> · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> · 84 m² · T4</div>
+                </div>
+              </div>
+
+              <!-- Group: bâtiments -->
+              <div class="px-4 py-2 bg-sunken/70 grp-title border-t border-border">Bâtiments · 2</div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer">
+                <div class="w-8 h-8 rounded-lg bg-violet-soft flex items-center justify-center">🏢</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px] font-semibold">Bât. A · Les <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span></div>
+                  <div class="helper">12 rue des <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span> · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> · 8 lots · 1 mission à venir</div>
+                </div>
+                <span class="pill bg-sunken text-muted-fg">→ choisir un lot</span>
+              </div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer border-t border-border">
+                <div class="w-8 h-8 rounded-lg bg-violet-soft flex items-center justify-center">🏢</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px] font-semibold">Bât. B · Les <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span></div>
+                  <div class="helper">12 rue des <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span> · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> · 5 lots · 2 missions à venir</div>
+                </div>
+                <span class="pill bg-sunken text-muted-fg">→ choisir un lot</span>
+              </div>
+
+              <!-- Group: adresses externes BAN -->
+              <div class="px-4 py-2 bg-sunken/70 grp-title border-t border-border">Adresses externes · BAN</div>
+              <div class="px-4 py-3 hover:bg-sunken/60 flex items-center gap-3 cursor-pointer">
+                <div class="w-8 h-8 rounded-lg bg-amber-soft flex items-center justify-center">📍</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13.5px]">3 rue des <span class="bg-amber-soft text-amber-600 px-0.5 rounded">Lilas</span> · <span class="bg-amber-soft text-amber-600 px-0.5 rounded">75019</span> Paris</div>
+                  <div class="helper">Aucun bâtiment référencé — créer ici</div>
+                </div>
+                <span class="text-[11px] text-primary">+ créer →</span>
+              </div>
+
+              <!-- CTA -->
+              <div class="dashed rounded-b-xl border-t-0 px-4 py-3 flex items-center gap-2 cursor-pointer">
+                <span class="text-primary text-[16px]">+</span>
+                <span class="text-[12.5px] font-semibold text-primary">Saisir une nouvelle adresse manuellement</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Once a lot/bâtiment is picked, the rest of mission unfolds inline -->
+          <div class="opacity-60 pointer-events-none space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="grp-title">Suite de la mission — débloquée après sélection</span>
+            </div>
+            <div>
+              <div class="label mb-1">Type d'intervention *</div>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Entrée</div>
+                <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Sortie</div>
+                <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Entrée + Sortie</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div><div class="label mb-1">Date *</div><div class="input placeholder">JJ/MM/AAAA</div></div>
+              <div><div class="label mb-1">Début</div><div class="input placeholder">--:--</div></div>
+              <div><div class="label mb-1">Durée</div><div class="input placeholder">Durée…</div></div>
+            </div>
+            <div><div class="label mb-1">Locataires</div><div class="input placeholder">Ajouter un locataire</div></div>
+            <div><div class="label mb-1">Technicien</div><div class="input placeholder">Sélectionner…</div></div>
+            <div><div class="label mb-1">Commentaire</div><div class="input placeholder" style="height:60px;">Notes…</div></div>
+          </div>
+        </div>
+
+        <div class="px-7 py-4 border-t border-border bg-sunken flex justify-end items-center gap-2">
+          <span class="chip border border-border bg-card cursor-pointer">Annuler</span>
+          <span class="chip bg-primary/30 text-primary-fg cursor-not-allowed">Créer la mission</span>
+        </div>
+      </div>
+
+
+      <!-- C — second simulation : aucun match → expansion inline du formulaire bâtiment -->
+      <div class="modal mx-auto mt-10" style="max-width:920px;">
+        <div class="px-7 py-5 border-b border-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-[18px] font-bold">Nouvelle mission</span>
+            <span class="pill bg-violet-soft text-violet-600">cas : adresse externe BAN choisie → tout se déroule inline</span>
+          </div>
+          <span class="text-[20px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <div class="px-7 py-6 space-y-5">
+
+          <div>
+            <div class="label mb-1">Lot, bâtiment ou adresse *</div>
+            <div class="input flex items-center gap-2">
+              <span>📍</span>
+              <span><b>15 rue Voltaire</b> · 75011 Paris</span>
+              <span class="pill bg-amber-soft text-amber-600 ml-2">Adresse BAN — création requise</span>
+              <span class="ml-auto text-[11px] text-primary cursor-pointer">↻</span>
+            </div>
+          </div>
+
+          <!-- Inline new bâtiment + lot -->
+          <div class="rounded-xl border border-border bg-sunken/50 p-4 space-y-4">
+            <div class="grp-title">Nouveau bâtiment</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><div class="label mb-1">Type *</div><div class="input">Immeuble</div></div>
+              <div><div class="label mb-1">Numéro / lettre</div><div class="input placeholder">A, B, 1…</div></div>
+              <div class="col-span-2"><div class="label mb-1">Désignation</div><div class="input placeholder">Résidence du Parc…</div></div>
+              <div><div class="label mb-1">Nb étages</div><div class="input">5</div></div>
+              <div><div class="label mb-1">Complément d'adresse</div><div class="input placeholder">Entrée 2, escalier C…</div></div>
+            </div>
+
+            <div class="section-divider"></div>
+
+            <div class="grp-title">Lot dans ce bâtiment</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><div class="label mb-1">Désignation</div><div class="input">Apt 12</div></div>
+              <div><div class="label mb-1">Type de bien *</div><div class="input">Appartement</div></div>
+              <div><div class="label mb-1">Étage</div><div class="input">3</div></div>
+              <div><div class="label mb-1">Surface (m²)</div><div class="input">48</div></div>
+              <div><div class="label mb-1">Nombre de pièces</div><div class="input">T2</div></div>
+              <div class="flex items-end gap-3 pb-1"><span class="label">Meublé</span><span class="switch"></span></div>
+            </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Mission section -->
+          <div class="space-y-4">
+            <div>
+              <div class="label mb-1">Type d'intervention *</div>
+              <div class="grid grid-cols-3 gap-2">
+                <div class="rounded-lg border-2 border-primary bg-primary text-primary-fg text-[13px] font-semibold py-2 text-center">Entrée</div>
+                <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Sortie</div>
+                <div class="rounded-lg border border-border bg-card text-[13px] text-muted-fg py-2 text-center">Entrée + Sortie</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div><div class="label mb-1">Date *</div><div class="input">02/05/2026</div></div>
+              <div><div class="label mb-1">Début</div><div class="input">14:00</div></div>
+              <div><div class="label mb-1">Durée</div><div class="input">1 h</div></div>
+            </div>
+            <p class="helper">Heure de fin : <b>15:00</b></p>
+            <div>
+              <div class="label mb-1">Locataires</div>
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-sunken">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-amber-soft text-amber-600 flex items-center justify-center text-[11px] font-bold">PM</div>
+                    <span class="text-[13px] font-medium">Pierre Martin</span>
+                    <span class="pill bg-amber-soft text-amber-600">Sortant</span>
+                  </div>
+                  <span class="text-muted-fg cursor-pointer">×</span>
+                </div>
+              </div>
+            </div>
+            <div><div class="label mb-1">Technicien</div><div class="input">Jérôme Marchand</div></div>
+          </div>
+        </div>
+
+        <div class="px-7 py-4 border-t border-border bg-sunken flex items-center justify-between">
+          <span class="text-[12px] text-muted-fg">3 entités créées en 1 clic : <b>bâtiment</b>, <b>lot</b>, <b>mission</b>.</span>
+          <div class="flex items-center gap-2">
+            <span class="chip border border-border bg-card cursor-pointer">Annuler</span>
+            <span class="chip bg-primary text-primary-fg cursor-pointer">Créer la mission</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="max-w-[1500px] mx-auto px-8 py-10 text-[11px] text-muted-fg">
+  Mockups statiques · A : tout dans une modale (avec récap latéral en direct). B : 2 modales empilées (état actuel polish). C : un seul champ qui cherche partout, expansion inline si l'adresse n'existe pas.
+</footer>
+
+</body>
+</html>

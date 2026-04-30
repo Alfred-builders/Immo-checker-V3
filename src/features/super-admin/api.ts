@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api-client'
 import type {
   SuperAdminWorkspaceRow,
@@ -8,9 +8,13 @@ import type {
   AuditLogEntry,
   SuperAdminStats,
   SuperAdminTrends,
-  WorkspaceStatut,
   WorkspaceType,
 } from './types'
+
+interface PaginatedResponse<T> {
+  data: T[]
+  meta: { cursor?: string; has_more: boolean; total?: number }
+}
 
 export function useSuperAdminStats() {
   return useQuery<SuperAdminStats>({
@@ -27,14 +31,19 @@ export function useSuperAdminTrends() {
 }
 
 export function useSuperAdminWorkspaces(filters: { search?: string; type?: string; statut?: string } = {}) {
-  const params = new URLSearchParams()
-  if (filters.search) params.set('search', filters.search)
-  if (filters.type) params.set('type', filters.type)
-  if (filters.statut) params.set('statut', filters.statut)
-  const qs = params.toString() ? `?${params.toString()}` : ''
-  return useQuery<{ data: SuperAdminWorkspaceRow[]; total: number }>({
+  return useInfiniteQuery({
     queryKey: ['super-admin', 'workspaces', filters],
-    queryFn: () => api(`/super-admin/workspaces${qs}`),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams()
+      if (filters.search) params.set('search', filters.search)
+      if (filters.type) params.set('type', filters.type)
+      if (filters.statut) params.set('statut', filters.statut)
+      if (pageParam) params.set('cursor', pageParam as string)
+      const qs = params.toString() ? `?${params.toString()}` : ''
+      return api<PaginatedResponse<SuperAdminWorkspaceRow>>(`/super-admin/workspaces${qs}`)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
   })
 }
 
@@ -74,17 +83,59 @@ export function useCreateWorkspace() {
   })
 }
 
-export function useUpdateWorkspaceStatut() {
+export interface UpdateWorkspaceInput {
+  nom?: string
+  type_workspace?: WorkspaceType
+  siret?: string | null
+  email?: string | null
+  telephone?: string | null
+  adresse?: string | null
+  code_postal?: string | null
+  ville?: string | null
+}
+
+export function useUpdateWorkspace() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, statut }: { id: string; statut: WorkspaceStatut }) =>
-      api(`/super-admin/workspaces/${id}`, {
+    mutationFn: ({ id, ...patch }: { id: string } & UpdateWorkspaceInput) =>
+      api<SuperAdminWorkspaceDetail>(`/super-admin/workspaces/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ statut }),
+        body: JSON.stringify(patch),
       }),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['super-admin', 'workspace', id] })
       qc.invalidateQueries({ queryKey: ['super-admin', 'workspaces'] })
+    },
+  })
+}
+
+export function useSuspendWorkspace() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      api<SuperAdminWorkspaceDetail>(`/super-admin/workspaces/${id}/suspend`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['super-admin', 'workspace', id] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'workspaces'] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'audit'] })
+    },
+  })
+}
+
+export function useReactivateWorkspace() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<SuperAdminWorkspaceDetail>(`/super-admin/workspaces/${id}/reactivate`, {
+        method: 'POST',
+      }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ['super-admin', 'workspace', id] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'workspaces'] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'audit'] })
     },
   })
 }
@@ -100,10 +151,17 @@ export function useResendAdminInvite() {
 }
 
 export function useSuperAdminUsers(search?: string) {
-  const qs = search ? `?search=${encodeURIComponent(search)}` : ''
-  return useQuery<{ data: SuperAdminUserRow[]; total: number }>({
+  return useInfiniteQuery({
     queryKey: ['super-admin', 'users', search],
-    queryFn: () => api(`/super-admin/users${qs}`),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      if (pageParam) params.set('cursor', pageParam as string)
+      const qs = params.toString() ? `?${params.toString()}` : ''
+      return api<PaginatedResponse<SuperAdminUserRow>>(`/super-admin/users${qs}`)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
   })
 }
 
@@ -126,6 +184,49 @@ export function useUpdateUserSuperAdmin() {
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['super-admin', 'user', id] })
       qc.invalidateQueries({ queryKey: ['super-admin', 'users'] })
+    },
+  })
+}
+
+export function useToggleUserActive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, est_actif }: { id: string; est_actif: boolean }) =>
+      api<{ id: string; email: string; est_actif: boolean }>(
+        `/super-admin/users/${id}/status`,
+        { method: 'PATCH', body: JSON.stringify({ est_actif }) }
+      ),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['super-admin', 'user', id] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'users'] })
+      qc.invalidateQueries({ queryKey: ['super-admin', 'audit'] })
+    },
+  })
+}
+
+export function useForcePasswordReset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ message: string; email: string }>(
+        `/super-admin/users/${id}/force-password-reset`,
+        { method: 'POST' }
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['super-admin', 'audit'] })
+    },
+  })
+}
+
+export function useRevokeUserSessions() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ revoked: number }>(`/super-admin/users/${id}/revoke-sessions`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['super-admin', 'audit'] })
     },
   })
 }

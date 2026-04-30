@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS tiers_organisation (
 CREATE TABLE IF NOT EXISTS batiment (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
-  designation VARCHAR(255) NOT NULL,
+  designation VARCHAR(255),
   type VARCHAR(30) NOT NULL CHECK (type IN ('immeuble', 'maison', 'local_commercial', 'mixte', 'autre')),
   num_batiment VARCHAR(50),
   nb_etages INT,
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS lot (
   batiment_id UUID NOT NULL REFERENCES batiment(id) ON DELETE CASCADE,
   workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
   mandataire_id UUID REFERENCES tiers(id) ON DELETE SET NULL,
-  designation VARCHAR(255) NOT NULL,
+  designation VARCHAR(255),
   reference_interne VARCHAR(100),
   type_bien VARCHAR(30) NOT NULL CHECK (type_bien IN ('appartement', 'maison', 'studio', 'local_commercial', 'parking', 'cave', 'autre')),
   type_bien_precision VARCHAR(100),
@@ -219,11 +219,10 @@ CREATE TABLE IF NOT EXISTS mission (
   lot_id UUID NOT NULL REFERENCES lot(id) ON DELETE RESTRICT,
   created_by UUID NOT NULL REFERENCES utilisateur(id),
   reference VARCHAR(20) NOT NULL, -- Format: M-YYYY-XXXX, UNIQUE per workspace
-  date_planifiee DATE NOT NULL,
+  date_planifiee DATE,
   heure_debut TIME,
   heure_fin TIME,
-  statut VARCHAR(15) NOT NULL DEFAULT 'planifiee' CHECK (statut IN ('planifiee', 'terminee', 'annulee')),
-  statut_rdv VARCHAR(15) DEFAULT 'a_confirmer' CHECK (statut_rdv IN ('a_confirmer', 'confirme', 'reporte')),
+  statut VARCHAR(15) NOT NULL DEFAULT 'planifiee' CHECK (statut IN ('planifiee', 'terminee', 'infructueuse', 'annulee')),
   avec_inventaire BOOLEAN NOT NULL DEFAULT false,
   type_bail VARCHAR(15) CHECK (type_bail IN ('individuel', 'collectif')),
   motif_annulation TEXT,
@@ -679,7 +678,7 @@ ALTER TABLE edl_inventaire ADD COLUMN IF NOT EXISTS web_url_legal TEXT;
 UPDATE mission SET statut = 'planifiee' WHERE statut = 'assignee';
 ALTER TABLE mission DROP CONSTRAINT IF EXISTS mission_statut_check;
 ALTER TABLE mission ADD CONSTRAINT mission_statut_check
-  CHECK (statut IN ('planifiee', 'terminee', 'annulee'));
+  CHECK (statut IN ('planifiee', 'terminee', 'infructueuse', 'annulee'));
 
 -- ============================================================
 -- MIGRATION: type_bien_precision sur lot
@@ -687,3 +686,95 @@ ALTER TABLE mission ADD CONSTRAINT mission_statut_check
 -- (ex: "Entrepôt", "Loft", "Box moto"…). Même pattern que nb_pieces_precision.
 -- ============================================================
 ALTER TABLE lot ADD COLUMN IF NOT EXISTS type_bien_precision VARCHAR(100);
+
+-- ============================================================
+-- MIGRATION: timestamps de transition sur mission (audit Tony §8)
+-- updated_at change à chaque update — pas spécifique. Ces colonnes
+-- permettent au feed d'activité (chronologie) de dater précisément
+-- les transitions clés. Set côté backend lors des transitions.
+-- ============================================================
+ALTER TABLE mission ADD COLUMN IF NOT EXISTS statut_rdv_updated_at TIMESTAMPTZ;
+ALTER TABLE mission ADD COLUMN IF NOT EXISTS terminee_at TIMESTAMPTZ;
+ALTER TABLE mission ADD COLUMN IF NOT EXISTS annulee_at TIMESTAMPTZ;
+
+-- ============================================================
+-- MIGRATION: désignation optionnelle bâtiment + lot (Flat Checker · avr. 2026)
+-- Le numéro de bâtiment (A/B/C…) reste dans num_batiment, la désignation
+-- ("Les Lilas") devient secondaire/optionnelle. Idem pour lot.designation —
+-- fallback d'affichage = "Bât. {num}" / "{type_bien} · étage {etage}".
+-- ============================================================
+ALTER TABLE batiment ALTER COLUMN designation DROP NOT NULL;
+ALTER TABLE lot ALTER COLUMN designation DROP NOT NULL;
+
+-- ============================================================
+-- MIGRATION: dashboard_metrics (workspace-level pref)
+-- Tableau ordonné des IDs de métriques affichées sur le dashboard.
+-- Voir src/features/dashboard/metric-catalog.ts pour la liste des IDs valides.
+-- Limite applicative : max 6 entrées.
+-- ============================================================
+ALTER TABLE workspace ADD COLUMN IF NOT EXISTS dashboard_metrics JSONB
+  NOT NULL DEFAULT '["edl_month","pending_actions","upcoming_7d"]'::jsonb;
+
+-- ============================================================
+-- MIGRATION: mission.date_planifiee nullable (Flat Checker §4.6 · avr. 2026)
+-- Permet de créer une mission "À planifier" sans date confirmée.
+-- Le badge UI "À planifier" est dérivé via getStatutAffichage() côté frontend.
+-- ============================================================
+ALTER TABLE mission ALTER COLUMN date_planifiee DROP NOT NULL;
+
+-- ============================================================
+-- MIGRATION: nouveau modèle de statuts mission (Flat Checker · 28/04/2026)
+-- 5 statuts UI dérivés : à planifier / planifié / finalisée / infructueuse / annulée.
+-- Au niveau SQL : 4 valeurs (à planifier est dérivé de date_planifiee IS NULL).
+-- + nouvelle action "Infructueuse" (tech déplacé mais EDL pas réalisé).
+-- + suppression statut_rdv (pas d'app locataire en V1).
+-- ============================================================
+-- 1. Ajouter "infructueuse" au CHECK statut
+ALTER TABLE mission DROP CONSTRAINT IF EXISTS mission_statut_check;
+ALTER TABLE mission ADD CONSTRAINT mission_statut_check
+  CHECK (statut IN ('planifiee', 'terminee', 'infructueuse', 'annulee'));
+
+-- 2. Champs dédiés à l'action Infructueuse
+ALTER TABLE mission ADD COLUMN IF NOT EXISTS motif_infructueux TEXT;
+ALTER TABLE mission ADD COLUMN IF NOT EXISTS infructueuse_at TIMESTAMPTZ;
+
+-- 3. Drop statut_rdv (et son timestamp). Pas d'app locataire = pas d'état RDV.
+--    La validation du créneau se fait à l'oral / mail hors plateforme.
+ALTER TABLE mission DROP COLUMN IF EXISTS statut_rdv;
+ALTER TABLE mission DROP COLUMN IF EXISTS statut_rdv_updated_at;
+
+-- ============================================================
+-- MIGRATION: super-admin P0 controls (avr. 2026)
+-- Désactivation globale d'un utilisateur (différent de workspace_user.est_actif
+-- qui est par appartenance). Suspension de workspace avec motif tracé.
+-- ============================================================
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS est_actif BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE utilisateur ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_utilisateur_actif ON utilisateur(est_actif) WHERE est_actif = false;
+
+ALTER TABLE workspace ADD COLUMN IF NOT EXISTS suspended_reason TEXT;
+ALTER TABLE workspace ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ;
+
+-- ============================================================
+-- TABLE: email_template (Cadrage FC §6 · 28/04/2026)
+-- Templates personnalisables par workspace pour les mails transactionnels.
+-- Code = identifiant logique (mission_planifiee, mission_creneau_modifie,
+-- technicien_invite, mission_tech_assigne). Si pas de ligne pour un (workspace,
+-- code), on retombe sur le template par défaut codé en TS (default-templates.ts).
+-- Les variables {{xxx}} sont substituées au render. Édition structurée :
+-- header + footer fixes (mis dans le wrapper côté serveur), seul body_html éditable.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS email_template (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES workspace(id) ON DELETE CASCADE,
+  code VARCHAR(60) NOT NULL,
+  sujet VARCHAR(255) NOT NULL,
+  body_html TEXT NOT NULL,
+  -- Snapshot des variables disponibles (référentiel, pas validation stricte) ;
+  -- l'éditeur s'en sert pour proposer l'autocomplétion à l'admin.
+  variables_dispo JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(workspace_id, code)
+);
+CREATE INDEX IF NOT EXISTS idx_email_template_workspace ON email_template(workspace_id);

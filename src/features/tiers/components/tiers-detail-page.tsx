@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Archive, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText, IdentificationCard, SpinnerGap, Check } from '@phosphor-icons/react'
+import { Trash, ArrowCounterClockwise, PencilSimple, Warning, BuildingOffice, User, CaretUp, CaretDown, House, Briefcase, ClipboardText, Plus, X, MagnifyingGlass, FileText, IdentificationCard, SpinnerGap, Check } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -19,8 +19,9 @@ import { useRecentItems } from 'src/hooks/use-recent-items'
 import { CreateTiersModal } from './create-tiers-modal'
 import { api } from 'src/lib/api-client'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import { formatDate } from '../../../lib/formatters'
-import { getStatutAffichage, statutAffichageColors, statutAffichageLabels } from '../../missions/types'
+import { getStatutMission, statutMissionColors, statutMissionLabels } from '../../missions/types'
 
 /* ── Fonction labels ── */
 const FONCTION_OPTIONS = [
@@ -64,20 +65,29 @@ export function TiersDetailPage() {
   const updateMutation = useUpdateTiers()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
+  // Retours FC avril 2026 :
+  // - Plus de date_naissance ni procuration sur la fiche tiers
+  // - Adresse uniquement pour PM (siège social)
+  // - Représentant PM : split prénom + nom (UI), persisté en concat dans representant_nom
   const [formData, setFormData] = useState({
     nom: '', prenom: '', raison_sociale: '', type_personne: 'physique' as string,
     email: '', tel: '', adresse: '', code_postal: '', ville: '',
-    siren: '', date_naissance: '', representant_nom: '', notes: '',
+    siren: '', representant_prenom: '', representant_nom: '', notes: '',
   })
   const [saving, setSaving] = useState(false)
 
   function tiersToForm(t: typeof tiers) {
+    // Split representant_nom en prenom + nom (espace = séparateur, premier mot = prénom)
+    const repFull = (t?.representant_nom || '').trim()
+    const repParts = repFull.split(/\s+/)
+    const repPrenom = repParts.length > 1 ? repParts[0] : ''
+    const repNom = repParts.length > 1 ? repParts.slice(1).join(' ') : repFull
     return {
       nom: t?.nom || '', prenom: t?.prenom || '', raison_sociale: t?.raison_sociale || '',
       type_personne: t?.type_personne || 'physique', email: t?.email || '', tel: t?.tel || '',
       adresse: t?.adresse || '', code_postal: t?.code_postal || '', ville: t?.ville || '',
-      siren: t?.siren || '', date_naissance: t?.date_naissance || '',
-      representant_nom: t?.representant_nom || '', notes: t?.notes || '',
+      siren: t?.siren || '',
+      representant_prenom: repPrenom, representant_nom: repNom, notes: t?.notes || '',
     }
   }
 
@@ -101,10 +111,17 @@ export function TiersDetailPage() {
 
   async function handleArchive() {
     if (!id) return
-    try {
-      await updateMutation.mutateAsync({ id, est_archive: !tiers!.est_archive })
-      toast.success(tiers!.est_archive ? 'Tiers restauré' : 'Tiers archivé')
-    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    if (tiers!.est_archive) {
+      try {
+        await updateMutation.mutateAsync({ id, est_archive: false })
+        toast.success('Tiers restauré')
+      } catch (err: any) { toast.error(err.message || 'Erreur') }
+      return
+    }
+    undoableToast({
+      message: 'Tiers supprimé',
+      run: () => updateMutation.mutateAsync({ id, est_archive: true }),
+    })
   }
 
   function handleCancel() {
@@ -116,15 +133,23 @@ export function TiersDetailPage() {
     if (!hasChanges) { setEditing(false); return }
     setSaving(true)
     try {
+      // Concat prénom + nom du représentant (PM uniquement)
+      const isPM = formData.type_personne === 'morale'
+      const repFull = isPM
+        ? [formData.representant_prenom.trim(), formData.representant_nom.trim()].filter(Boolean).join(' ').trim() || null
+        : null
+      // Adresse uniquement pour PM (PP : pas d'adresse)
+      const includeAdresse = isPM
       await updateMutation.mutateAsync({
         id: tiers!.id,
         nom: formData.nom, prenom: formData.prenom || null,
         raison_sociale: formData.raison_sociale || null,
         email: formData.email || null, tel: formData.tel || null,
-        adresse: formData.adresse || null, code_postal: formData.code_postal || null,
-        ville: formData.ville || null, siren: formData.siren || null,
-        date_naissance: formData.date_naissance || null,
-        representant_nom: formData.representant_nom || null,
+        adresse: includeAdresse ? (formData.adresse || null) : null,
+        code_postal: includeAdresse ? (formData.code_postal || null) : null,
+        ville: includeAdresse ? (formData.ville || null) : null,
+        siren: formData.siren || null,
+        representant_nom: repFull,
         notes: formData.notes || null,
       })
       toast.success('Tiers mis à jour')
@@ -173,7 +198,7 @@ export function TiersDetailPage() {
                   {roles.map(r => (
                     <span key={r} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{r}</span>
                   ))}
-                  {tiers.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
+                  {tiers.est_archive && <Badge variant="destructive" className="text-xs">Supprimé</Badge>}
                 </div>
                 <div className="flex items-center gap-5 mt-2 text-xs text-muted-foreground">
                   {tiers.email && <span className="inline-flex items-center gap-1.5">📧 {tiers.email}</span>}
@@ -196,7 +221,7 @@ export function TiersDetailPage() {
                 </>
               )}
               <Button variant="outline" size="sm" className={tiers.est_archive ? '' : 'text-destructive hover:text-destructive'} onClick={() => setShowArchiveConfirm(true)}>
-                {tiers.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+                {tiers.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Trash className="h-3.5 w-3.5" /> Supprimer</>}
               </Button>
             </div>
           </div>
@@ -204,7 +229,7 @@ export function TiersDetailPage() {
         {tiers.est_archive && (
           <div className="border-t border-red-200 bg-red-50/60 px-7 py-3 flex items-center gap-3 dark:bg-red-950/30 dark:border-red-800">
             <Warning className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
-            <p className="text-xs text-red-800 dark:text-red-300">Ce tiers est archivé. Les modifications sont désactivées.</p>
+            <p className="text-xs text-red-800 dark:text-red-300">Ce tiers est supprimé. Les modifications sont désactivées.</p>
           </div>
         )}
       </div>
@@ -221,9 +246,6 @@ export function TiersDetailPage() {
               <FieldRow label="Prénom" editing={editing} value={tiers.prenom || '—'}>
                 <Input value={formData.prenom} onChange={(e) => setFormData(prev => ({ ...prev, prenom: e.target.value }))} className="h-9 text-sm" />
               </FieldRow>
-              <FieldRow label="Date de naissance" editing={editing} value={tiers.date_naissance || '—'}>
-                <Input type="date" value={formData.date_naissance} onChange={(e) => setFormData(prev => ({ ...prev, date_naissance: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-9 text-sm cursor-pointer" />
-              </FieldRow>
               <FieldRow label="Notes" editing={editing} value={tiers.notes || '—'} last>
                 <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={2} className="text-sm" />
               </FieldRow>
@@ -239,7 +261,17 @@ export function TiersDetailPage() {
               <FieldRow label="SIREN" editing={editing} value={tiers.siren || '—'} mono>
                 <Input value={formData.siren} onChange={(e) => setFormData(prev => ({ ...prev, siren: e.target.value }))} className="h-9 text-sm font-mono" />
               </FieldRow>
-              <FieldRow label="Représentant" editing={editing} value={tiers.representant_nom || '—'}>
+              <FieldRow label="Prénom du représentant" editing={editing} value={(() => {
+                const parts = (tiers.representant_nom || '').trim().split(/\s+/)
+                return parts.length > 1 ? parts[0] : '—'
+              })()}>
+                <Input value={formData.representant_prenom} onChange={(e) => setFormData(prev => ({ ...prev, representant_prenom: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Nom du représentant" editing={editing} value={(() => {
+                const repFull = (tiers.representant_nom || '').trim()
+                const parts = repFull.split(/\s+/)
+                return parts.length > 1 ? parts.slice(1).join(' ') : (repFull || '—')
+              })()}>
                 <Input value={formData.representant_nom} onChange={(e) => setFormData(prev => ({ ...prev, representant_nom: e.target.value }))} className="h-9 text-sm" />
               </FieldRow>
               <FieldRow label="Notes" editing={editing} value={tiers.notes || '—'} last>
@@ -249,23 +281,27 @@ export function TiersDetailPage() {
           )}
         </CardBlock>
 
-        {/* Contact & Adresse */}
-        <CardBlock title="Contact & Adresse" icon={IdentificationCard}>
+        {/* Contact (+ Adresse pour PM uniquement). PP : pas d'adresse renseignée à la création (retours FC) */}
+        <CardBlock title={tiers.type_personne === 'morale' ? 'Contact & Adresse' : 'Contact'} icon={IdentificationCard}>
           <FieldRow label="Email" editing={editing} value={tiers.email || '—'}>
             <Input type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} className="h-9 text-sm" />
           </FieldRow>
-          <FieldRow label="Téléphone" editing={editing} value={tiers.tel || '—'}>
+          <FieldRow label="Téléphone" editing={editing} value={tiers.tel || '—'} last={tiers.type_personne !== 'morale'}>
             <Input value={formData.tel} onChange={(e) => setFormData(prev => ({ ...prev, tel: e.target.value }))} className="h-9 text-sm" />
           </FieldRow>
-          <FieldRow label="Adresse" editing={editing} value={tiers.adresse || '—'}>
-            <Input value={formData.adresse} onChange={(e) => setFormData(prev => ({ ...prev, adresse: e.target.value }))} className="h-9 text-sm" />
-          </FieldRow>
-          <FieldRow label="Code postal" editing={editing} value={tiers.code_postal || '—'}>
-            <Input value={formData.code_postal} onChange={(e) => setFormData(prev => ({ ...prev, code_postal: e.target.value }))} className="h-9 text-sm" />
-          </FieldRow>
-          <FieldRow label="Ville" editing={editing} value={tiers.ville || '—'} last>
-            <Input value={formData.ville} onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))} className="h-9 text-sm" />
-          </FieldRow>
+          {tiers.type_personne === 'morale' && (
+            <>
+              <FieldRow label="Adresse" editing={editing} value={tiers.adresse || '—'}>
+                <Input value={formData.adresse} onChange={(e) => setFormData(prev => ({ ...prev, adresse: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Code postal" editing={editing} value={tiers.code_postal || '—'}>
+                <Input value={formData.code_postal} onChange={(e) => setFormData(prev => ({ ...prev, code_postal: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+              <FieldRow label="Ville" editing={editing} value={tiers.ville || '—'} last>
+                <Input value={formData.ville} onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))} className="h-9 text-sm" />
+              </FieldRow>
+            </>
+          )}
         </CardBlock>
       </div>
 
@@ -298,11 +334,11 @@ export function TiersDetailPage() {
       <ConfirmDialog
         open={showArchiveConfirm}
         onOpenChange={setShowArchiveConfirm}
-        title={tiers.est_archive ? 'Restaurer ce tiers ?' : 'Archiver ce tiers ?'}
+        title={tiers.est_archive ? 'Restaurer ce tiers ?' : 'Supprimer ce tiers ?'}
         description={tiers.est_archive
           ? 'Le tiers redeviendra visible dans les listes et les recherches.'
           : 'Le tiers sera masqué des listes, recherches et pickers. Les lots et missions liés restent consultables.'}
-        confirmLabel={tiers.est_archive ? 'Restaurer' : 'Archiver'}
+        confirmLabel={tiers.est_archive ? 'Restaurer' : 'Supprimer'}
         variant={tiers.est_archive ? 'default' : 'destructive'}
         onConfirm={handleArchive}
       />
@@ -908,9 +944,9 @@ function MissionsSection({ tiersId }: { tiersId: string }) {
             <div className="text-muted-foreground text-[13px]">
               {m.date_planifiee ? formatDate(m.date_planifiee) : '--'}
             </div>
-            {(() => { const a = getStatutAffichage(m); return (
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutAffichageColors[a]}`}>
-                {statutAffichageLabels[a]}
+            {(() => { const a = getStatutMission(m); return (
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statutMissionColors[a]}`}>
+                {statutMissionLabels[a]}
               </span>
             ) })()}
           </div>

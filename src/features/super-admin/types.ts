@@ -42,6 +42,8 @@ export interface SuperAdminWorkspaceDetail extends SuperAdminWorkspaceRow {
   code_postal: string | null
   ville: string | null
   couleur_primaire: string | null
+  suspended_reason: string | null
+  suspended_at: string | null
   lots_count: number
   edl_signed_count: number
   members: WorkspaceMember[]
@@ -54,6 +56,7 @@ export interface SuperAdminUserRow {
   nom: string
   prenom: string
   is_super_admin: boolean
+  est_actif: boolean
   last_login_at: string | null
   created_at: string
   memberships: Array<{
@@ -67,6 +70,7 @@ export interface SuperAdminUserRow {
 export interface SuperAdminUserDetail extends SuperAdminUserRow {
   tel: string | null
   avatar_url: string | null
+  deactivated_at: string | null
   memberships: Array<{
     workspace_id: string
     workspace_nom: string

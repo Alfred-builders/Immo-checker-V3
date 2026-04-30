@@ -6,6 +6,7 @@ export type NotificationType =
   | 'mission_created'
   | 'mission_cancelled'
   | 'mission_completed'
+  | 'mission_infructueuse'
   | 'technicien_accepted'
   | 'technicien_refused'
   | 'invitation_accepted'

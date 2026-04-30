@@ -6,7 +6,7 @@ import {
   UsersThree, IdentificationCard, Ruler, Lightning, ArrowSquareOut,
   ChatText, ClipboardText, FilePdf,
   BuildingApartment, Storefront, Garage, DoorOpen,
-  SpinnerGap, Check,
+  SpinnerGap, Check, Trash,
 } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
@@ -18,13 +18,15 @@ import { Switch } from 'src/components/ui/switch'
 import { FloatingSaveBar } from '../../../components/shared/floating-save-bar'
 import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
 import { useLotDetail, useUpdateLot, useSearchTiers, useLinkProprietaire, useUnlinkProprietaire } from '../api'
+import { formatBatimentLabel, formatLotLabel } from '../labels'
 import { useRecentItems } from 'src/hooks/use-recent-items'
 import { useMissions } from '../../missions/api'
-import { statutAffichageLabels, statutAffichageColors, sensLabels, sensColors, getStatutAffichage } from '../../missions/types'
+import { statutMissionLabels, statutMissionColors, sensLabels, sensColors, getStatutMission } from '../../missions/types'
 import { CreateMissionModal } from '../../missions/components/create-mission-modal'
 import { CreateTiersModal } from '../../tiers/components/create-tiers-modal'
 import { formatDate } from '../../../lib/formatters'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 
 const typeBienLabels: Record<string, string> = {
   appartement: 'Appartement', maison: 'Maison', studio: 'Studio',
@@ -85,23 +87,23 @@ export function LotDetailPage() {
     addRecent({
       id: lot.id,
       type: 'lot',
-      label: lot.designation,
-      subtitle: lot.batiment?.designation,
+      label: formatLotLabel(lot),
+      subtitle: lot.batiment ? formatBatimentLabel(lot.batiment) : undefined,
       to: `/app/patrimoine/lots/${lot.id}`,
     })
   }, [lot?.id, addRecent])
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
-    if (lot?.designation && !(location.state as any)?.breadcrumbs) {
+    if (lot && !(location.state as any)?.breadcrumbs) {
       const crumbs: { label: string; href?: string }[] = [{ label: 'Parc immobilier', href: '/app/patrimoine' }]
-      if (lot.batiment_id && lot.batiment?.designation) {
-        crumbs.push({ label: lot.batiment.designation, href: `/app/patrimoine/batiments/${lot.batiment_id}` })
+      if (lot.batiment_id && lot.batiment) {
+        crumbs.push({ label: formatBatimentLabel(lot.batiment), href: `/app/patrimoine/batiments/${lot.batiment_id}` })
       }
-      crumbs.push({ label: lot.designation })
+      crumbs.push({ label: formatLotLabel(lot) })
       navigate(location.pathname, { replace: true, state: { breadcrumbs: crumbs } })
     }
-  }, [lot?.designation])
+  }, [lot?.id, lot?.designation])
   const updateMutation = useUpdateLot()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
 
@@ -149,10 +151,17 @@ export function LotDetailPage() {
 
   async function handleArchive() {
     if (!id) return
-    try {
-      await updateMutation.mutateAsync({ id, est_archive: !lot!.est_archive })
-      toast.success(lot!.est_archive ? 'Lot restauré' : 'Lot archivé')
-    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    if (lot!.est_archive) {
+      try {
+        await updateMutation.mutateAsync({ id, est_archive: false })
+        toast.success('Lot restauré')
+      } catch (err: any) { toast.error(err.message || 'Erreur') }
+      return
+    }
+    undoableToast({
+      message: 'Lot supprimé',
+      run: () => updateMutation.mutateAsync({ id, est_archive: true }),
+    })
   }
 
   function handleCancel() {
@@ -165,7 +174,7 @@ export function LotDetailPage() {
     setSaving(true)
     try {
       await updateMutation.mutateAsync({
-        id: lot!.id, designation: formData.designation, type_bien: formData.type_bien,
+        id: lot!.id, designation: formData.designation.trim() || null, type_bien: formData.type_bien,
         type_bien_precision: formData.type_bien === 'autre' ? (formData.type_bien_precision.trim() || null) : null,
         etage: formData.etage || null, surface: formData.surface ? parseFloat(formData.surface) : null,
         nb_pieces: formData.nb_pieces || null, meuble: formData.meuble,
@@ -196,13 +205,13 @@ export function LotDetailPage() {
                 </div>
               )})()}
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{lot.designation}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{formatLotLabel(lot)}</h1>
                 <div className="flex items-center gap-2 mt-1.5">
                   {lot.meuble && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700">Meublé</span>}
-                  {lot.est_archive && <Badge variant="destructive" className="text-xs">Archivé</Badge>}
+                  {lot.est_archive && <Badge variant="destructive" className="text-xs">Supprimé</Badge>}
                 </div>
                 <div className="flex items-center gap-5 mt-2 text-xs text-muted-foreground">
-                  {lot.batiment && <span className="inline-flex items-center gap-1.5"><BuildingOffice className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{lot.batiment.designation}</span>}
+                  {lot.batiment && <span className="inline-flex items-center gap-1.5"><BuildingOffice className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{formatBatimentLabel(lot.batiment)}</span>}
                   {lot.batiment?.adresse && <span className="inline-flex items-center gap-1.5">{lot.batiment.adresse.rue}, {lot.batiment.adresse.ville}</span>}
                 </div>
               </div>
@@ -221,7 +230,7 @@ export function LotDetailPage() {
                 </>
               )}
               <Button variant="outline" size="sm" className={lot.est_archive ? '' : 'text-destructive hover:text-destructive'} onClick={() => setShowArchiveConfirm(true)}>
-                {lot.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Archive className="h-3.5 w-3.5" /> Archiver</>}
+                {lot.est_archive ? <><ArrowCounterClockwise className="h-3.5 w-3.5" /> Restaurer</> : <><Trash className="h-3.5 w-3.5" /> Supprimer</>}
               </Button>
             </div>
           </div>
@@ -229,7 +238,7 @@ export function LotDetailPage() {
         {lot.est_archive && (
           <div className="border-t border-red-200 bg-red-50/60 px-7 py-3 flex items-center gap-3">
             <Warning className="h-4 w-4 text-red-600 shrink-0" />
-            <p className="text-xs text-red-800">Ce lot est archivé. Les modifications sont désactivées.</p>
+            <p className="text-xs text-red-800">Ce lot est supprimé. Les modifications sont désactivées.</p>
           </div>
         )}
       </div>
@@ -238,8 +247,8 @@ export function LotDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Identification */}
         <CardBlock title="Identification" icon={IdentificationCard}>
-          <FieldRow label="Désignation" editing={editing} value={lot.designation}>
-            <Input value={formData.designation} onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} className="h-9 text-sm" />
+          <FieldRow label="Désignation" editing={editing} value={lot.designation || '—'}>
+            <Input value={formData.designation} onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} placeholder="Optionnel" className="h-9 text-sm" />
           </FieldRow>
           <FieldRow label="Référence" editing={editing} value={lot.reference_interne || '—'} mono>
             <Input value={formData.reference_interne} onChange={(e) => setFormData(prev => ({ ...prev, reference_interne: e.target.value }))} className="h-9 text-sm" />
@@ -384,9 +393,9 @@ export function LotDetailPage() {
 
       <FloatingSaveBar visible={editing} hasChanges={hasChanges} onSave={handleSave} onCancel={handleCancel} saving={saving} />
       <ConfirmDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}
-        title={lot.est_archive ? 'Restaurer ce lot ?' : 'Archiver ce lot ?'}
+        title={lot.est_archive ? 'Restaurer ce lot ?' : 'Supprimer ce lot ?'}
         description={lot.est_archive ? 'Le lot redeviendra visible dans les listes et les recherches.' : 'Le lot sera masqué des listes, recherches et pickers. Les missions existantes restent consultables.'}
-        confirmLabel={lot.est_archive ? 'Restaurer' : 'Archiver'}
+        confirmLabel={lot.est_archive ? 'Restaurer' : 'Supprimer'}
         variant={lot.est_archive ? 'default' : 'destructive'}
         onConfirm={handleArchive}
       />
@@ -682,7 +691,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
                 {missions.map((m) => (
                   <tr key={m.id} className="border-b border-border/20 hover:bg-muted/20 cursor-pointer transition-colors" onClick={() => navigate(`/app/missions/${m.id}`, { state: { breadcrumbs: [{ label: 'Missions', href: '/app/missions' }, { label: m.reference || 'Mission' }] } })}>
                     <td className="px-4 py-3 font-mono font-semibold text-[12px]">{m.reference}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{formatDate(m.date_planifiee)}</td>
+                    <td className="px-4 py-3">{m.date_planifiee ? <span className="text-muted-foreground">{formatDate(m.date_planifiee)}</span> : <span className="italic text-orange-600 dark:text-orange-400">À planifier</span>}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
                         {m.edl_types?.map((type: string) => (
@@ -694,7 +703,7 @@ function MissionsTable({ lotId, isArchived }: { lotId: string; isArchived: boole
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{m.technicien_nom || '—'}</td>
                     <td className="px-4 py-3">
-                      {(() => { const a = getStatutAffichage(m); return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
+                      {(() => { const a = getStatutMission(m); return <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${statutMissionColors[a]}`}>{statutMissionLabels[a]}</span> })()}
                     </td>
                   </tr>
                 ))}

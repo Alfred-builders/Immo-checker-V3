@@ -5,40 +5,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
 import { TimePicker } from 'src/components/ui/time-picker'
+import { DurationPicker } from 'src/components/ui/duration-picker'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
-import { Switch } from 'src/components/ui/switch'
 import { RecordPicker } from 'src/components/shared/record-picker'
-import { CreateLotModal } from 'src/features/patrimoine/components/create-lot-modal'
+import { DatePicker } from 'src/components/shared/date-picker'
+import { TechPicker } from 'src/components/shared/tech-picker'
+import { MissionLotPicker } from './mission-lot-picker'
 import { CreateTiersModal } from 'src/features/tiers/components/create-tiers-modal'
 import { useCreateMission, useWorkspaceTechnicians, useTechnicianConflicts } from '../api'
+import { useLotDetail } from 'src/features/patrimoine/api'
 import { toast } from 'sonner'
 import type { SensEDL, TechnicianConflicts } from '../types'
 
 // We'll use a simple lot search hook from patrimoine
 // In real app, this would come from a shared API
 import { api } from 'src/lib/api-client'
+import { addMinutesToTime } from 'src/lib/time'
 import { useQuery, useQueries } from '@tanstack/react-query'
-
-type LotRow = { id: string; designation: string; type_bien: string; batiment_designation: string; adresse: string | null; proprietaire_nom: string | null; etage: string | null }
-
-function useLotSearch(search: string) {
-  return useQuery({
-    queryKey: ['lots-search', search],
-    queryFn: () => api<{ data: LotRow[] }>(`/lots?search=${encodeURIComponent(search)}&limit=20`),
-    enabled: search.length > 0,
-  })
-}
-
-function useRecentLots(enabled: boolean) {
-  return useQuery({
-    queryKey: ['lots-recent'],
-    queryFn: () => api<{ data: LotRow[] }>(`/lots?sort=recent&limit=3`),
-    enabled,
-    staleTime: 30_000,
-  })
-}
 
 type TiersRow = { id: string; nom: string; prenom?: string; raison_sociale?: string; type: string; email?: string }
 
@@ -103,13 +88,12 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   const technicians = techData ?? []
 
   // Form state
-  const [lotId, setLotId] = useState(preselectedLotId || '')
-  const [lotSearch, setLotSearch] = useState('')
+  const [lotId, setLotId] = useState<string | null>(preselectedLotId || null)
   const [sens, setSens] = useState<'entree' | 'sortie' | 'entree_sortie'>('entree')
-  const [avecInventaire, setAvecInventaire] = useState(false)
   const [datePlanifiée, setDatePlanifiée] = useState(preselectedDate || '')
   const [heureDebut, setHeureDebut] = useState('')
-  const [heureFin, setHeureFin] = useState('')
+  const [dureeMin, setDureeMin] = useState<number | null>(null)
+  const heureFin = heureDebut && dureeMin ? (addMinutesToTime(heureDebut, dureeMin) ?? '') : ''
   const [locataires, setLocataires] = useState<Locataire[]>([])
   const [typeBail, setTypeBail] = useState<'individuel' | 'collectif'>('individuel')
   const [technicienId, setTechnicienId] = useState('')
@@ -117,15 +101,11 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   const [tiersSearch, setTiersSearch] = useState('')
   const [showLocatairePicker, setShowLocatairePicker] = useState(false)
   const [locataireRole, setLocataireRole] = useState<'entrant' | 'sortant'>('entrant')
-  const [showCreateLot, setShowCreateLot] = useState(false)
-  const [createdLotLabel, setCreatedLotLabel] = useState('')
   const [showCreateLocataire, setShowCreateLocataire] = useState(false)
 
-  const { data: lotData } = useLotSearch(lotSearch)
-  const { data: recentLotData } = useRecentLots(open && lotSearch.length === 0)
-  const lots: LotRow[] = lotSearch.length > 0
-    ? (lotData?.data ?? [])
-    : (recentLotData?.data ?? [])
+  // Inventaire auto-déduit : un lot meublé requiert un inventaire mobilier.
+  const { data: lotDetail } = useLotDetail(lotId ?? undefined)
+  const avecInventaire = !!lotDetail?.meuble
 
   const { data: tiersData } = useTiersSearch(tiersSearch)
   const { data: recentTiersData } = useRecentTiers(open && showLocatairePicker && tiersSearch.length === 0)
@@ -145,20 +125,17 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   const allTechConflicts = useAllTechConflicts(technicians, datePlanifiée || undefined)
 
   function reset() {
-    setLotId(preselectedLotId || '')
-    setLotSearch('')
+    setLotId(preselectedLotId || null)
     setSens('entree')
-    setAvecInventaire(false)
     setDatePlanifiée(preselectedDate || '')
     setHeureDebut('')
-    setHeureFin('')
+    setDureeMin(null)
     setLocataires([])
     setTypeBail('individuel')
     setTechnicienId('')
     setCommentaire('')
     setTiersSearch('')
     setShowLocatairePicker(false)
-    setCreatedLotLabel('')
     setShowCreateLocataire(false)
   }
 
@@ -189,14 +166,6 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
       toast.error('Veuillez sélectionner un lot')
       return
     }
-    if (!datePlanifiée) {
-      toast.error('Veuillez saisir une date')
-      return
-    }
-    if (heureDebut && heureFin && heureFin <= heureDebut) {
-      toast.error('L\'heure de fin doit être après l\'heure de début')
-      return
-    }
     if (locataires.length >= 2 && !typeBail) {
       toast.error('Veuillez choisir le type de bail (individuel ou collectif)')
       return
@@ -207,7 +176,7 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
         lot_id: lotId,
         sens: sens as SensEDL | 'entree_sortie',
         avec_inventaire: avecInventaire,
-        date_planifiee: datePlanifiée,
+        date_planifiee: datePlanifiée || undefined,
         heure_debut: heureDebut || undefined,
         heure_fin: heureFin || undefined,
         technicien_id: technicienId || undefined,
@@ -227,18 +196,6 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
     }
   }
 
-  const isShowingRecent = lotSearch.length === 0 && lots.length > 0
-  const lotOptions = [
-    // Include the just-created lot so the picker can display it
-    ...(lotId && createdLotLabel && !lots.some(l => l.id === lotId) ? [{ id: lotId, label: createdLotLabel, sublabel: 'Lot créé', meta: '' }] : []),
-    ...lots.map(l => ({
-      id: l.id,
-      label: l.designation,
-      sublabel: l.adresse ? `${l.batiment_designation} - ${l.adresse}` : l.batiment_designation,
-      meta: isShowingRecent ? 'Récent' : l.type_bien,
-    })),
-  ]
-
   /** Compute conflict label for a technician */
   function getTechConflictInfo(techId: string): { label: string; color: string } | null {
     if (!datePlanifiée) return null
@@ -256,68 +213,78 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nouvelle mission</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 1. Lot picker */}
+          {/* 1. Lot picker — recherche bâtiment puis lot */}
           <div className="space-y-1.5">
-            <Label className="text-xs">Lot *</Label>
-            <RecordPicker
-              options={lotOptions}
-              value={lotId || null}
-              onChange={(id) => setLotId(id || '')}
-              placeholder="Rechercher un lot..."
-              searchPlaceholder="Désignation, adresse..."
-              onSearch={setLotSearch}
-              isLoading={lotSearch.length > 0 && !lotData}
-              onCreateClick={() => setShowCreateLot(true)}
-              createLabel="Créer un lot"
+            <Label className="text-xs">Bâtiment & lot *</Label>
+            <MissionLotPicker
+              value={lotId}
+              onChange={setLotId}
+              preselectedLotId={preselectedLotId}
             />
           </div>
 
-          {/* 2. Sens */}
+          {/* 2. Type d'intervention */}
           <div className="space-y-1.5">
             <Label className="text-xs">Type d'intervention *</Label>
-            <div className="flex gap-2">
-              {(['entree', 'sortie', 'entree_sortie'] as const).map((s) => (
+            <div className="inline-flex h-9 p-0.5 bg-muted/60 rounded-lg w-full">
+              {(['sortie', 'entree', 'entree_sortie'] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setSens(s)}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+                  className={`flex-1 px-3 rounded-md text-[12.5px] font-semibold transition-all ${
                     sens === s
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                      : 'bg-card border-border/60 text-muted-foreground hover:border-border/80 hover:text-foreground'
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {s === 'entree' ? 'Entrée' : s === 'sortie' ? 'Sortie' : 'Entrée + Sortie'}
+                  {s === 'entree' ? 'Entrée' : s === 'sortie' ? 'Sortie' : 'Sortie + Entrée'}
                 </button>
               ))}
             </div>
+            {lotDetail && (
+              <p className="text-[11px] text-muted-foreground/70">
+                {avecInventaire ? (
+                  <>Lot meublé → un <span className="font-semibold text-foreground/80">inventaire mobilier</span> sera ajouté à la mission.</>
+                ) : (
+                  <>Lot vide → pas d'inventaire mobilier requis.</>
+                )}
+              </p>
+            )}
           </div>
 
-          {/* 3. Avec inventaire */}
-          <div className="flex items-center justify-between py-2">
-            <Label className="text-xs">Avec inventaire</Label>
-            <Switch
-              checked={avecInventaire}
-              onCheckedChange={setAvecInventaire}
-            />
-          </div>
-
-          {/* 4. Date */}
+          {/* 3. Date + Heure début + Durée — même ligne */}
           <div className="space-y-1.5">
-            <Label className="text-xs">Date *</Label>
-            <Input
-              type="date"
-              value={datePlanifiée}
-              onChange={(e) => setDatePlanifiée(e.target.value)}
-              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
-              required
-              className="h-9 cursor-pointer"
-            />
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Date</Label>
+                <DatePicker
+                  value={datePlanifiée}
+                  onChange={setDatePlanifiée}
+                  modal
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Heure début</Label>
+                <TimePicker value={heureDebut} onChange={setHeureDebut} modal />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Durée</Label>
+                <DurationPicker value={dureeMin} onChange={setDureeMin} />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground/70">
+              {!datePlanifiée
+                ? <>Laisser la date vide pour créer la mission en <span className="font-semibold text-foreground/80">À planifier</span>.</>
+                : heureDebut && dureeMin
+                ? <>Heure de fin : <span className="font-semibold text-foreground/80">{heureFin}</span></>
+                : 'Renseigne l\'heure de début et la durée pour calculer l\'heure de fin.'}
+            </p>
             {datePlanifiée && datePlanifiée < new Date().toISOString().split('T')[0] && (
               <div className="flex items-start gap-2 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
                 <Warning className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" weight="fill" />
@@ -326,18 +293,6 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                 </p>
               </div>
             )}
-          </div>
-
-          {/* 5. Heures */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Heure début</Label>
-              <TimePicker value={heureDebut} onChange={setHeureDebut} modal />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Heure fin</Label>
-              <TimePicker value={heureFin} onChange={setHeureFin} modal />
-            </div>
           </div>
 
           {/* 6. Locataires */}
@@ -470,37 +425,19 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
             )}
           </div>
 
-          {/* 7. Technicien */}
+          {/* 7. Technicien — picker comme dans le calendrier dashboard */}
           <div className="border-t border-border/60 pt-4 space-y-1.5">
             <Label className="text-xs">Technicien</Label>
-            <Select value={technicienId} onValueChange={setTechnicienId} disabled={techLoading}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder={techLoading ? 'Chargement...' : 'Sélectionner un technicien...'} />
-              </SelectTrigger>
-              <SelectContent>
-                {technicians.map((t) => {
-                  const conflictInfo = getTechConflictInfo(t.id)
-                  return (
-                    <SelectItem key={t.id} value={t.id}>
-                      <span className={`flex items-center gap-2 ${conflictInfo ? 'text-muted-foreground' : ''}`}>
-                        <span className={conflictInfo ? 'text-muted-foreground' : ''}>
-                          {t.prenom} {t.nom}
-                        </span>
-                        {conflictInfo && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${
-                            conflictInfo.color === 'text-muted-foreground'
-                              ? 'bg-muted/30 text-muted-foreground'
-                              : 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400'
-                          }`}>
-                            {conflictInfo.label}
-                          </span>
-                        )}
-                      </span>
-                    </SelectItem>
-                  )
-                })}
-              </SelectContent>
-            </Select>
+            <TechPicker
+              technicians={technicians}
+              value={technicienId || undefined}
+              onSelect={(id) => setTechnicienId(id === technicienId ? '' : id)}
+              placeholder={techLoading ? 'Chargement…' : 'Sélectionner un technicien…'}
+              date={datePlanifiée || undefined}
+              heureDebut={heureDebut || undefined}
+              heureFin={heureFin || undefined}
+              className="w-full"
+            />
 
             {/* Conflict warning */}
             {hasConflicts && (
@@ -517,10 +454,25 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
                           const creneau = m.heure_debut
                             ? `${m.heure_debut.slice(0, 5)}${m.heure_fin ? `–${m.heure_fin.slice(0, 5)}` : ''}`
                             : 'horaire non défini'
+                          const TYPE_LABELS: Record<string, string> = {
+                            appartement: 'Appart.', maison: 'Maison', studio: 'Studio',
+                            local_commercial: 'Local', parking: 'Parking', cave: 'Cave', autre: 'Lot',
+                          }
+                          const typeShort = m.lot?.type_bien ? (TYPE_LABELS[m.lot.type_bien] ?? m.lot.type_bien) : null
+                          const lotMeta = [
+                            typeShort,
+                            m.lot?.nb_pieces,
+                            m.lot?.meuble === true ? 'meublé' : m.lot?.meuble === false ? 'vide' : null,
+                          ].filter(Boolean).join(' · ')
                           return (
                             <li key={m.id} className="flex items-baseline gap-1.5">
                               <span className="font-mono font-semibold shrink-0">{m.reference}</span>
                               <span className="text-amber-700 dark:text-amber-400 shrink-0">· {creneau}</span>
+                              {lotMeta && (
+                                <span className="text-amber-700/80 dark:text-amber-400/80 shrink-0">
+                                  · {lotMeta}
+                                </span>
+                              )}
                               {m.adresse && (
                                 <span className="text-amber-700/80 dark:text-amber-400/80 truncate" title={m.adresse}>
                                   · {m.adresse}
@@ -581,19 +533,6 @@ export function CreateMissionModal({ open, onOpenChange, preselectedLotId, prese
       }}
     />
 
-    <CreateLotModal
-      open={showCreateLot}
-      onOpenChange={setShowCreateLot}
-      onCreated={async (newLotId) => {
-        setLotId(newLotId)
-        setShowCreateLot(false)
-        // Fetch lot name to display in picker
-        try {
-          const lot = await api<any>(`/lots/${newLotId}`)
-          setCreatedLotLabel(lot.designation || 'Nouveau lot')
-        } catch { setCreatedLotLabel('Nouveau lot') }
-      }}
-    />
     </>
   )
 }

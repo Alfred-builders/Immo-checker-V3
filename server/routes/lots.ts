@@ -3,7 +3,7 @@ import { z } from 'zod/v4'
 import { query } from '../db/index.js'
 import { verifyToken, requireRole } from '../middleware/auth.js'
 import { validate } from '../middleware/validate.js'
-import { sendSuccess, sendError } from '../utils/response.js'
+import { sendSuccess, sendList, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
 
 const router = Router()
@@ -14,8 +14,8 @@ router.use(requireRole('admin', 'gestionnaire'))
 router.get('/', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const { search, limit: limitParam, sort } = req.query
-    const limit = Math.min(parseInt(limitParam as string) || 50, 100)
+    const { search, limit: limitParam, sort, cursor } = req.query
+    const limit = Math.min(parseInt(limitParam as string) || 25, 100)
 
     let where = `l.workspace_id = $1 AND l.est_archive = false`
     const params: any[] = [workspaceId]
@@ -27,7 +27,13 @@ router.get('/', async (req, res) => {
       paramIndex++
     }
 
-    const orderBy = sort === 'recent' ? 'l.created_at DESC' : 'l.designation'
+    if (cursor) {
+      where += ` AND l.id > $${paramIndex}`
+      params.push(cursor)
+      paramIndex++
+    }
+
+    const orderBy = sort === 'recent' ? 'l.created_at DESC, l.id ASC' : 'l.designation ASC, l.id ASC'
 
     const sql = `
       SELECT l.id, l.designation, l.type_bien, l.etage, l.surface, l.meuble,
@@ -44,10 +50,14 @@ router.get('/', async (req, res) => {
       ORDER BY ${orderBy}
       LIMIT $${paramIndex}
     `
-    params.push(limit)
+    params.push(limit + 1)
 
     const result = await query(sql, params)
-    res.json({ data: result.rows })
+    const hasMore = result.rows.length > limit
+    const data = hasMore ? result.rows.slice(0, limit) : result.rows
+    const nextCursor = hasMore ? data[data.length - 1].id : undefined
+
+    sendList(res, data, { cursor: nextCursor, has_more: hasMore })
   } catch (error) {
     sendError(res, error)
   }
@@ -110,9 +120,11 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/lots — Create lot
+// designation is optional: when missing, the UI falls back to
+// "{type_bien} · étage {etage} · {emplacement_palier}" for display.
 const createLotSchema = z.object({
   batiment_id: z.uuid(),
-  designation: z.string().min(1).max(255),
+  designation: z.string().max(255).optional(),
   reference_interne: z.string().max(100).optional(),
   type_bien: z.enum(['appartement', 'maison', 'studio', 'local_commercial', 'parking', 'cave', 'autre']),
   type_bien_precision: z.string().max(100).optional(),
@@ -142,7 +154,7 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createLotSchema)
         nb_pieces, etage, emplacement_palier, surface, meuble, dpe_classe, ges_classe,
         num_cave, num_parking, commentaire, mandataire_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
-      [workspaceId, d.batiment_id, d.designation, d.reference_interne ?? null, d.type_bien, typeBienPrecision,
+      [workspaceId, d.batiment_id, d.designation ?? null, d.reference_interne ?? null, d.type_bien, typeBienPrecision,
        d.nb_pieces ?? null, d.etage ?? null, d.emplacement_palier ?? null,
        d.surface ?? null, d.meuble ?? false, d.dpe_classe ?? null, d.ges_classe ?? null,
        d.num_cave ?? null, d.num_parking ?? null, d.commentaire ?? null, d.mandataire_id ?? null]

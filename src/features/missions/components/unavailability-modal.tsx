@@ -8,6 +8,7 @@ import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Switch } from 'src/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
+import { DatePicker } from 'src/components/shared/date-picker'
 import {
   useIndisponibilite,
   useCreateIndisponibilite,
@@ -16,6 +17,7 @@ import {
   useWorkspaceTechnicians,
 } from '../api'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import type { RecurrenceConfig, IndisponibiliteTechnicien } from '../types'
 
 const FREQ_LABELS: Record<string, string> = {
@@ -193,16 +195,15 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
     }
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!editId) return
-    try {
-      await deleteMutation.mutateAsync(editId)
-      toast.success('Indisponibilité supprimée')
-      setShowDeleteConfirm(false)
-      onOpenChange(false)
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la suppression')
-    }
+    const id = editId
+    setShowDeleteConfirm(false)
+    onOpenChange(false)
+    undoableToast({
+      message: 'Indisponibilité supprimée',
+      run: () => deleteMutation.mutateAsync(id),
+    })
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending
@@ -248,24 +249,20 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Date début *</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                onChange={setDateDebut}
                 required
-                className="h-9 cursor-pointer"
+                modal
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Date fin</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                className="h-9 cursor-pointer"
+                onChange={setDateFin}
                 min={dateDebut}
+                modal
               />
             </div>
           </div>
@@ -387,13 +384,12 @@ export function UnavailabilityModal({ open, onOpenChange, editId, preselectedUse
                     />
                     <span className="text-xs text-foreground">Jusqu'au</span>
                     {recurrenceEnd === 'until' && (
-                      <Input
-                        type="date"
+                      <DatePicker
                         value={recurrenceUntil}
-                        onChange={(e) => setRecurrenceUntil(e.target.value)}
-                        onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
-                        className="h-7 text-xs cursor-pointer"
+                        onChange={setRecurrenceUntil}
                         min={dateDebut}
+                        className="h-7 text-xs"
+                        modal
                       />
                     )}
                   </label>

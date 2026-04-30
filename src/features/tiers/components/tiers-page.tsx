@@ -240,7 +240,7 @@ export function TiersPage() {
   ]
 
   return (
-    <div className="px-8 py-6 max-w-[1400px] mx-auto space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <CreateTiersModal open={showCreate} onOpenChange={setShowCreate} onCreated={(id) => navigate(`/app/tiers/${id}`)} />
 
       {/* Header */}
@@ -321,17 +321,23 @@ export function TiersPage() {
       {/* Table */}
       <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
        <div className="overflow-x-auto">
-        <div className="min-w-max">
-        {/* Dynamic header */}
-        <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
+        <div className="min-w-max w-full">
+        {/* Dynamic header — w-full + spacer fills remaining space on wide screens */}
+        <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20 w-full">
           {orderedColumns.filter(col => !col.label || visibleCols.includes(col.id)).map((col) => {
             const sortable = col.id !== 'avatar' && !!col.label
             const isActive = sortCol === col.id && sortable
             return (
               <div
                 key={col.id}
-                className={`relative shrink-0 ${col.align === 'center' ? 'text-center' : ''} ${sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
-                style={{ width: colWidths[col.id] ?? col.width, minWidth: col.minWidth ?? undefined }}
+                className={`relative ${col.align === 'center' ? 'text-center' : ''} ${sortable ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
+                style={(() => {
+                  const w = colWidths[col.id] ?? col.width
+                  // 'avatar' is a tiny non-sortable column — keep it fixed
+                  return col.id === 'avatar'
+                    ? { width: w, flexShrink: 0, minWidth: col.minWidth ?? undefined }
+                    : { flex: `${w} 0 ${w}px`, minWidth: col.minWidth ?? 40 }
+                })()}
                 onClick={() => sortable && handleSort(col.id)}
               >
                 <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
@@ -407,6 +413,9 @@ export function TiersPage() {
 
 // --- Cell renderers ---
 
+// Helper : style flex proportionnel pour que les colonnes se distribuent sur la largeur du tableau
+const flexCol = (w: number) => ({ flex: `${w} 0 ${w}px`, minWidth: 40 })
+
 function AvatarCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
     <div className="shrink-0 flex justify-center" style={{ width }}>
@@ -425,7 +434,7 @@ function NomCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
     ? t.raison_sociale || t.nom
     : `${t.prenom || ''} ${t.nom}`.trim()
   return (
-    <div className="shrink-0 min-w-0" style={{ width }}>
+    <div className="min-w-0" style={flexCol(width)}>
       <p className="font-semibold text-[13px] text-foreground group-hover:text-primary truncate transition-colors duration-200">{displayName}</p>
       {t.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
     </div>
@@ -434,7 +443,7 @@ function NomCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
 
 function TypeCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
-    <div className="shrink-0" style={{ width }}>
+    <div style={flexCol(width)}>
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${t.type_personne === 'morale' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-primary/10 text-primary'}`}>
         {t.type_personne === 'morale' ? 'Morale' : 'Physique'}
       </span>
@@ -449,7 +458,7 @@ function RolesCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   if ((t.nb_lots_mandataire || 0) > 0) roles.push({ label: 'Mandataire', className: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' })
 
   return (
-    <div className="shrink-0 flex items-center gap-1 flex-wrap" style={{ width }}>
+    <div className="flex items-center gap-1 flex-wrap" style={flexCol(width)}>
       {roles.length > 0
         ? roles.map((r) => (
             <span key={r.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${r.className}`}>{r.label}</span>
@@ -461,16 +470,16 @@ function RolesCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
 }
 
 function EmailCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
-  return <div className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width }}>{t.email || '--'}</div>
+  return <div className="text-[13px] text-muted-foreground truncate min-w-0" style={flexCol(width)}>{t.email || '--'}</div>
 }
 
 function TelCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
-  return <div className="shrink-0 text-[13px] text-muted-foreground" style={{ width }}>{t.tel || '--'}</div>
+  return <div className="text-[13px] text-muted-foreground min-w-0" style={flexCol(width)}>{t.tel || '--'}</div>
 }
 
 function NbLotsCell({ count, width }: { count: number; width: number }) {
   return (
-    <div className="shrink-0 text-center" style={{ width }}>
+    <div className="text-center" style={flexCol(width)}>
       {count > 0 ? <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-muted/50 text-xs font-semibold text-foreground/70">{count}</span> : <span className="text-muted-foreground/25">--</span>}
     </div>
   )
@@ -478,7 +487,7 @@ function NbLotsCell({ count, width }: { count: number; width: number }) {
 
 function DerniereMissionCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
-    <div className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width }}>
+    <div className="text-[13px] text-muted-foreground/60" style={flexCol(width)}>
       {t.derniere_mission ? formatDate(t.derniere_mission) : <span className="text-muted-foreground/25">--</span>}
     </div>
   )
@@ -486,7 +495,7 @@ function DerniereMissionCell({ tiers: t, width }: { tiers: Tiers; width: number 
 
 function DernierLotCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
-    <div className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width }}>
+    <div className="text-[13px] text-muted-foreground truncate min-w-0" style={flexCol(width)}>
       {t.dernier_lot || <span className="text-muted-foreground/25">--</span>}
     </div>
   )
@@ -494,7 +503,7 @@ function DernierLotCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
 
 function ProprietaireCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
-    <div className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width }}>
+    <div className="text-[13px] text-muted-foreground truncate min-w-0" style={flexCol(width)}>
       {t.proprietaire_nom || <span className="text-muted-foreground/25">--</span>}
     </div>
   )
@@ -502,7 +511,7 @@ function ProprietaireCell({ tiers: t, width }: { tiers: Tiers; width: number }) 
 
 function ContactPrincipalCell({ tiers: t, width }: { tiers: Tiers; width: number }) {
   return (
-    <div className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width }}>
+    <div className="text-[13px] text-muted-foreground truncate min-w-0" style={flexCol(width)}>
       {t.contact_principal || <span className="text-muted-foreground/25">--</span>}
     </div>
   )
@@ -515,7 +524,7 @@ function TiersRow({ tiers: t, columns, colWidths, index, onClick }: {
 }) {
   return (
     <div
-      className="group flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 text-[13px]"
+      className="group flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 text-[13px] w-full"
       onClick={onClick}
     >
       {columns.map((col) => {

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from 'src/lib/api-client'
 import type {
   TypePiece, CatalogueItem, CatalogueItemDetail,
@@ -6,6 +6,11 @@ import type {
   ValeurReferentiel, CatalogueContexte, CatalogueCategorie,
   NiveauExigence, CritereEvaluation,
 } from './types'
+
+interface CatalogueListResponse {
+  data: CatalogueItem[]
+  meta: { cursor?: string; has_more: boolean; total?: number }
+}
 
 // ── Type Pieces (US-832) ──
 
@@ -53,16 +58,38 @@ export function useArchiveTypePiece() {
 
 // ── Catalogue Items (US-835) ──
 
-export function useCatalogueItems(params?: { contexte?: CatalogueContexte; categorie?: CatalogueCategorie; search?: string }) {
-  const searchParams = new URLSearchParams()
-  if (params?.contexte) searchParams.set('contexte', params.contexte)
-  if (params?.categorie) searchParams.set('categorie', params.categorie)
-  if (params?.search) searchParams.set('search', params.search)
-  const qs = searchParams.toString()
+function buildCatalogueQuery(
+  params: { contexte?: CatalogueContexte; categorie?: CatalogueCategorie; search?: string } | undefined,
+  cursor?: string,
+) {
+  const sp = new URLSearchParams()
+  if (params?.contexte) sp.set('contexte', params.contexte)
+  if (params?.categorie) sp.set('categorie', params.categorie)
+  if (params?.search) sp.set('search', params.search)
+  if (cursor) sp.set('cursor', cursor)
+  return sp.toString()
+}
 
+export function useCatalogueItems(params?: { contexte?: CatalogueContexte; categorie?: CatalogueCategorie; search?: string }) {
   return useQuery({
     queryKey: ['catalogue-items', params],
-    queryFn: () => api<CatalogueItem[]>(`/catalogue-items${qs ? `?${qs}` : ''}`),
+    queryFn: async () => {
+      const qs = buildCatalogueQuery(params)
+      const res = await api<CatalogueListResponse>(`/catalogue-items${qs ? `?${qs}` : ''}`)
+      return res.data
+    },
+  })
+}
+
+export function useCatalogueItemsInfinite(params?: { contexte?: CatalogueContexte; categorie?: CatalogueCategorie; search?: string }) {
+  return useInfiniteQuery({
+    queryKey: ['catalogue-items', 'infinite', params],
+    queryFn: ({ pageParam }) => {
+      const qs = buildCatalogueQuery(params, pageParam as string | undefined)
+      return api<CatalogueListResponse>(`/catalogue-items${qs ? `?${qs}` : ''}`)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
   })
 }
 

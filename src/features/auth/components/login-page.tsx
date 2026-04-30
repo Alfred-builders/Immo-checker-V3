@@ -70,11 +70,11 @@ export function LoginPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
           Connexion
         </h1>
-        <p className="text-sm text-muted-foreground mt-2">
+        <p className="text-sm text-muted-foreground mt-1.5 sm:mt-2">
           Accédez à votre espace de travail
         </p>
       </div>
@@ -159,7 +159,7 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-border/40">
+      <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-border/40">
         <p className="text-center text-xs text-muted-foreground">
           Pas encore de compte ?{' '}
           <span className="text-foreground/70 font-medium">

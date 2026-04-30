@@ -6,8 +6,13 @@ import { validate } from '../middleware/validate.js'
 import { sendSuccess, sendList, sendError } from '../utils/response.js'
 import { NotFoundError, AppError } from '../utils/errors.js'
 import { dispatchWebhook } from '../services/webhook-service.js'
-import { sendEmailTechnicienAssigne } from '../services/email-service.js'
 import { publishToRoles } from '../services/notification-service.js'
+import { formatDateFr } from '../utils/date-format.js'
+import {
+  notifyMissionPlanifiee,
+  notifyCreneauModifie,
+  notifyTechnicienAssigne,
+} from '../services/mission-mailer.js'
 
 const router = Router()
 router.use(verifyToken)
@@ -30,9 +35,9 @@ router.get('/stats', async (req, res) => {
         count(*) FILTER (
           WHERE m.statut = 'planifiee'
           AND (
-            NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
+            m.date_planifiee IS NULL
+            OR NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
             OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
-            OR m.statut_rdv = 'a_confirmer'
           )
         )::int as pending,
         count(*) FILTER (WHERE m.date_planifiee > CURRENT_DATE AND m.statut = 'planifiee')::int as upcoming
@@ -53,7 +58,7 @@ router.get('/', async (req, res) => {
     const userId = req.user!.userId
     const isTechnicien = req.user!.role === 'technicien'
     const {
-      search, statut, statut_affichage, statut_rdv, technicien_id, date_from, date_to,
+      search, statut, statut_affichage, technicien_id, date_from, date_to,
       pending_actions, lot_id, batiment_id, cursor, limit: rawLimit
     } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
@@ -69,32 +74,25 @@ router.get('/', async (req, res) => {
       paramIndex++
     }
 
-    // Filtre statut. 3 modes mutuellement exclusifs (priorité descendante) :
-    //   1. statut (3 valeurs brutes : planifiee/terminee/annulee) — usage legacy + intégrations
-    //   2. statut_affichage (4 valeurs UI : a_traiter/prete/terminee/annulee) — filtre tableau missions
+    // Filtre statut. 2 modes mutuellement exclusifs :
+    //   1. statut (4 valeurs brutes : planifiee/terminee/infructueuse/annulee) — usage legacy + intégrations
+    //   2. statut_affichage (5 valeurs UI : a_planifier/planifie/finalisee/infructueuse/annulee) — filtre tableau
     //   3. par défaut : exclut annulee
+    // Cadrage Flat Checker du 28/04/2026 — modèle de statuts mission.
     if (statut) {
       where += ` AND m.statut = $${paramIndex}`
       params.push(statut)
       paramIndex++
-    } else if (statut_affichage === 'terminee') {
+    } else if (statut_affichage === 'a_planifier') {
+      where += ` AND m.statut = 'planifiee' AND m.date_planifiee IS NULL`
+    } else if (statut_affichage === 'planifie') {
+      where += ` AND m.statut = 'planifiee' AND m.date_planifiee IS NOT NULL`
+    } else if (statut_affichage === 'finalisee') {
       where += ` AND m.statut = 'terminee'`
+    } else if (statut_affichage === 'infructueuse') {
+      where += ` AND m.statut = 'infructueuse'`
     } else if (statut_affichage === 'annulee') {
       where += ` AND m.statut = 'annulee'`
-    } else if (statut_affichage === 'prete') {
-      // Tout est OK : planifiée, RDV confirmé, technicien assigné qui a accepté.
-      where += ` AND m.statut = 'planifiee'
-        AND m.statut_rdv = 'confirme'
-        AND EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
-        AND NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')`
-    } else if (statut_affichage === 'a_traiter') {
-      // Action requise : pas de tech, OU au moins une invitation non acceptée, OU RDV à confirmer/reporté.
-      where += ` AND m.statut = 'planifiee'
-        AND (
-          NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
-          OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
-          OR m.statut_rdv IN ('a_confirmer', 'reporte')
-        )`
     } else {
       where += ` AND m.statut != 'annulee'`
     }
@@ -105,12 +103,6 @@ router.get('/', async (req, res) => {
         OR EXISTS (SELECT 1 FROM lot l2 WHERE l2.id = m.lot_id AND l2.designation ILIKE $${paramIndex})
       )`
       params.push(`%${search}%`)
-      paramIndex++
-    }
-
-    if (statut_rdv) {
-      where += ` AND m.statut_rdv = $${paramIndex}`
-      params.push(statut_rdv)
       paramIndex++
     }
 
@@ -146,9 +138,9 @@ router.get('/', async (req, res) => {
 
     if (pending_actions === 'true') {
       where += ` AND m.statut = 'planifiee' AND (
-        NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
+        m.date_planifiee IS NULL
+        OR NOT EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id)
         OR EXISTS (SELECT 1 FROM mission_technicien mt2 WHERE mt2.mission_id = m.id AND mt2.statut_invitation != 'accepte')
-        OR m.statut_rdv = 'a_confirmer'
       )`
     }
 
@@ -164,8 +156,8 @@ router.get('/', async (req, res) => {
     const sql = `
       SELECT
         m.id, m.reference, m.date_planifiee::date::text as date_planifiee, m.heure_debut, m.heure_fin,
-        m.statut, m.statut_rdv, m.avec_inventaire, m.type_bail,
-        m.commentaire, m.motif_annulation, m.created_at,
+        m.statut, m.avec_inventaire, m.type_bail,
+        m.commentaire, m.motif_annulation, m.motif_infructueux, m.created_at,
         json_build_object(
           'id', l.id, 'designation', l.designation, 'type_bien', l.type_bien,
           'etage', l.etage
@@ -181,7 +173,7 @@ router.get('/', async (req, res) => {
           'id', b.id, 'designation', b.designation
         ) FROM batiment b WHERE b.id = l.batiment_id) as batiment,
         (SELECT json_agg(json_build_object(
-          'user_id', u.id, 'nom', u.nom, 'prenom', u.prenom,
+          'user_id', u.id, 'nom', u.nom, 'prenom', u.prenom, 'avatar_url', u.avatar_url,
           'statut_invitation', mt.statut_invitation, 'est_principal', mt.est_principal
         )) FROM mission_technicien mt
          JOIN utilisateur u ON u.id = mt.user_id
@@ -203,7 +195,7 @@ router.get('/', async (req, res) => {
       FROM mission m
       JOIN lot l ON l.id = m.lot_id
       WHERE ${where}
-      ORDER BY m.date_planifiee DESC, m.reference DESC
+      ORDER BY m.date_planifiee DESC NULLS FIRST, m.reference DESC
       LIMIT $${paramIndex}
     `
     params.push(limit + 1)
@@ -220,9 +212,9 @@ router.get('/', async (req, res) => {
       const primaryTech = techniciens.find((t: any) => t.est_principal) ?? techniciens[0] ?? null
       const edlTypes = [...new Set(edls.flatMap((e: any) => [e.sens, ...(e.type === 'inventaire' ? ['inventaire'] : [])]))]
       const hasPendingActions = row.statut === 'planifiee' && (
+        !row.date_planifiee ||
         techniciens.length === 0 ||
-        techniciens.some((t: any) => t.statut_invitation !== 'accepte') ||
-        row.statut_rdv === 'a_confirmer'
+        techniciens.some((t: any) => t.statut_invitation !== 'accepte')
       )
 
       return {
@@ -239,12 +231,12 @@ router.get('/', async (req, res) => {
         heure_debut: row.heure_debut,
         heure_fin: row.heure_fin,
         statut: row.statut,
-        statut_rdv: row.statut_rdv,
         avec_inventaire: row.avec_inventaire,
         type_bail: row.type_bail,
         commentaire: row.commentaire,
         motif_annulation: row.motif_annulation,
-        technicien: primaryTech ? { user_id: primaryTech.user_id, nom: primaryTech.nom, prenom: primaryTech.prenom, statut_invitation: primaryTech.statut_invitation } : null,
+        motif_infructueux: row.motif_infructueux,
+        technicien: primaryTech ? { user_id: primaryTech.user_id, nom: primaryTech.nom, prenom: primaryTech.prenom, avatar_url: primaryTech.avatar_url ?? null, statut_invitation: primaryTech.statut_invitation } : null,
         edl_types: edlTypes,
         has_pending_actions: hasPendingActions,
         proprietaire_nom: row.proprietaire_nom ?? null,
@@ -307,7 +299,8 @@ router.get('/:id', async (req, res) => {
         -- Techniciens (via mission_technicien)
         (SELECT json_agg(json_build_object(
           'id', mt.id, 'user_id', u.id, 'nom', u.nom, 'prenom', u.prenom,
-          'email', u.email, 'statut_invitation', mt.statut_invitation,
+          'email', u.email, 'avatar_url', u.avatar_url,
+          'statut_invitation', mt.statut_invitation,
           'est_principal', mt.est_principal,
           'assigned_at', mt.created_at, 'invitation_updated_at', mt.updated_at
         )) FROM mission_technicien mt JOIN utilisateur u ON u.id = mt.user_id WHERE mt.mission_id = m.id) as techniciens,
@@ -350,9 +343,9 @@ router.get('/:id', async (req, res) => {
     const primaryTech = techniciens.find((t: any) => t.est_principal) ?? techniciens[0] ?? null
     const edlTypes = [...new Set(edls.flatMap((e: any) => [e.sens, ...(e.type === 'inventaire' ? ['inventaire'] : [])]))]
     const hasPendingActions = row.statut === 'planifiee' && (
+      !row.date_planifiee ||
       techniciens.length === 0 ||
-      techniciens.some((t: any) => t.statut_invitation !== 'accepte') ||
-      row.statut_rdv === 'a_confirmer'
+      techniciens.some((t: any) => t.statut_invitation !== 'accepte')
     )
 
     const creatorResult = await query(`SELECT nom, prenom FROM utilisateur WHERE id = $1`, [row.created_by])
@@ -366,7 +359,7 @@ router.get('/:id', async (req, res) => {
       adresse: row.adresse ? `${row.adresse.rue ?? ''}${row.adresse.complement ? `, ${row.adresse.complement}` : ''}, ${row.adresse.code_postal ?? ''} ${row.adresse.ville ?? ''}` : null,
       latitude: row.adresse?.latitude,
       longitude: row.adresse?.longitude,
-      technicien: primaryTech ? { user_id: primaryTech.user_id, nom: primaryTech.nom, prenom: primaryTech.prenom, statut_invitation: primaryTech.statut_invitation } : null,
+      technicien: primaryTech ? { user_id: primaryTech.user_id, nom: primaryTech.nom, prenom: primaryTech.prenom, avatar_url: primaryTech.avatar_url ?? null, statut_invitation: primaryTech.statut_invitation } : null,
       edl_types: edlTypes,
       has_pending_actions: hasPendingActions,
       lot: { ...row.lot, batiment: row.batiment, adresse: row.adresse },
@@ -389,7 +382,7 @@ const createMissionSchema = z.object({
   lot_id: z.uuid(),
   sens: z.enum(['entree', 'sortie', 'entree_sortie']),
   avec_inventaire: z.boolean().optional().default(false),
-  date_planifiee: z.string().min(1), // ISO date YYYY-MM-DD
+  date_planifiee: z.string().min(1).optional(), // ISO date YYYY-MM-DD — null = mission "À planifier"
   heure_debut: z.string().optional(),
   heure_fin: z.string().optional(),
   technicien_id: z.uuid().optional(),
@@ -427,9 +420,9 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createMissionSch
     // Create mission
     const missionResult = await query(
       `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee,
-        heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, type_bail, commentaire)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'planifiee','a_confirmer',$8,$9,$10) RETURNING *`,
-      [workspaceId, d.lot_id, userId, reference, d.date_planifiee,
+        heure_debut, heure_fin, statut, avec_inventaire, type_bail, commentaire)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'planifiee',$8,$9,$10) RETURNING *`,
+      [workspaceId, d.lot_id, userId, reference, d.date_planifiee ?? null,
        d.heure_debut ?? null, d.heure_fin ?? null,
        d.avec_inventaire, d.type_bail ?? null, d.commentaire ?? null]
     )
@@ -531,10 +524,22 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createMissionSch
     // In-app notification — admin + gestionnaires (excl. créateur)
     setImmediate(() => publishToRoles(workspaceId, ['admin', 'gestionnaire'], {
       type: 'mission_created',
-      titre: 'Nouvelle mission planifiée',
-      message: `${mission.reference} planifiée le ${mission.date_planifiee}`,
+      titre: mission.date_planifiee ? 'Nouvelle mission planifiée' : 'Nouvelle mission à planifier',
+      message: mission.date_planifiee
+        ? `${mission.reference} planifiée le ${formatDateFr(mission.date_planifiee)}`
+        : `${mission.reference} créée — date à définir`,
       lien: `/app/missions/${mission.id}`,
     }, userId))
+
+    // Mails transactionnels (Cadrage FC §6) — fire-and-forget
+    if (mission.date_planifiee) {
+      // Confirmation au locataire (la mission démarre directement en "Planifié")
+      setImmediate(() => notifyMissionPlanifiee(mission.id))
+    }
+    if (d.technicien_id) {
+      // Invitation au tech. isDeferred=false car simultané avec la création.
+      setImmediate(() => notifyTechnicienAssigne(mission.id, { isDeferred: false }))
+    }
 
     sendSuccess(res, mission, 201)
   } catch (error) {
@@ -547,14 +552,21 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
 
-    // Fetch current mission
+    // Fetch current mission (avec snapshot du créneau pour mail "Modification")
     const current = await query(
-      `SELECT id, statut FROM mission WHERE id = $1 AND workspace_id = $2`,
+      `SELECT id, statut, date_planifiee::date::text as date_planifiee,
+        heure_debut, heure_fin
+       FROM mission WHERE id = $1 AND workspace_id = $2`,
       [req.params.id, workspaceId]
     )
     if (current.rows.length === 0) throw new NotFoundError('Mission')
 
     const mission = current.rows[0]
+    const oldSnapshot = {
+      date_planifiee: mission.date_planifiee as string | null,
+      heure_debut: mission.heure_debut as string | null,
+      heure_fin: mission.heure_fin as string | null,
+    }
 
     // If terminated, only commentaire is editable
     if (mission.statut === 'terminee') {
@@ -568,7 +580,7 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
       }
     }
 
-    const allowedFields = ['date_planifiee', 'heure_debut', 'heure_fin', 'statut_rdv', 'commentaire']
+    const allowedFields = ['date_planifiee', 'heure_debut', 'heure_fin', 'commentaire']
     const fields: string[] = []
     const values: unknown[] = []
     let idx = 1
@@ -595,15 +607,30 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), async (req, res) => {
 
     if (result.rows.length === 0) throw new NotFoundError('Mission')
 
-    // US-595: if scheduling fields changed, reset accepted technicien invitation to en_attente
+    // Auto-réinvitation : si la planification (date/heures) change, l'invitation
+    // technicien repasse automatiquement à "Invité" — Cadrage FC du 28/04/2026.
+    // Toute acceptation antérieure n'est plus valide pour un nouveau créneau.
     const schedulingFields = ['date_planifiee', 'heure_debut', 'heure_fin']
     const schedulingChanged = schedulingFields.some(f => req.body[f] !== undefined)
     if (schedulingChanged) {
       await query(
         `UPDATE mission_technicien SET statut_invitation = 'en_attente', updated_at = now()
-         WHERE mission_id = $1 AND statut_invitation = 'accepte'`,
+         WHERE mission_id = $1 AND statut_invitation IN ('accepte', 'en_attente')`,
         [req.params.id]
       )
+    }
+
+    // Mails transactionnels (Cadrage FC §6) — fire-and-forget
+    if (schedulingChanged) {
+      const wasUnplanned = !oldSnapshot.date_planifiee
+      const isNowPlanned = result.rows[0].date_planifiee != null
+      if (wasUnplanned && isNowPlanned) {
+        // Passage de "À planifier" à "Planifié" : confirmation locataire.
+        setImmediate(() => notifyMissionPlanifiee(req.params.id))
+      } else if (!wasUnplanned && isNowPlanned) {
+        // Modification d'un créneau existant : notif locataire + tech.
+        setImmediate(() => notifyCreneauModifie(req.params.id, oldSnapshot))
+      }
     }
 
     sendSuccess(res, result.rows[0])
@@ -656,9 +683,9 @@ router.post('/:id/cancel', requireRole('admin', 'gestionnaire', 'technicien'), v
       }
     }
 
-    // Cancel mission
+    // Cancel mission (annulee_at set pour le feed d'activité — audit Tony §8)
     const result = await query(
-      `UPDATE mission SET statut = 'annulee', motif_annulation = $1, updated_at = now()
+      `UPDATE mission SET statut = 'annulee', motif_annulation = $1, annulee_at = now(), updated_at = now()
        WHERE id = $2 AND workspace_id = $3 RETURNING *`,
       [req.body.motif, req.params.id, workspaceId]
     )
@@ -682,6 +709,71 @@ router.post('/:id/cancel', requireRole('admin', 'gestionnaire', 'technicien'), v
       type: 'mission_cancelled',
       titre: 'Mission annulée',
       message: `${result.rows[0].reference} — ${req.body.motif}`,
+      lien: `/app/missions/${req.params.id}`,
+    }, req.user!.userId))
+
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// ── POST /api/missions/:id/infructueuse — Mark as Infructueuse ──
+// Cadrage Flat Checker du 28/04/2026 : tech déplacé mais EDL pas réalisé
+// (locataire absent, accès refusé…). Marqué par le tech depuis l'app mobile,
+// avec un motif optionnel.
+const infructueuseSchema = z.object({
+  motif: z.string().optional(),
+})
+
+router.post('/:id/infructueuse', requireRole('admin', 'gestionnaire', 'technicien'), validate(infructueuseSchema), async (req, res) => {
+  try {
+    const workspaceId = req.user!.workspaceId
+
+    const current = await query(
+      `SELECT id, statut FROM mission WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, workspaceId]
+    )
+    if (current.rows.length === 0) throw new NotFoundError('Mission')
+
+    const mission = current.rows[0]
+
+    if (mission.statut === 'terminee') {
+      throw new AppError('Mission déjà finalisée', 'MISSION_LOCKED', 409)
+    }
+    if (mission.statut === 'annulee') {
+      throw new AppError('Mission annulée — impossible de marquer infructueuse', 'MISSION_LOCKED', 409)
+    }
+    if (mission.statut === 'infructueuse') {
+      throw new AppError('Mission déjà infructueuse', 'ALREADY_INFRUCTUEUSE', 409)
+    }
+
+    const result = await query(
+      `UPDATE mission SET statut = 'infructueuse', motif_infructueux = $1,
+         infructueuse_at = now(), updated_at = now()
+       WHERE id = $2 AND workspace_id = $3 RETURNING *`,
+      [req.body.motif ?? null, req.params.id, workspaceId]
+    )
+
+    // Marquer tous les EDL brouillon comme infructueux (cohérence avec /cancel)
+    await query(
+      `UPDATE edl_inventaire SET statut = 'infructueux', updated_at = now()
+       WHERE mission_id = $1 AND statut = 'brouillon'`,
+      [req.params.id]
+    )
+
+    // Webhook mission.infructueuse
+    dispatchWebhook(workspaceId, 'mission.infructueuse', {
+      mission_id: req.params.id,
+      reference: result.rows[0].reference,
+      motif: req.body.motif,
+    })
+
+    // In-app notification
+    setImmediate(() => publishToRoles(workspaceId, ['admin', 'gestionnaire'], {
+      type: 'mission_infructueuse',
+      titre: 'Mission infructueuse',
+      message: `${result.rows[0].reference}${req.body.motif ? ` — ${req.body.motif}` : ' — motif non précisé'}`,
       lien: `/app/missions/${req.params.id}`,
     }, req.user!.userId))
 
@@ -741,9 +833,14 @@ router.post('/:id/technician', requireRole('admin', 'gestionnaire'), async (req,
       throw new AppError('user_id requis', 'VALIDATION_ERROR', 400)
     }
 
-    // Verify mission exists
+    // Verify mission exists. On capture aussi date_planifiee + présence tech
+    // pour distinguer assignation simultanée (création) vs différée (mission
+    // déjà planifiée, on assigne plus tard).
     const missionCheck = await query(
-      `SELECT id, statut FROM mission WHERE id = $1 AND workspace_id = $2`,
+      `SELECT m.id, m.statut, m.date_planifiee,
+        EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id) AS had_tech
+       FROM mission m
+       WHERE m.id = $1 AND m.workspace_id = $2`,
       [req.params.id, workspaceId]
     )
     if (missionCheck.rows.length === 0) throw new NotFoundError('Mission')
@@ -755,6 +852,8 @@ router.post('/:id/technician', requireRole('admin', 'gestionnaire'), async (req,
     if (missionCheck.rows[0].statut === 'annulee') {
       throw new AppError('Mission annulee — assignation impossible', 'MISSION_CANCELLED', 409)
     }
+
+    const isDeferred = !!missionCheck.rows[0].date_planifiee && !missionCheck.rows[0].had_tech
 
     // Verify user is technicien in workspace
     const techCheck = await query(
@@ -775,33 +874,9 @@ router.post('/:id/technician', requireRole('admin', 'gestionnaire'), async (req,
       [req.params.id, user_id]
     )
 
-    // US-595: send email notification to technicien (fire-and-forget)
-    setImmediate(async () => {
-      try {
-        const techInfo = await query(
-          `SELECT u.email, u.prenom, u.nom,
-             m.reference, m.date_planifiee, m.heure_debut,
-             l.designation as lot_designation,
-             ab.rue as adresse
-           FROM utilisateur u
-           JOIN mission m ON m.id = $1
-           JOIN lot l ON l.id = m.lot_id
-           LEFT JOIN adresse_batiment ab ON ab.batiment_id = l.batiment_id AND ab.type = 'principale'
-           WHERE u.id = $2`,
-          [req.params.id, user_id]
-        )
-        if (techInfo.rows.length > 0) {
-          const r = techInfo.rows[0]
-          await sendEmailTechnicienAssigne(r.email, r.prenom, {
-            reference: r.reference,
-            date_planifiee: r.date_planifiee,
-            heure_debut: r.heure_debut,
-            lot_designation: r.lot_designation,
-            adresse: r.adresse,
-          })
-        }
-      } catch (e) { console.error('[email] sendEmailTechnicienAssigne failed:', e) }
-    })
+    // Mails transactionnels : invitation tech + (si différée) coordonnées
+    // tech au locataire — Cadrage FC §6.
+    setImmediate(() => notifyTechnicienAssigne(req.params.id, { isDeferred }))
 
     sendSuccess(res, result.rows[0], 201)
   } catch (error) {

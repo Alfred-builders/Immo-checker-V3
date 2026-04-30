@@ -6,8 +6,58 @@ import { sendSuccess, sendError } from '../../utils/response.js'
 import { NotFoundError, AppError } from '../../utils/errors.js'
 import { dispatchWebhook } from '../../services/webhook-service.js'
 import { presignPdfUrl } from '../../services/s3-presign-service.js'
+import { encodeCursor, decodeCursor } from '../../utils/cursor.js'
+import { resolveId } from '../../utils/resolve-id.js'
+
+// Resolve mission `:id` path-param: accepts UUID or `reference` (M-YYYY-XXXX).
+function resolveMissionId(rawId: string, workspaceId: string) {
+  return resolveId({
+    table: 'mission',
+    alternateColumn: 'reference',
+    identifier: rawId,
+    workspaceId,
+    entityName: 'Mission',
+  })
+}
 
 const router = Router()
+
+// SQL projection for the full Mission object returned by GET /:id, POST and PATCH.
+// Keep aligned with the `Mission` schema in openapi.yaml.
+const MISSION_SELECT = `
+  m.id, m.reference, m.lot_id, m.date_planifiee, m.heure_debut, m.heure_fin,
+  m.statut, m.avec_inventaire, m.commentaire,
+  m.motif_annulation, m.motif_infructueux, m.terminee_at, m.infructueuse_at, m.annulee_at,
+  m.created_at, m.updated_at,
+  json_build_object('id', l.id, 'designation', l.designation, 'type_bien', l.type_bien,
+    'etage', l.etage, 'surface', l.surface) AS lot,
+  (SELECT json_build_object(
+            'user_id', mt.user_id, 'statut_invitation', mt.statut_invitation,
+            'nom', u.nom, 'prenom', u.prenom, 'email', u.email)
+   FROM mission_technicien mt
+   JOIN utilisateur u ON u.id = mt.user_id
+   WHERE mt.mission_id = m.id LIMIT 1) AS technicien,
+  (SELECT json_agg(json_build_object('id', ei.id, 'type', ei.type, 'sens', ei.sens,
+    'statut', ei.statut, 'motif_infructueux', ei.motif_infructueux,
+    'pdf_url', ei.pdf_url, 'web_url', ei.web_url,
+    'pdf_url_legal', ei.pdf_url_legal, 'web_url_legal', ei.web_url_legal,
+    'url_verification', ei.url_verification))
+   FROM edl_inventaire ei WHERE ei.mission_id = m.id) AS edls
+`
+
+async function fetchMissionById(missionId: string, workspaceId: string) {
+  const result = await query(
+    `SELECT ${MISSION_SELECT}
+     FROM mission m
+     JOIN lot l ON l.id = m.lot_id
+     WHERE m.id = $1 AND m.workspace_id = $2`,
+    [missionId, workspaceId]
+  )
+  if (result.rows.length === 0) throw new NotFoundError('Mission')
+  const mission = result.rows[0]
+  mission.edls = projectEdlRows(mission.edls)
+  return mission
+}
 
 // Null out URLs on non-signed EDL; pre-sign PDF URLs on signed ones (US-601).
 function projectEdlRows<T extends Record<string, unknown>>(edls: T[] | null): T[] | null {
@@ -24,13 +74,16 @@ function projectEdlRows<T extends Record<string, unknown>>(edls: T[] | null): T[
   })
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const HHMM = /^\d{2}:\d{2}(:\d{2})?$/
+
 const createSchema = z.object({
   lot_id: z.string().uuid(),
   sens: z.enum(['entree', 'sortie', 'entree_sortie']),
   avec_inventaire: z.boolean().optional().default(false),
-  date_planifiee: z.string().min(1),
-  heure_debut: z.string().optional(),
-  heure_fin: z.string().optional(),
+  date_planifiee: z.string().regex(ISO_DATE, 'Format attendu YYYY-MM-DD').optional(),
+  heure_debut: z.string().regex(HHMM, 'Format attendu HH:MM').optional(),
+  heure_fin: z.string().regex(HHMM, 'Format attendu HH:MM').optional(),
   commentaire: z.string().optional(),
   // optional: assign a technician immediately
   technicien_id: z.string().uuid().optional(),
@@ -40,11 +93,10 @@ const createSchema = z.object({
 })
 
 const patchSchema = z.object({
-  date_planifiee: z.string().optional(),
-  heure_debut: z.string().nullable().optional(),
-  heure_fin: z.string().nullable().optional(),
+  date_planifiee: z.string().regex(ISO_DATE, 'Format attendu YYYY-MM-DD').optional(),
+  heure_debut: z.string().regex(HHMM, 'Format attendu HH:MM').nullable().optional(),
+  heure_fin: z.string().regex(HHMM, 'Format attendu HH:MM').nullable().optional(),
   commentaire: z.string().nullable().optional(),
-  statut_rdv: z.enum(['a_confirmer', 'confirme', 'reporte']).optional(),
 })
 
 const cancelSchema = z.object({
@@ -66,25 +118,29 @@ router.get('/', async (req, res) => {
     if (date_from) { where += ` AND m.date_planifiee >= $${idx++}`; params.push(date_from) }
     if (date_to) { where += ` AND m.date_planifiee <= $${idx++}`; params.push(date_to) }
     if (cursor) {
-      where += ` AND (m.date_planifiee, m.id) < ((SELECT date_planifiee FROM mission WHERE id=$${idx}), $${idx})`
-      params.push(cursor); idx++
+      const c = decodeCursor(cursor)
+      if (c) {
+        where += ` AND (m.date_planifiee, m.id) < ($${idx}, $${idx + 1})`
+        params.push(c.orderKey, c.id); idx += 2
+      }
     }
 
     const sql = `
       SELECT m.id, m.reference, m.date_planifiee, m.heure_debut, m.heure_fin,
-             m.statut, m.statut_rdv, m.avec_inventaire, m.commentaire, m.created_at,
+             m.statut, m.avec_inventaire, m.commentaire, m.created_at,
              json_build_object('id', l.id, 'designation', l.designation, 'type_bien', l.type_bien) AS lot
       FROM mission m
       JOIN lot l ON l.id = m.lot_id
       ${where}
-      ORDER BY m.date_planifiee DESC, m.id DESC
+      ORDER BY m.date_planifiee DESC NULLS FIRST, m.id DESC
       LIMIT $${idx}`
     params.push(limit + 1)
 
     const result = await query(sql, params)
     const has_more = result.rows.length > limit
     const rows = has_more ? result.rows.slice(0, limit) : result.rows
-    const nextCursor = has_more ? rows[rows.length - 1].id : undefined
+    const last = rows[rows.length - 1]
+    const nextCursor = has_more && last ? encodeCursor(last.date_planifiee, last.id) : null
 
     sendSuccess(res, { data: rows, meta: { cursor: nextCursor, has_more } })
   } catch (error) {
@@ -96,27 +152,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
-    const result = await query(
-      `SELECT m.id, m.reference, m.date_planifiee, m.heure_debut, m.heure_fin,
-              m.statut, m.statut_rdv, m.avec_inventaire, m.commentaire,
-              m.motif_annulation, m.created_at,
-              json_build_object('id', l.id, 'designation', l.designation, 'type_bien', l.type_bien,
-                'etage', l.etage, 'surface', l.surface) AS lot,
-              (SELECT json_agg(json_build_object('id', ei.id, 'type', ei.type, 'sens', ei.sens,
-                'statut', ei.statut, 'motif_infructueux', ei.motif_infructueux,
-                'pdf_url', ei.pdf_url, 'web_url', ei.web_url,
-                'pdf_url_legal', ei.pdf_url_legal, 'web_url_legal', ei.web_url_legal,
-                'url_verification', ei.url_verification))
-               FROM edl_inventaire ei WHERE ei.mission_id = m.id) AS edls
-       FROM mission m
-       JOIN lot l ON l.id = m.lot_id
-       WHERE m.id = $1 AND m.workspace_id = $2`,
-      [req.params.id, workspaceId]
-    )
-    if (result.rows.length === 0) throw new NotFoundError('Mission')
-    const mission = result.rows[0]
-    mission.edls = projectEdlRows(mission.edls)
-    sendSuccess(res, mission)
+    const missionId = await resolveMissionId(String(req.params.id), workspaceId)
+    sendSuccess(res, await fetchMissionById(missionId, workspaceId))
   } catch (error) {
     sendError(res, error)
   }
@@ -126,11 +163,7 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/edl-inventaires', async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
-    const missionCheck = await query(
-      `SELECT id FROM mission WHERE id = $1 AND workspace_id = $2`,
-      [req.params.id, workspaceId]
-    )
-    if (missionCheck.rows.length === 0) throw new NotFoundError('Mission')
+    const missionId = await resolveMissionId(String(req.params.id), workspaceId)
 
     const result = await query(
       `SELECT ei.id, ei.type, ei.sens, ei.statut,
@@ -139,7 +172,7 @@ router.get('/:id/edl-inventaires', async (req, res) => {
        FROM edl_inventaire ei
        WHERE ei.mission_id = $1 AND ei.workspace_id = $2
        ORDER BY ei.created_at ASC`,
-      [req.params.id, workspaceId]
+      [missionId, workspaceId]
     )
     sendSuccess(res, projectEdlRows(result.rows))
   } catch (error) {
@@ -192,10 +225,10 @@ router.post('/', requireWriteScope, async (req, res) => {
 
       const mResult = await client.query(
         `INSERT INTO mission (workspace_id, lot_id, reference, date_planifiee, heure_debut, heure_fin,
-          statut, statut_rdv, avec_inventaire, commentaire)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'a_confirmer', $8, $9)
-         RETURNING id, reference, date_planifiee, statut, statut_rdv, created_at`,
-        [workspaceId, data.lot_id, reference, data.date_planifiee,
+          statut, avec_inventaire, commentaire)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, reference`,
+        [workspaceId, data.lot_id, reference, data.date_planifiee ?? null,
          data.heure_debut ?? null, data.heure_fin ?? null,
          initialStatut, data.avec_inventaire, data.commentaire ?? null]
       )
@@ -263,15 +296,18 @@ router.post('/', requireWriteScope, async (req, res) => {
       client.release()
     }
 
+    // Re-fetch the full Mission shape so the response matches the OpenAPI `Mission` schema.
+    const fullMission = await fetchMissionById(mission.id, workspaceId)
+
     // Dispatch mission.creee webhook (fire-and-forget)
     setImmediate(() => dispatchWebhook(workspaceId, 'mission.creee', {
-      mission_id: mission.id,
-      reference: mission.reference,
+      mission_id: fullMission.id,
+      reference: fullMission.reference,
       lot_id: data.lot_id,
-      statut: mission.statut,
+      statut: fullMission.statut,
     }))
 
-    sendSuccess(res, mission, 201)
+    sendSuccess(res, fullMission, 201)
   } catch (error) {
     sendError(res, error)
   }
@@ -282,10 +318,11 @@ router.patch('/:id', requireWriteScope, async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
     const data = patchSchema.parse(req.body)
+    const missionId = await resolveMissionId(String(req.params.id), workspaceId)
 
     const current = await query(
       `SELECT id, statut FROM mission WHERE id = $1 AND workspace_id = $2 AND est_archive = false`,
-      [req.params.id, workspaceId]
+      [missionId, workspaceId]
     )
     if (current.rows.length === 0) throw new NotFoundError('Mission')
 
@@ -296,30 +333,43 @@ router.patch('/:id', requireWriteScope, async (req, res) => {
     const values: unknown[] = []
     let idx = 1
 
-    // Terminée: commentaire seul modifiable
-    if (statut === 'terminee') {
+    // Terminée / Infructueuse : commentaire seul modifiable
+    if (statut === 'terminee' || statut === 'infructueuse') {
       if (data.commentaire !== undefined) {
         fields.push(`commentaire = $${idx++}`); values.push(data.commentaire)
       } else {
-        throw new AppError('Mission terminée : seul le commentaire est modifiable', 'MISSION_LOCKED', 403)
+        throw new AppError('Mission verrouillée : seul le commentaire est modifiable', 'MISSION_LOCKED', 403)
       }
     } else {
       if (data.date_planifiee !== undefined) { fields.push(`date_planifiee = $${idx++}`); values.push(data.date_planifiee) }
       if (data.heure_debut !== undefined) { fields.push(`heure_debut = $${idx++}`); values.push(data.heure_debut) }
       if (data.heure_fin !== undefined) { fields.push(`heure_fin = $${idx++}`); values.push(data.heure_fin) }
       if (data.commentaire !== undefined) { fields.push(`commentaire = $${idx++}`); values.push(data.commentaire) }
-      if (data.statut_rdv !== undefined) { fields.push(`statut_rdv = $${idx++}`); values.push(data.statut_rdv) }
     }
 
     if (fields.length === 0) throw new AppError('Aucun champ à modifier', 'VALIDATION_ERROR', 400)
 
     fields.push(`updated_at = now()`)
-    values.push(req.params.id)
-    const result = await query(
-      `UPDATE mission SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, commentaire`,
+    values.push(missionId)
+    await query(
+      `UPDATE mission SET ${fields.join(', ')} WHERE id = $${idx}`,
       values
     )
-    sendSuccess(res, result.rows[0])
+
+    // Auto-réinvitation : si la planification change, l'invitation tech repasse à "Invité"
+    const schedulingChanged =
+      data.date_planifiee !== undefined ||
+      data.heure_debut !== undefined ||
+      data.heure_fin !== undefined
+    if (schedulingChanged) {
+      await query(
+        `UPDATE mission_technicien SET statut_invitation = 'en_attente', updated_at = now()
+         WHERE mission_id = $1 AND statut_invitation IN ('accepte', 'en_attente')`,
+        [missionId]
+      )
+    }
+
+    sendSuccess(res, await fetchMissionById(missionId, workspaceId))
   } catch (error) {
     sendError(res, error)
   }
@@ -330,10 +380,11 @@ router.delete('/:id', requireWriteScope, async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
     const data = cancelSchema.parse(req.body)
+    const missionId = await resolveMissionId(String(req.params.id), workspaceId)
 
     const current = await query(
       `SELECT id, statut FROM mission WHERE id = $1 AND workspace_id = $2 AND est_archive = false`,
-      [req.params.id, workspaceId]
+      [missionId, workspaceId]
     )
     if (current.rows.length === 0) throw new NotFoundError('Mission')
 
@@ -346,17 +397,17 @@ router.delete('/:id', requireWriteScope, async (req, res) => {
     }
 
     await query(
-      `UPDATE mission SET statut = 'annulee', motif_annulation = $1, updated_at = now() WHERE id = $2`,
-      [data.motif, req.params.id]
+      `UPDATE mission SET statut = 'annulee', motif_annulation = $1, annulee_at = now(), updated_at = now() WHERE id = $2`,
+      [data.motif, missionId]
     )
     await query(
       `UPDATE edl_inventaire SET statut = 'infructueux', updated_at = now()
        WHERE mission_id = $1 AND statut = 'brouillon'`,
-      [req.params.id]
+      [missionId]
     )
 
     setImmediate(() => dispatchWebhook(workspaceId, 'mission.annulee', {
-      mission_id: req.params.id,
+      mission_id: missionId,
       motif: data.motif,
     }))
 

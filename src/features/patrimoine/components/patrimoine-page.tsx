@@ -19,6 +19,7 @@ import { ResizeHandle, useResizableColumns } from '../../../components/shared/re
 import { DynamicFilter, type FilterField, type ActiveFilter } from '../../../components/shared/dynamic-filter'
 import { LoadMoreFooter } from '../../../components/shared/load-more-footer'
 import type { Batiment, Lot } from '../types'
+import { formatBatimentLabel, formatLotLabel } from '../labels'
 
 const BATIMENT_COLUMNS: ColumnDef[] = [
   { id: 'designation', label: 'Désignation', defaultVisible: true },
@@ -67,15 +68,15 @@ const typeColors: Record<string, string> = {
 }
 
 const DEFAULT_COL_WIDTHS: Record<string, number> = {
-  designation: 220,
-  type: 120,
-  adresse: 200,
-  nb_lots: 64,
-  nb_etages: 64,
-  annee_construction: 72,
-  derniere_mission: 110,
-  missions_a_venir: 72,
-  created_at: 100,
+  designation: 280,
+  type: 140,
+  adresse: 360,
+  nb_lots: 80,
+  nb_etages: 80,
+  annee_construction: 90,
+  derniere_mission: 130,
+  missions_a_venir: 90,
+  created_at: 120,
 }
 
 // Sortable column definitions
@@ -272,7 +273,7 @@ export function PatrimoinePage() {
   const visibleOrdered = effectiveOrder.filter(id => visibleCols.includes(id))
 
   return (
-    <div className="px-8 py-6 max-w-[1400px] mx-auto space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       {/* Modals */}
       <CreateBuildingModal
         open={showCreateBuilding}
@@ -377,9 +378,9 @@ export function PatrimoinePage() {
       {view === 'table' && (
         <div className="bg-card rounded-2xl border border-border/40 shadow-elevation-raised overflow-hidden">
          <div className="overflow-x-auto">
-          <div className="min-w-max">
-          {/* Table header */}
-          <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20">
+          <div className="min-w-max w-full">
+          {/* Table header — columns grow proportionally to their base width to fill the row */}
+          <div className="flex items-center gap-4 px-5 py-3 border-b border-border/30 text-xs font-medium text-muted-foreground select-none bg-muted/20 w-full">
             <div className="w-7 shrink-0" />
             {visibleOrdered.map(id => {
               const sortable = SORTABLE_COLS.has(id)
@@ -388,7 +389,7 @@ export function PatrimoinePage() {
               return sortable ? (
                 <SortableHeader key={id} colId={id} label={labelMap[id]} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={colWidths[id]} onResizeStart={handleResizeStart} onResize={handleResize} align={align} />
               ) : (
-                <div key={id} className="relative overflow-visible shrink-0" style={{ width: colWidths[id], minWidth: 40 }}>
+                <div key={id} className="relative overflow-visible" style={{ flex: `${colWidths[id]} 0 ${colWidths[id]}px`, minWidth: 40 }}>
                   {labelMap[id]}
                   <ResizeHandle colId={id} onResizeStart={handleResizeStart} onResize={handleResize} />
                 </div>
@@ -454,8 +455,8 @@ function SortableHeader({ colId, label, sortKey, sortDir, onSort, width, onResiz
   const isActive = sortKey === colId
   return (
     <div
-      className={`relative overflow-visible shrink-0 cursor-pointer group/sort ${align === 'center' ? 'text-center' : ''}`}
-      style={{ width, minWidth: 40 }}
+      className={`relative overflow-visible cursor-pointer group/sort ${align === 'center' ? 'text-center' : ''}`}
+      style={{ flex: `${width} 0 ${width}px`, minWidth: 40 }}
       onClick={() => onSort(colId)}
     >
       <span className={`inline-flex items-center gap-1.5 ${isActive ? 'text-foreground' : ''}`}>
@@ -477,19 +478,19 @@ function renderBatimentCell(id: string, batiment: Batiment, colWidths: Record<st
   switch (id) {
     case 'designation':
       return (
-        <div key={id} className="shrink-0 flex items-center gap-3 min-w-0 overflow-hidden" style={{ width: colWidths.designation }}>
+        <div key={id} className="flex items-center gap-3 min-w-0 overflow-hidden" style={{ flex: `${colWidths.designation} 0 ${colWidths.designation}px`, minWidth: 40 }}>
           <div className="h-8 w-8 rounded-xl bg-muted/50 flex items-center justify-center shrink-0">
             <Icon className="h-4 w-4 text-muted-foreground/60" />
           </div>
           <div className="min-w-0">
-            <span className="font-medium text-[13px] text-foreground group-hover/row:text-primary truncate block transition-colors duration-200">{batiment.designation}</span>
+            <span className="font-medium text-[13px] text-foreground group-hover/row:text-primary truncate block transition-colors duration-200">{formatBatimentLabel(batiment)}</span>
             {batiment.est_archive && <span className="text-[11px] text-muted-foreground/50">Archivé</span>}
           </div>
         </div>
       )
     case 'type':
       return (
-        <div key={id} className="shrink-0" style={{ width: colWidths.type }}>
+        <div key={id} style={{ flex: `${colWidths.type} 0 ${colWidths.type}px`, minWidth: 40 }}>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${typeColors[batiment.type] || typeColors.autre}`}>
             {typeLabels[batiment.type]}
           </span>
@@ -497,32 +498,32 @@ function renderBatimentCell(id: string, batiment: Batiment, colWidths: Record<st
       )
     case 'adresse':
       return (
-        <div key={id} className="shrink-0 text-[13px] text-muted-foreground truncate" style={{ width: colWidths.adresse }}>
+        <div key={id} className="text-[13px] text-muted-foreground truncate min-w-0" style={{ flex: `${colWidths.adresse} 0 ${colWidths.adresse}px`, minWidth: 40 }}>
           {adresse ? `${adresse.rue}, ${adresse.ville}` : <span className="text-muted-foreground/30">--</span>}
         </div>
       )
     case 'nb_lots':
       return (
-        <div key={id} className="shrink-0 text-center" style={{ width: colWidths.nb_lots }}>
+        <div key={id} className="text-center" style={{ flex: `${colWidths.nb_lots} 0 ${colWidths.nb_lots}px`, minWidth: 40 }}>
           <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-muted/50 text-xs font-semibold text-foreground/70">{batiment.nb_lots}</span>
         </div>
       )
     case 'nb_etages':
-      return <div key={id} className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.nb_etages }}>{batiment.nb_etages ?? <span className="text-muted-foreground/25">--</span>}</div>
+      return <div key={id} className="text-center text-muted-foreground/60 text-[13px]" style={{ flex: `${colWidths.nb_etages} 0 ${colWidths.nb_etages}px`, minWidth: 40 }}>{batiment.nb_etages ?? <span className="text-muted-foreground/25">--</span>}</div>
     case 'annee_construction':
-      return <div key={id} className="shrink-0 text-center text-muted-foreground/60 text-[13px]" style={{ width: colWidths.annee_construction }}>{batiment.annee_construction ?? <span className="text-muted-foreground/25">--</span>}</div>
+      return <div key={id} className="text-center text-muted-foreground/60 text-[13px]" style={{ flex: `${colWidths.annee_construction} 0 ${colWidths.annee_construction}px`, minWidth: 40 }}>{batiment.annee_construction ?? <span className="text-muted-foreground/25">--</span>}</div>
     case 'derniere_mission':
-      return <div key={id} className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.derniere_mission }}>{batiment.derniere_mission ? formatDate(batiment.derniere_mission) : <span className="text-muted-foreground/25">--</span>}</div>
+      return <div key={id} className="text-[13px] text-muted-foreground/60" style={{ flex: `${colWidths.derniere_mission} 0 ${colWidths.derniere_mission}px`, minWidth: 40 }}>{batiment.derniere_mission ? formatDate(batiment.derniere_mission) : <span className="text-muted-foreground/25">--</span>}</div>
     case 'missions_a_venir':
       return (
-        <div key={id} className="shrink-0 text-center" style={{ width: colWidths.missions_a_venir }}>
+        <div key={id} className="text-center" style={{ flex: `${colWidths.missions_a_venir} 0 ${colWidths.missions_a_venir}px`, minWidth: 40 }}>
           {batiment.missions_a_venir > 0 ? (
             <span className="inline-flex items-center justify-center h-6 min-w-6 px-2 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">{batiment.missions_a_venir}</span>
           ) : <span className="text-muted-foreground/25">--</span>}
         </div>
       )
     case 'created_at':
-      return <div key={id} className="shrink-0 text-[13px] text-muted-foreground/60" style={{ width: colWidths.created_at }}>{formatDate(batiment.created_at)}</div>
+      return <div key={id} className="text-[13px] text-muted-foreground/60" style={{ flex: `${colWidths.created_at} 0 ${colWidths.created_at}px`, minWidth: 40 }}>{formatDate(batiment.created_at)}</div>
     default:
       return null
   }
@@ -535,8 +536,8 @@ function BatimentRow({ batiment, visibleCols, colWidths }: { batiment: Batiment;
   return (
     <div className="group/row">
       <div
-        className="flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150"
-        onClick={() => navigate(`/app/patrimoine/batiments/${batiment.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation }] } })}
+        className="flex items-center gap-4 px-5 py-3 border-b border-border/15 last:border-0 hover:bg-primary/[0.03] cursor-pointer transition-all duration-150 w-full"
+        onClick={() => navigate(`/app/patrimoine/batiments/${batiment.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: formatBatimentLabel(batiment) }] } })}
       >
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
@@ -547,7 +548,7 @@ function BatimentRow({ batiment, visibleCols, colWidths }: { batiment: Batiment;
         {visibleCols.map(id => renderBatimentCell(id, batiment, colWidths))}
       </div>
 
-      {expanded && <LotSubRows batimentId={batiment.id} batimentName={batiment.designation} />}
+      {expanded && <LotSubRows batimentId={batiment.id} batimentName={formatBatimentLabel(batiment)} />}
     </div>
   )
 }
@@ -593,13 +594,13 @@ function LotSubRows({ batimentId, batimentName }: { batimentId: string; batiment
           <div
             key={lot.id}
             className="group grid grid-cols-[1fr_100px_60px_80px_70px_140px] gap-3 pl-14 pr-5 py-3 hover:bg-accent/50 cursor-pointer transition-colors duration-200 text-[13px] border-b border-border/20 last:border-b-0 items-center"
-            onClick={() => navigate(`/app/patrimoine/lots/${lot.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batimentName, href: `/app/patrimoine/batiments/${batimentId}` }, { label: lot.designation }] } })}
+            onClick={() => navigate(`/app/patrimoine/lots/${lot.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batimentName, href: `/app/patrimoine/batiments/${batimentId}` }, { label: formatLotLabel(lot) }] } })}
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="h-6 w-6 rounded-lg bg-card flex items-center justify-center shrink-0 border border-border/40">
                 <House className="h-3 w-3 text-muted-foreground/40" />
               </div>
-              <span className="font-medium text-foreground/80 group-hover:text-primary truncate transition-colors duration-200">{lot.designation}</span>
+              <span className="font-medium text-foreground/80 group-hover:text-primary truncate transition-colors duration-200">{formatLotLabel(lot)}</span>
             </div>
             <div>
               <span

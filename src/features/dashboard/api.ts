@@ -8,6 +8,11 @@ export interface DashboardStats {
   today: number
   completed_month: number
   total_month: number
+  overdue: number
+  cancelled_month: number
+  edl_signed_month: number
+  keys_pending: number
+  active_technicians: number
 }
 
 export interface DashboardActivity {

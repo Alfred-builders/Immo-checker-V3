@@ -11,55 +11,30 @@ import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
 import { Input } from 'src/components/ui/input'
 import { TimePicker } from 'src/components/ui/time-picker'
+import { DurationPicker } from 'src/components/ui/duration-picker'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'src/components/ui/dialog'
 import { TechPicker } from 'src/components/shared/tech-picker'
+import { DatePicker } from 'src/components/shared/date-picker'
 import { useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateCle, useDeleteCle, useAddCle, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission } from '../api'
+import { formatBatimentLabel, formatLotLabel } from 'src/features/patrimoine/labels'
 import { FloatingSaveBar } from 'src/components/shared/floating-save-bar'
 import { CancelMissionModal } from './cancel-mission-modal'
 import { useRecentItems } from 'src/hooks/use-recent-items'
 import { formatDate, formatTime } from 'src/lib/formatters'
+import { addMinutesToTime, diffMinutes } from 'src/lib/time'
 import { toast } from 'sonner'
-import type { MissionDetail, CleMission, StatutRdv, StatutCle, SensEDL, TypeEDL } from '../types'
+import { undoableToast } from 'src/lib/undoable-toast'
+import type { MissionDetail, CleMission, StatutCle, SensEDL, TypeEDL } from '../types'
 import {
-  statutAffichageLabels, statutAffichageColors,
-  statutRdvLabels, statutInvitationLabels,
+  statutInvitationLabels,
   sensLabels, sensColors,
   typeCleLabels, statutCleLabels, statutCleColors,
-  getStatutAffichage, getPendingActions,
+  getPendingActions,
 } from '../types'
-
-/* ── Revalidation Dialog ── */
-function RevalidationDialog({ open, onOpenChange, onRevalidate, onConfirmDirectly, saving }: {
-  open: boolean; onOpenChange: (open: boolean) => void; onRevalidate: () => void; onConfirmDirectly: () => void; saving: boolean
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Warning className="h-5 w-5 text-amber-600" />
-            Revalidation du technicien
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Le technicien a déjà accepté cette mission. Que souhaitez-vous faire ?</p>
-          <div className="flex flex-col gap-2">
-            <Button variant="outline" onClick={onRevalidate} disabled={saving} className="justify-start">Demander revalidation</Button>
-            <p className="text-[11px] text-muted-foreground/60 ml-1 -mt-1">Le technicien devra re-accepter la mission avec les nouvelles dates.</p>
-            <Button onClick={onConfirmDirectly} disabled={saving} className="justify-start">Confirmer d'office</Button>
-            <p className="text-[11px] text-muted-foreground/60 ml-1 -mt-1">Les modifications seront enregistrées sans demander revalidation.</p>
-          </div>
-          <div className="flex justify-end pt-1">
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>Annuler</Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
+import { MissionStatusBadge } from './mission-status-badge'
 
 export function MissionDetailPage() {
   const { id } = useParams()
@@ -99,7 +74,6 @@ export function MissionDetailPage() {
   const [showCancel, setShowCancel] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [showRevalidation, setShowRevalidation] = useState(false)
   const [showAddEdl, setShowAddEdl] = useState(false)
   const [addEdlSens, setAddEdlSens] = useState<SensEDL>('entree')
   const [addEdlType, setAddEdlType] = useState<TypeEDL>('edl')
@@ -112,7 +86,7 @@ export function MissionDetailPage() {
   const [addCleLieu, setAddCleLieu] = useState('')
   const [addCleSaving, setAddCleSaving] = useState(false)
 
-  const [formData, setFormData] = useState({ date_planifiee: '', heure_debut: '', heure_fin: '', statut_rdv: '' as string })
+  const [formData, setFormData] = useState({ date_planifiee: '', heure_debut: '', duree_min: null as number | null })
   const [commentaireLocal, setCommentaireLocal] = useState('')
   const [commentaireDirty, setCommentaireDirty] = useState(false)
   const [savingComment, setSavingComment] = useState(false)
@@ -133,7 +107,16 @@ export function MissionDetailPage() {
 
   const missionId = mission?.id
   useEffect(() => {
-    if (mission && !editing) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' })
+    if (mission && !editing) {
+      const debut = mission.heure_debut || ''
+      const fin = mission.heure_fin || ''
+      const duree = debut && fin ? diffMinutes(debut, fin) : null
+      setFormData({
+        date_planifiee: (mission.date_planifiee || '').slice(0, 10),
+        heure_debut: debut,
+        duree_min: duree && duree > 0 ? duree : null,
+      })
+    }
   }, [missionId, editing])
 
   useEffect(() => {
@@ -145,16 +128,18 @@ export function MissionDetailPage() {
   const isLocked = isTerminated || isCancelled
   const pendingActions = mission ? getPendingActions(mission) : []
   const initialDate = (mission?.date_planifiee || '').slice(0, 10)
-  const planningChanged = mission && (formData.date_planifiee !== initialDate || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || ''))
-  const techAccepted = mission?.technicien?.statut_invitation === 'accepte'
-
-  async function doSave(revalidate: boolean) {
+  const computedHeureFin = formData.heure_debut && formData.duree_min
+    ? (addMinutesToTime(formData.heure_debut, formData.duree_min) ?? '')
+    : ''
+  async function doSave() {
     if (!mission) return
     setSaving(true)
     try {
-      await updateMission.mutateAsync({ id: mission.id, date_planifiee: formData.date_planifiee, heure_debut: formData.heure_debut || undefined, heure_fin: formData.heure_fin || undefined, statut_rdv: formData.statut_rdv as StatutRdv })
-      if (revalidate && mission.technicien) await updateInvitation.mutateAsync({ missionId: mission.id, statut_invitation: 'en_attente' })
-      toast.success('Planning mis à jour'); setEditing(false); setShowRevalidation(false)
+      await updateMission.mutateAsync({ id: mission.id, date_planifiee: formData.date_planifiee, heure_debut: formData.heure_debut || undefined, heure_fin: computedHeureFin || undefined })
+      // Auto-réinvitation : la modification de la planification fait repasser
+      // l'invitation tech en "Invité" côté serveur (cf. PATCH /missions/:id).
+      // Pas de dialog de revalidation manuelle — décision Cadrage FC 28/04/2026.
+      toast.success('Planning mis à jour'); setEditing(false)
     } catch (err: any) { toast.error(err.message || 'Erreur lors de la mise à jour') }
     finally { setSaving(false) }
   }
@@ -172,8 +157,7 @@ export function MissionDetailPage() {
   async function handleSave() {
     if (!mission) return
     if (!hasEdits) { setEditing(false); return }
-    if (planningChanged && techAccepted && !isTerminated) { setShowRevalidation(true); return }
-    await doSave(false)
+    await doSave()
   }
 
   async function handleAssignTechnician(userId: string) {
@@ -224,16 +208,16 @@ export function MissionDetailPage() {
     finally { setAddCleSaving(false) }
   }
 
-  async function handleDeleteCle(cle: CleMission) {
-    try {
-      await deleteCle.mutateAsync({ edlId: cle.edl_id, cleId: cle.id })
-      toast.success('Clé supprimée')
-    } catch (err: any) { toast.error(err.message || 'Erreur') }
+  function handleDeleteCle(cle: CleMission) {
+    undoableToast({
+      message: 'Clé supprimée',
+      run: () => deleteCle.mutateAsync({ edlId: cle.edl_id, cleId: cle.id }),
+    })
   }
 
   const edlBrouillonCount = mission?.edls.filter(e => e.statut === 'brouillon').length ?? 0
 
-  const hasEdits = mission && (formData.date_planifiee !== initialDate || formData.heure_debut !== (mission.heure_debut || '') || formData.heure_fin !== (mission.heure_fin || '') || formData.statut_rdv !== (mission.statut_rdv || ''))
+  const hasEdits = mission && (formData.date_planifiee !== initialDate || formData.heure_debut !== (mission.heure_debut || '') || computedHeureFin !== (mission.heure_fin || ''))
 
   useEffect(() => {
     if (!editing || !hasEdits) return
@@ -266,7 +250,6 @@ export function MissionDetailPage() {
   return (
     <div className="px-8 py-6 max-w-[1180px] mx-auto space-y-4">
       {showCancel && <CancelMissionModal open={showCancel} onOpenChange={setShowCancel} missionId={mission.id} missionStatut={mission.statut} edlBrouillonCount={edlBrouillonCount} />}
-      <RevalidationDialog open={showRevalidation} onOpenChange={setShowRevalidation} onRevalidate={() => doSave(true)} onConfirmDirectly={() => doSave(false)} saving={saving} />
 
       {/* Terminated mission banner (US-811) */}
       {isTerminated && (
@@ -289,8 +272,7 @@ export function MissionDetailPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{mission.reference}</h1>
-                {(() => { const a = getStatutAffichage(mission); return <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${statutAffichageColors[a]}`}>{statutAffichageLabels[a]}</span> })()}
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>RDV: {statutRdvLabels[mission.statut_rdv]}</span>
+                <MissionStatusBadge mission={mission} />
                 {mission.edl_types.map((type) => (
                   <span key={type} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
                     {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inventaire'}
@@ -309,11 +291,11 @@ export function MissionDetailPage() {
                   to={`/app/patrimoine/batiments/${mission.lot.batiment.id}`}
                   className="text-muted-foreground font-normal hover:text-primary hover:underline transition-colors"
                 >
-                  {mission.lot.batiment.designation}
+                  {formatBatimentLabel(mission.lot.batiment)}
                 </Link>
               </p>
               <div className="flex items-center gap-5 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{formatDate(mission.date_planifiee)}</span>
+                <span className={`inline-flex items-center gap-1.5 ${mission.date_planifiee ? '' : 'text-orange-600 dark:text-orange-400 font-semibold italic'}`}><Calendar className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{mission.date_planifiee ? formatDate(mission.date_planifiee) : 'À planifier'}</span>
                 {mission.heure_debut && <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{formatTime(mission.heure_debut)}{mission.heure_fin ? ` - ${formatTime(mission.heure_fin)}` : ''}</span>}
                 {techName && <span className="inline-flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{techName}</span>}
                 {mission.lot.adresse && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted-foreground/40" weight="duotone" />{mission.lot.adresse.rue}, {mission.lot.adresse.ville}</span>}
@@ -323,7 +305,19 @@ export function MissionDetailPage() {
               {!isCancelled && !isTerminated && !editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><PencilSimple className="h-3.5 w-3.5" /> Modifier</Button>}
               {!isCancelled && !isTerminated && editing && (
                 <>
-                  <Button variant="outline" size="sm" disabled={saving} onClick={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }}>Annuler</Button>
+                  <Button variant="outline" size="sm" disabled={saving} onClick={() => {
+                    setEditing(false)
+                    if (mission) {
+                      const debut = mission.heure_debut || ''
+                      const fin = mission.heure_fin || ''
+                      const duree = debut && fin ? diffMinutes(debut, fin) : null
+                      setFormData({
+                        date_planifiee: (mission.date_planifiee || '').slice(0, 10),
+                        heure_debut: debut,
+                        duree_min: duree && duree > 0 ? duree : null,
+                      })
+                    }
+                  }}>Annuler</Button>
                   <Button size="sm" onClick={handleSave} disabled={saving || !hasEdits}>
                     {saving ? <SpinnerGap className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Sauvegarder
@@ -362,19 +356,25 @@ export function MissionDetailPage() {
         <CardBlock title="Planning" icon={Calendar} locked={isLocked}>
           {editing && !isTerminated ? (
             <div className="space-y-3">
-              <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Date</Label><Input type="date" value={formData.date_planifiee} onChange={(e) => setFormData(prev => ({ ...prev, date_planifiee: e.target.value }))} onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()} className="h-10 cursor-pointer" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><TimePicker value={formData.heure_debut} onChange={(v) => setFormData(prev => ({ ...prev, heure_debut: v }))} /></div>
-                <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure fin</Label><TimePicker value={formData.heure_fin} onChange={(v) => setFormData(prev => ({ ...prev, heure_fin: v }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Date</Label><DatePicker value={formData.date_planifiee} onChange={(v) => setFormData(prev => ({ ...prev, date_planifiee: v }))} className="h-10" /></div>
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Heure début</Label><TimePicker value={formData.heure_debut} onChange={(v) => setFormData(prev => ({ ...prev, heure_debut: v }))} /></div>
+                  <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Durée</Label><DurationPicker value={formData.duree_min} onChange={(v) => setFormData(prev => ({ ...prev, duree_min: v }))} /></div>
+                </div>
+                <p className="text-[11px] text-muted-foreground/70">
+                  {formData.heure_debut && formData.duree_min
+                    ? <>Heure de fin : <span className="font-semibold text-foreground/80">{computedHeureFin}</span></>
+                    : 'Renseigne l\'heure de début et la durée pour calculer l\'heure de fin.'}
+                </p>
               </div>
-              <div className="space-y-1.5"><Label className="text-xs font-semibold text-muted-foreground">Statut RDV</Label><Select value={formData.statut_rdv} onValueChange={(v) => setFormData(prev => ({ ...prev, statut_rdv: v }))}><SelectTrigger className="h-10"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="a_confirmer">À confirmer</SelectItem><SelectItem value="confirme">Confirmé</SelectItem><SelectItem value="reporte">Reporté</SelectItem></SelectContent></Select></div>
             </div>
           ) : (
             <div className="space-y-3">
               <FieldRow label="Référence"><span className="text-[14px] font-semibold text-foreground font-mono">{mission.reference}</span></FieldRow>
-              <FieldRow label="Date"><span className="text-[14px] font-semibold text-foreground">{formatDate(mission.date_planifiee)}</span></FieldRow>
+              <FieldRow label="Statut"><MissionStatusBadge mission={mission} variant="compact" /></FieldRow>
+              <FieldRow label="Date">{mission.date_planifiee ? <span className="text-[14px] font-semibold text-foreground">{formatDate(mission.date_planifiee)}</span> : <span className="text-[14px] font-semibold italic text-amber-600 dark:text-amber-400">À planifier</span>}</FieldRow>
               {mission.heure_debut && <FieldRow label="Horaire"><span className="text-[14px] font-medium text-foreground">{formatTime(mission.heure_debut)}{mission.heure_fin ? ` — ${formatTime(mission.heure_fin)}` : ''}</span></FieldRow>}
-              <FieldRow label="Statut RDV"><span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold ${mission.statut_rdv === 'confirme' ? 'bg-green-100 text-green-700' : mission.statut_rdv === 'reporte' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{statutRdvLabels[mission.statut_rdv]}</span></FieldRow>
               {mission.avec_inventaire && <FieldRow label="Inventaire"><span className="text-[13px] text-foreground">Oui</span></FieldRow>}
               {mission.type_bail && mission.type_bail !== 'individuel' && <FieldRow label="Type bail"><span className="text-[13px] text-foreground capitalize">{mission.type_bail}</span></FieldRow>}
               <FieldRow label="Créée le"><span className="text-[13px] text-muted-foreground">{formatDate(mission.created_at)}</span></FieldRow>
@@ -440,11 +440,12 @@ export function MissionDetailPage() {
                 <TimelineEvent color="bg-muted-foreground/20" title="En attente d'assignation" desc="Aucun technicien assigné" muted />
               )}
               <TimelineEvent
-                color={mission.statut_rdv === 'confirme' ? 'bg-green-500' : mission.statut_rdv === 'reporte' ? 'bg-red-400' : 'bg-muted-foreground/20'}
-                title={`RDV ${statutRdvLabels[mission.statut_rdv].toLowerCase()}`}
-                desc={`Date prévue : ${formatDate(mission.date_planifiee)}${mission.heure_debut ? ` à ${formatTime(mission.heure_debut)}` : ''}`}
-                timestamp={mission.statut_rdv !== 'a_confirmer' ? mission.statut_rdv_updated_at : null}
-                muted={mission.statut_rdv === 'a_confirmer'}
+                color={mission.date_planifiee ? 'bg-sky-500' : 'bg-amber-500'}
+                title={mission.date_planifiee ? 'Mission planifiée' : 'À planifier'}
+                desc={mission.date_planifiee
+                  ? `Date prévue : ${formatDate(mission.date_planifiee)}${mission.heure_debut ? ` à ${formatTime(mission.heure_debut)}` : ''}`
+                  : 'Aucun créneau fixé pour le moment'}
+                muted={!mission.date_planifiee}
               />
               {mission.edls.filter(e => e.statut === 'signe').map((edl) => (
                 <TimelineEvent
@@ -609,7 +610,7 @@ export function MissionDetailPage() {
               <Link to={`/app/patrimoine/lots/${mission.lot.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
                 <div className="h-10 w-10 rounded-[10px] bg-blue-50 flex items-center justify-center shrink-0 dark:bg-blue-950"><House className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" /></div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-foreground truncate">{mission.lot.designation}</div>
+                  <div className="text-[13px] font-semibold text-foreground truncate">{formatLotLabel(mission.lot)}</div>
                   <div className="text-[11px] text-muted-foreground capitalize">{mission.lot.type_bien}{mission.lot.etage ? ` · ${mission.lot.etage}` : ''}{mission.lot.surface ? ` · ${mission.lot.surface} m²` : ''}</div>
                 </div>
                 <ArrowSquareOut className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0" />
@@ -617,7 +618,7 @@ export function MissionDetailPage() {
               <Link to={`/app/patrimoine/batiments/${mission.lot.batiment.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
                 <div className="h-10 w-10 rounded-[10px] bg-slate-100 flex items-center justify-center shrink-0 dark:bg-slate-900"><BuildingOffice className="h-4.5 w-4.5 text-slate-500 dark:text-slate-400" /></div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-foreground truncate">{mission.lot.batiment.designation}</div>
+                  <div className="text-[13px] font-semibold text-foreground truncate">{formatBatimentLabel(mission.lot.batiment)}</div>
                   {mission.lot.adresse && <div className="text-[11px] text-muted-foreground truncate">{mission.lot.adresse.rue}, {mission.lot.adresse.code_postal} {mission.lot.adresse.ville}</div>}
                 </div>
                 <ArrowSquareOut className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0" />
@@ -858,7 +859,19 @@ export function MissionDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <FloatingSaveBar visible={editing} hasChanges={!!hasEdits} onSave={handleSave} onCancel={() => { setEditing(false); if (mission) setFormData({ date_planifiee: (mission.date_planifiee || '').slice(0, 10), heure_debut: mission.heure_debut || '', heure_fin: mission.heure_fin || '', statut_rdv: mission.statut_rdv || '' }) }} saving={saving} />
+      <FloatingSaveBar visible={editing} hasChanges={!!hasEdits} onSave={handleSave} onCancel={() => {
+        setEditing(false)
+        if (mission) {
+          const debut = mission.heure_debut || ''
+          const fin = mission.heure_fin || ''
+          const duree = debut && fin ? diffMinutes(debut, fin) : null
+          setFormData({
+            date_planifiee: (mission.date_planifiee || '').slice(0, 10),
+            heure_debut: debut,
+            duree_min: duree && duree > 0 ? duree : null,
+          })
+        }
+      }} saving={saving} />
     </div>
   )
 }

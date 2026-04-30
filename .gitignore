@@ -10,3 +10,6 @@ core.*
 
 # AI chat uploads
 .uploads/
+
+# Claude Code runtime files
+.claude/scheduled_tasks.lock

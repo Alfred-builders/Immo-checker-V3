@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'src/co
 import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from 'src/components/ui/select'
 import { formatTime, formatDate } from 'src/lib/formatters'
+import { undoableToast } from 'src/lib/undoable-toast'
 import { TechPicker } from 'src/components/shared/tech-picker'
 import { UnavailabilityModal } from './unavailability-modal'
 import { useMissions, useWorkspaceTechnicians, useIndisponibilites, useDeleteIndisponibilite, useUpdateIndisponibilite } from '../api'
@@ -29,9 +30,10 @@ const MONTH_NAMES = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Jui
 type CalendarMode = 'week' | 'month'
 
 const legendItems = [
-  { label: 'À traiter', color: 'bg-orange-500' },
-  { label: 'Prête', color: 'bg-emerald-500' },
-  { label: 'Terminée', color: 'bg-muted-foreground/30' },
+  { label: 'À planifier', color: 'bg-amber-500' },
+  { label: 'Planifié', color: 'bg-sky-500' },
+  { label: 'Finalisée', color: 'bg-emerald-500' },
+  { label: 'Infructueuse', color: 'bg-orange-500' },
   { label: 'Annulée', color: 'bg-red-400' },
 ]
 
@@ -243,9 +245,10 @@ export function MissionCalendar(props: Props) {
           <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="a_traiter">À traiter</SelectItem>
-            <SelectItem value="prete">Prête</SelectItem>
-            <SelectItem value="terminee">Terminée</SelectItem>
+            <SelectItem value="a_planifier">À planifier</SelectItem>
+            <SelectItem value="planifie">Planifié</SelectItem>
+            <SelectItem value="finalisee">Finalisée</SelectItem>
+            <SelectItem value="infructueuse">Infructueuse</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
           </SelectContent>
         </Select>
@@ -299,8 +302,8 @@ export function MissionCalendar(props: Props) {
         <div className="flex items-center gap-3 basis-full">
           {legendItems.map(l => (
             <div key={l.label} className="flex items-center gap-1.5">
-              <div className={`w-2 h-2 rounded-full ${l.color}`} />
-              <span className="text-[11px] text-muted-foreground/50 font-medium">{l.label}</span>
+              <div className={`w-2.5 h-2.5 rounded-full ${l.color}`} />
+              <span className="text-xs text-muted-foreground font-medium">{l.label}</span>
             </div>
           ))}
           <div className="flex items-center gap-1.5">
@@ -311,7 +314,7 @@ export function MissionCalendar(props: Props) {
                   'repeating-linear-gradient(135deg, transparent 0px, transparent 2px, rgba(0,0,0,0.14) 2px, rgba(0,0,0,0.14) 3px)',
               }}
             />
-            <span className="text-[11px] text-muted-foreground/50 font-medium">Indisponible</span>
+            <span className="text-xs text-muted-foreground font-medium">Indisponible</span>
           </div>
         </div>
       </div>
@@ -480,7 +483,6 @@ export function MissionCalendar(props: Props) {
 
 /* ── Week Card (detailed) ── */
 function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
-  const compact = false
   const statut = getStatutMission(mission)
   const cardColor = statutMissionCardColors[statut]
   const dotColor = statutMissionDotColors[statut]
@@ -488,65 +490,60 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
   const hasPending = pendingActions.length > 0
   const techInitials = mission.technicien ? `${mission.technicien.prenom[0]}${mission.technicien.nom[0]}`.toUpperCase() : null
   const techFullName = mission.technicien ? `${mission.technicien.prenom} ${mission.technicien.nom}` : null
+  const techAvatarUrl = mission.technicien?.avatar_url ?? null
+
+  // Titre = propriétaire principal, fallback adresse, puis désignation lot
+  const title = mission.proprietaire_nom || mission.adresse || mission.lot_designation
+  const showAddressSubline = !!mission.proprietaire_nom && !!mission.adresse
 
   return (
     <div data-mission-card onClick={onClick} className={`group px-2 py-1.5 rounded-lg border cursor-pointer transition-all duration-150 hover:shadow-elevation-raised-hover overflow-hidden ${cardColor}`}>
-      {compact ? (
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between mb-0.5 gap-1">
+        <div className="flex items-center gap-1 min-w-0">
           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-          <span className="text-[11px] font-bold text-foreground/80 truncate">{mission.lot_designation}</span>
-          {mission.heure_debut && <span className="text-[11px] text-muted-foreground/40 ml-auto shrink-0">{formatTime(mission.heure_debut)}</span>}
+          <span className="text-[11px] font-semibold text-foreground/90 group-hover:text-primary transition-colors truncate leading-tight">{title}</span>
         </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between mb-0.5">
-            <div className="flex items-center gap-1 min-w-0">
-              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-              <span className="font-mono text-[11px] font-bold text-foreground/70 group-hover:text-primary transition-colors truncate">{mission.reference}</span>
-            </div>
-            {techInitials && (
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[11px] font-bold text-primary shrink-0 ml-1">
-                      {techInitials}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-[11px]">{techFullName}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-          </div>
-          <p className="text-[11px] font-semibold text-foreground/90 truncate leading-tight">{mission.lot_designation}</p>
-          {mission.adresse && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[11px] text-muted-foreground/80 truncate">
-              <MapPin className="h-2.5 w-2.5 shrink-0" />
-              <span className="truncate">{mission.adresse}</span>
-            </div>
-          )}
-          {mission.heure_debut && (
-            <div className="flex items-center gap-0.5 mt-0.5 text-[11px] font-medium text-muted-foreground/75">
-              <Clock className="h-2.5 w-2.5" />
-              {formatTime(mission.heure_debut)}{mission.heure_fin ? `-${formatTime(mission.heure_fin)}` : ''}
-            </div>
-          )}
-        </>
-      )}
-
-      {!compact && (
-        <div className="flex flex-wrap gap-0.5 mt-1">
-          {mission.edl_types.map(type => (
-            <span key={type} className={`px-1 py-0 rounded text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
-              {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inv.'}
-            </span>
-          ))}
-          {hasPending && (
-            <span className="flex items-center gap-0.5 px-1 py-0 rounded text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-              <WarningCircle className="h-2 w-2" weight="fill" />{pendingActions.length}
-            </span>
-          )}
+        {mission.technicien && (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-5 w-5 rounded shrink-0 ml-1 overflow-hidden bg-primary/10 flex items-center justify-center">
+                  {techAvatarUrl ? (
+                    <img src={techAvatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-[11px] font-bold text-primary">{techInitials}</span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-[11px]">{techFullName}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+      {showAddressSubline && (
+        <div className="flex items-center gap-0.5 mt-0.5 text-[11px] text-muted-foreground/80 truncate">
+          <MapPin className="h-2.5 w-2.5 shrink-0" />
+          <span className="truncate">{mission.adresse}</span>
         </div>
       )}
+      {mission.heure_debut && (
+        <div className="flex items-center gap-0.5 mt-0.5 text-[11px] font-medium text-muted-foreground/75">
+          <Clock className="h-2.5 w-2.5" />
+          {formatTime(mission.heure_debut)}{mission.heure_fin ? `-${formatTime(mission.heure_fin)}` : ''}
+        </div>
+      )}
+      <div className="flex flex-wrap gap-0.5 mt-1">
+        {mission.edl_types.map(type => (
+          <span key={type} className={`px-1 py-0 rounded text-[11px] font-semibold ${type === 'entree' || type === 'sortie' ? sensColors[type as 'entree' | 'sortie'] : 'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300'}`}>
+            {type === 'entree' || type === 'sortie' ? sensLabels[type as 'entree' | 'sortie'] : 'Inv.'}
+          </span>
+        ))}
+        {hasPending && (
+          <span className="flex items-center gap-0.5 px-1 py-0 rounded text-[11px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+            <WarningCircle className="h-2 w-2" weight="fill" />{pendingActions.length}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
@@ -554,11 +551,12 @@ function WeekCard({ mission, onClick }: { mission: Mission; onClick: () => void 
 /* ── Month Card (compact) ── */
 function MonthCard({ mission, onClick }: { mission: Mission; onClick: () => void }) {
   const dotColor = statutMissionDotColors[getStatutMission(mission)]
+  const title = mission.proprietaire_nom || mission.adresse || mission.lot_designation
 
   return (
     <div data-mission-card onClick={onClick} className="group flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer hover:bg-muted/30 transition-colors">
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-      <span className="text-[11px] font-semibold text-foreground/80 truncate group-hover:text-primary transition-colors">{mission.lot_designation}</span>
+      <span className="text-[11px] font-semibold text-foreground/80 truncate group-hover:text-primary transition-colors">{title}</span>
       {mission.heure_debut && <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-auto">{formatTime(mission.heure_debut)}</span>}
     </div>
   )
@@ -586,30 +584,41 @@ function IndispoBlock({ indispo: ind, onEdit }: { indispo: IndisponibiliteTechni
   }
 
   function confirmSimpleDelete() {
-    deleteMutation.mutate(parentId, {
-      onSuccess: () => setShowSimpleConfirm(false),
+    setShowSimpleConfirm(false)
+    undoableToast({
+      message: 'Indisponibilité supprimée',
+      run: () => deleteMutation.mutateAsync(parentId),
     })
   }
 
-  async function deleteOccurrenceOnly() {
+  function deleteOccurrenceOnly() {
     const config = { ...(ind.recurrence_config || { freq: 'weekly' as const }) } as any
     const exdates = [...(config.exdates || []), occurrenceDate]
-    await updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, exdates } })
     setShowRecurringConfirm(false)
+    undoableToast({
+      message: 'Occurrence supprimée',
+      run: () => updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, exdates } }),
+    })
   }
 
-  async function deleteFromHere() {
+  function deleteFromHere() {
     const prevDay = new Date(occurrenceDate)
     prevDay.setDate(prevDay.getDate() - 1)
     const until = prevDay.toISOString().slice(0, 10)
     const config = { ...(ind.recurrence_config || { freq: 'weekly' as const }) } as any
-    await updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, until } })
     setShowRecurringConfirm(false)
+    undoableToast({
+      message: 'Récurrence terminée à cette date',
+      run: () => updateMutation.mutateAsync({ id: parentId, recurrence_config: { ...config, until } }),
+    })
   }
 
-  async function deleteAll() {
-    await deleteMutation.mutateAsync(parentId)
+  function deleteAll() {
     setShowRecurringConfirm(false)
+    undoableToast({
+      message: 'Récurrence supprimée',
+      run: () => deleteMutation.mutateAsync(parentId),
+    })
   }
 
   const initials = `${(ind.user_prenom?.[0] || '').toUpperCase()}${(ind.user_nom?.[0] || '').toUpperCase()}` || '—'

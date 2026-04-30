@@ -22,9 +22,9 @@ router.get('/stats', async (req, res) => {
         (SELECT count(*) FROM mission m
          WHERE m.workspace_id = $1 AND m.statut = 'planifiee'
            AND (
-             NOT EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id)
+             m.date_planifiee IS NULL
+             OR NOT EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id)
              OR EXISTS (SELECT 1 FROM mission_technicien mt WHERE mt.mission_id = m.id AND mt.statut_invitation != 'accepte')
-             OR m.statut_rdv = 'a_confirmer'
            )
         )::int as pending_actions,
         (SELECT count(*) FROM mission
@@ -42,7 +42,28 @@ router.get('/stats', async (req, res) => {
         (SELECT count(*) FROM mission
          WHERE workspace_id = $1 AND statut != 'annulee'
            AND date_planifiee >= $2
-        )::int as total_month`,
+        )::int as total_month,
+        (SELECT count(*) FROM mission
+         WHERE workspace_id = $1 AND statut = 'planifiee'
+           AND date_planifiee::date < $3::date
+        )::int as overdue,
+        (SELECT count(*) FROM mission
+         WHERE workspace_id = $1 AND statut = 'annulee'
+           AND date_planifiee >= $2
+        )::int as cancelled_month,
+        (SELECT count(*) FROM edl_inventaire
+         WHERE workspace_id = $1 AND statut = 'signe'
+           AND date_signature >= $2
+        )::int as edl_signed_month,
+        (SELECT count(*) FROM cle_mission cm
+         JOIN mission m ON m.id = cm.mission_id
+         WHERE m.workspace_id = $1 AND cm.statut = 'a_deposer'
+        )::int as keys_pending,
+        (SELECT count(DISTINCT mt.user_id) FROM mission_technicien mt
+         JOIN mission m ON m.id = mt.mission_id
+         WHERE m.workspace_id = $1 AND mt.statut_invitation = 'accepte'
+           AND m.date_planifiee BETWEEN $3 AND $4
+        )::int as active_technicians`,
       [workspaceId, firstOfMonth, today, in7days]
     )
 

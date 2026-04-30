@@ -26,7 +26,14 @@ export function DayMissionsModal({ date, onClose, onMissionClick }: DayMissionsM
     date_to: date,
     limit: 50,
   })
-  const missions = missionsData?.data ?? []
+  const missions = [...(missionsData?.data ?? [])].sort((a, b) => {
+    const ta = a.heure_debut ?? ''
+    const tb = b.heure_debut ?? ''
+    // Missions sans heure (journée entière) en premier
+    if (!ta && tb) return -1
+    if (ta && !tb) return 1
+    return ta.localeCompare(tb)
+  })
 
   function handleMissionClick(id: string) {
     onMissionClick(id)

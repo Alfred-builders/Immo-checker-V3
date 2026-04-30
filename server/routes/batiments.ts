@@ -12,10 +12,12 @@ router.use(verifyToken)
 router.use(requireRole('admin', 'gestionnaire'))
 
 // GET /api/batiments — List buildings with search, filters, pagination
+// Special mode: ?address_rue=&address_cp=&address_ville= → returns buildings
+// matching that exact address (used by the address-first picker).
 router.get('/', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
-    const { search, type, archived, cursor, limit: rawLimit } = req.query
+    const { search, type, archived, cursor, limit: rawLimit, address_rue, address_cp, address_ville, sort } = req.query
     const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
 
     let where = `b.workspace_id = $1 AND b.est_archive = $2`
@@ -25,11 +27,27 @@ router.get('/', async (req, res) => {
     if (search) {
       where += ` AND (
         b.designation ILIKE $${paramIndex}
+        OR b.num_batiment ILIKE $${paramIndex}
         OR EXISTS (SELECT 1 FROM adresse_batiment ab WHERE ab.batiment_id = b.id AND (ab.rue ILIKE $${paramIndex} OR ab.ville ILIKE $${paramIndex} OR ab.code_postal ILIKE $${paramIndex}))
         OR EXISTS (SELECT 1 FROM lot l WHERE l.batiment_id = b.id AND (l.designation ILIKE $${paramIndex} OR l.reference_interne ILIKE $${paramIndex}))
       )`
       params.push(`%${search}%`)
       paramIndex++
+    }
+
+    // Address-first picker: match on normalized rue + cp + ville (case/space tolerant).
+    // We compare on lower(trim()) so "12 rue Lilas " == "12 RUE LILAS".
+    if (address_rue && address_cp && address_ville) {
+      where += ` AND EXISTS (
+        SELECT 1 FROM adresse_batiment ab
+        WHERE ab.batiment_id = b.id
+          AND ab.type = 'principale'
+          AND lower(trim(ab.rue)) = lower(trim($${paramIndex}))
+          AND trim(ab.code_postal) = trim($${paramIndex + 1})
+          AND lower(trim(ab.ville)) = lower(trim($${paramIndex + 2}))
+      )`
+      params.push(address_rue, address_cp, address_ville)
+      paramIndex += 3
     }
 
     if (type) {
@@ -59,7 +77,7 @@ router.get('/', async (req, res) => {
         (SELECT count(*) FROM mission m JOIN lot l ON l.id = m.lot_id WHERE l.batiment_id = b.id AND m.statut = 'planifiee' AND m.date_planifiee >= CURRENT_DATE)::int as missions_a_venir
       FROM batiment b
       WHERE ${where}
-      ORDER BY b.designation ASC
+      ORDER BY ${sort === 'recent' ? 'b.created_at DESC, b.id ASC' : 'b.num_batiment ASC NULLS LAST, b.designation ASC NULLS LAST, b.created_at ASC'}
       LIMIT $${paramIndex}
     `
     params.push(limit + 1)
@@ -124,8 +142,10 @@ router.get('/:id/lots', async (req, res) => {
 })
 
 // POST /api/batiments — Create building
+// designation is optional: when missing, the UI displays "Bât. {num_batiment}"
+// or "Bâtiment unique". num_batiment carries the structured letter/number (A, B, C…).
 const createBatimentSchema = z.object({
-  designation: z.string().min(1).max(255),
+  designation: z.string().max(255).optional(),
   type: z.enum(['immeuble', 'maison', 'local_commercial', 'mixte', 'autre']),
   num_batiment: z.string().max(50).optional(),
   nb_etages: z.number().int().optional(),
@@ -150,7 +170,7 @@ router.post('/', requireRole('admin', 'gestionnaire'), validate(createBatimentSc
     const batResult = await query(
       `INSERT INTO batiment (workspace_id, designation, type, num_batiment, nb_etages, annee_construction, commentaire)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [workspaceId, batimentData.designation, batimentData.type, batimentData.num_batiment ?? null,
+      [workspaceId, batimentData.designation ?? null, batimentData.type, batimentData.num_batiment ?? null,
        batimentData.nb_etages ?? null, batimentData.annee_construction ?? null, batimentData.commentaire ?? null]
     )
     const batiment = batResult.rows[0]

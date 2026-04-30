@@ -6,6 +6,7 @@ import { Textarea } from 'src/components/ui/textarea'
 import { Label } from 'src/components/ui/label'
 import { useCancelMission } from '../api'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import type { MissionStatut } from '../types'
 
 interface Props {
@@ -22,20 +23,19 @@ export function CancelMissionModal({ open, onOpenChange, missionId, missionStatu
 
   const isTerminated = missionStatut === 'terminee'
 
-  async function handleConfirm() {
-    if (!motif.trim()) {
+  function handleConfirm() {
+    const trimmed = motif.trim()
+    if (!trimmed) {
       toast.error('Le motif d\'annulation est obligatoire')
       return
     }
-
-    try {
-      await cancelMission.mutateAsync({ id: missionId, motif: motif.trim() })
-      toast.success('Mission annulée')
-      setMotif('')
-      onOpenChange(false)
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de l\'annulation')
-    }
+    onOpenChange(false)
+    setMotif('')
+    undoableToast({
+      message: 'Mission annulée',
+      description: 'Action effective dans 5 s',
+      run: () => cancelMission.mutateAsync({ id: missionId, motif: trimmed }),
+    })
   }
 
   return (

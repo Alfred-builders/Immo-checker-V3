@@ -15,7 +15,7 @@ export interface AdresseDetail extends Adresse {
 
 export interface Batiment {
   id: string
-  designation: string
+  designation: string | null
   type: 'immeuble' | 'maison' | 'local_commercial' | 'mixte' | 'autre'
   num_batiment?: string | null
   nb_etages?: number | null
@@ -47,7 +47,7 @@ export interface TiersRef {
 
 export interface Lot {
   id: string
-  designation: string
+  designation: string | null
   reference_interne?: string | null
   type_bien: string
   type_bien_precision?: string | null
@@ -64,7 +64,7 @@ export interface Lot {
 
 export interface LotDetail extends Lot {
   batiment_id: string
-  batiment?: { id: string; designation: string; type: string }
+  batiment?: { id: string; designation: string | null; type: string; num_batiment?: string | null; adresse?: Adresse | null }
   // type_bien_precision déjà hérité de Lot — renseigné uniquement si type_bien = 'autre'
   dpe_classe?: string | null
   ges_classe?: string | null

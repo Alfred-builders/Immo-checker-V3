@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Form bâtiment — propositions design</title>
+<meta name="viewport" content="width=1600" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg: '#eef0f4',
+        card: '#ffffff',
+        sunken: '#f1f4f8',
+        border: '#e3e7ed',
+        muted: '#f1f4f8',
+        'muted-fg': '#64748b',
+        fg: '#0f172a',
+        primary: { DEFAULT: '#2563eb', fg: '#ffffff', soft: '#dbeafe' },
+        emerald: { 600: '#059669', soft: '#d1fae5' },
+        amber:   { 600: '#d97706', soft: '#fef3c7' },
+        violet:  { 600: '#7c3aed', soft: '#ede9fe' },
+        sky:     { 600: '#0284c7', soft: '#e0f2fe' },
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,sans-serif; }
+  /* gros input – 48px */
+  .input-lg {
+    display:flex; align-items:center; height:48px; width:100%;
+    border:1px solid #e3e7ed; border-radius:.65rem; background:#fff;
+    padding:0 1rem; font-size:15px; color:#0f172a; transition:all .15s;
+  }
+  .input-lg.focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.14); }
+  .input-lg.placeholder { color:#94a3b8; }
+  /* input XL — 56px */
+  .input-xl {
+    display:flex; align-items:center; height:56px; width:100%;
+    border:1px solid #e3e7ed; border-radius:.75rem; background:#fff;
+    padding:0 1.1rem; font-size:16px; color:#0f172a;
+  }
+  .input-xl.focus { border-color:#2563eb; box-shadow:0 0 0 4px rgba(37,99,235,.13); }
+  .input-xl.placeholder { color:#94a3b8; }
+  .label { font-size:13px; font-weight:600; color:#334155; letter-spacing:.005em; }
+  .label-lg { font-size:14px; font-weight:600; color:#0f172a; letter-spacing:.005em; }
+  .helper { font-size:12px; color:#64748b; }
+  .pill { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .6rem; border-radius:9999px; font-size:11.5px; font-weight:600; }
+  .chip { display:inline-flex; align-items:center; gap:.45rem; padding:.55rem 1rem; border-radius:.6rem; font-size:14px; font-weight:600; }
+  .chip-lg { padding:.7rem 1.2rem; font-size:15px; border-radius:.7rem; }
+  .grp-title { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
+  .modal { background:#fff; border:1px solid #e3e7ed; border-radius:18px; box-shadow:0 24px 60px -12px rgba(15,23,42,.22), 0 12px 24px -16px rgba(15,23,42,.10); overflow:hidden; }
+  .scrim { background:rgba(15,23,42,.18); padding:30px; border-radius:24px; }
+  .stickynav { position:sticky; top:0; z-index:50; backdrop-filter:saturate(150%) blur(8px); background:rgba(238,240,244,.85); border-bottom:1px solid #e3e7ed; }
+  .seg { display:inline-flex; padding:.18rem; background:#eef0f4; border-radius:.6rem; }
+  .seg button { padding:.4rem .85rem; font-size:13px; font-weight:600; border-radius:.45rem; color:#475569; background:transparent; }
+  .seg button.on { background:#fff; color:#0f172a; box-shadow:0 1px 2px rgba(15,23,42,.06); }
+  .step-num { width:32px; height:32px; border-radius:9999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .step-bar { height:2px; flex:1; background:#e3e7ed; }
+  .step-bar.done { background:#059669; }
+  .blink { animation:blink 1.05s steps(2,end) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .ring-soft { box-shadow:0 0 0 1px rgba(37,99,235,.45); }
+  .section-card { background:#fff; border:1px solid #e3e7ed; border-radius:14px; padding:24px; }
+  .section-card-elev { box-shadow:0 1px 2px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.07); }
+</style>
+</head>
+<body class="bg-bg text-fg">
+
+<nav class="stickynav">
+  <div class="max-w-[1500px] mx-auto px-8 py-3 flex items-center gap-3">
+    <span class="text-[14px] font-bold">Création bâtiment · propositions</span>
+    <span class="text-[12px] text-muted-fg ml-2">champs grands, modales spacieuses</span>
+    <div class="ml-auto seg">
+      <a href="#A" class="!no-underline"><button>A · Pleine largeur 2 col XL</button></a>
+      <a href="#B" class="!no-underline"><button>B · Wizard 3 étapes</button></a>
+      <a href="#C" class="!no-underline"><button>C · Hero adresse</button></a>
+      <a href="#D" class="!no-underline"><button>D · Cards aérées</button></a>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- A — Modale pleine largeur, 2 col, champs h-48px               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="A" class="py-12">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-amber-soft text-amber-600">A</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Modale pleine largeur — 2 colonnes, champs h=48px</h2>
+      <span class="text-[12px] text-muted-fg ml-auto">max-w-3xl · 768 px · plus large mais pas écrasant</span>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <div class="modal mx-auto" style="max-width:820px;">
+        <div class="px-8 py-6 border-b border-border flex items-center justify-between">
+          <div>
+            <div class="text-[22px] font-bold tracking-tight">Nouveau bâtiment</div>
+            <div class="text-[13px] text-muted-fg mt-0.5">Crée un bâtiment puis tu pourras y rattacher des lots.</div>
+          </div>
+          <span class="text-[24px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <div class="px-8 py-7 space-y-7">
+          <div class="grid grid-cols-2 gap-7">
+            <div class="space-y-5">
+              <div class="grp-title">Identification</div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="space-y-2">
+                  <div class="label">Numéro</div>
+                  <div class="input-lg placeholder">A, B, 1…</div>
+                </div>
+                <div class="col-span-2 space-y-2">
+                  <div class="label">Type *</div>
+                  <div class="input-lg flex justify-between">Immeuble<span class="text-muted-fg">▾</span></div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="label">Désignation</div>
+                <div class="input-lg">Résidence Les Lilas</div>
+                <p class="helper">Optionnel — nom de la résidence si pertinent.</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-2">
+                  <div class="label">Nombre d'étages</div>
+                  <div class="input-lg">5</div>
+                </div>
+                <div class="space-y-2">
+                  <div class="label">Année construction</div>
+                  <div class="input-lg">1968</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-5">
+              <div class="grp-title">Adresse</div>
+              <div class="space-y-2">
+                <div class="label">Adresse principale *</div>
+                <div class="input-lg focus">12 rue des Lilas, 75019 Paris<span class="blink ml-1">|</span></div>
+                <div class="flex items-center gap-2 text-[12px] text-muted-fg">
+                  <span class="text-emerald-600">✓</span>
+                  <span><b class="text-fg">12 rue des Lilas</b> · 75019 Paris</span>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <div class="label">Complément</div>
+                <div class="input-lg placeholder">Entrée 2, escalier C…</div>
+              </div>
+              <button class="text-[13px] text-primary font-semibold inline-flex items-center gap-1">+ Adresse secondaire</button>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="label">Commentaire</div>
+            <div class="input-lg placeholder" style="height:auto; min-height:88px; align-items:flex-start; padding-top:12px;">Notes complémentaires…</div>
+          </div>
+        </div>
+
+        <div class="px-8 py-5 border-t border-border bg-sunken/60 flex justify-end items-center gap-3">
+          <span class="chip border border-border bg-card">Annuler</span>
+          <span class="chip-lg chip bg-primary text-primary-fg">Créer le bâtiment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- B — Wizard 3 étapes, champs XL                                -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="B" class="py-12 bg-[#e9ecf1]">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-violet-soft text-violet-600">B</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Wizard 3 étapes — un seul focus à la fois, champs XL</h2>
+      <span class="text-[12px] text-muted-fg ml-auto">max-w-xl · une étape, 2-3 champs grands</span>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <div class="modal mx-auto" style="max-width:600px;">
+        <div class="px-8 py-6 border-b border-border">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-[22px] font-bold tracking-tight">Nouveau bâtiment</div>
+            <span class="text-[24px] text-muted-fg cursor-pointer">×</span>
+          </div>
+          <!-- stepper -->
+          <div class="flex items-center gap-3">
+            <div class="step-num bg-emerald-soft text-emerald-600">✓</div>
+            <div class="step-bar done"></div>
+            <div class="step-num bg-primary text-primary-fg">2</div>
+            <div class="step-bar"></div>
+            <div class="step-num bg-muted text-muted-fg">3</div>
+          </div>
+          <div class="flex items-center justify-between mt-2 text-[12px]">
+            <span class="text-muted-fg">Identification</span>
+            <span class="text-fg font-semibold">Adresse</span>
+            <span class="text-muted-fg">Détails</span>
+          </div>
+        </div>
+
+        <div class="px-8 py-8 space-y-6">
+          <div class="space-y-2">
+            <div class="label-lg">Adresse principale *</div>
+            <div class="input-xl focus">12 rue des Lilas, 75019 Paris<span class="blink ml-1">|</span></div>
+            <p class="helper">Tape l'adresse — elle est complétée automatiquement (BAN).</p>
+          </div>
+
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 flex items-start gap-3">
+            <span class="text-emerald-600 mt-1">📍</span>
+            <div class="flex-1">
+              <div class="text-[14px] font-semibold">12 rue des Lilas</div>
+              <div class="text-[12.5px] text-muted-fg">75019 Paris · 48.882, 2.385</div>
+            </div>
+            <span class="text-[12px] text-muted-fg cursor-pointer">↻ changer</span>
+          </div>
+
+          <div class="space-y-2">
+            <div class="label-lg">Complément</div>
+            <div class="input-xl placeholder">Entrée 2, escalier C…</div>
+          </div>
+
+          <button class="text-[14px] text-primary font-semibold inline-flex items-center gap-1.5">+ Ajouter une adresse secondaire</button>
+        </div>
+
+        <div class="px-8 py-5 border-t border-border bg-sunken/60 flex justify-between items-center">
+          <span class="chip border border-border bg-card">← Retour</span>
+          <span class="chip-lg chip bg-primary text-primary-fg">Continuer →</span>
+        </div>
+      </div>
+
+      <!-- Step 1 preview à côté -->
+      <div class="mt-6 max-w-[600px] mx-auto opacity-70">
+        <div class="text-[12px] text-muted-fg mb-2 text-center">Aperçu étape 1 (déjà validée) ↓</div>
+        <div class="modal" style="max-width:600px; margin:0 auto;">
+          <div class="px-8 py-5 border-b border-border flex items-center justify-between">
+            <div class="text-[18px] font-bold">Étape 1 · Identification</div>
+            <span class="text-[12px] text-emerald-600">✓ complétée</span>
+          </div>
+          <div class="px-8 py-6 grid grid-cols-3 gap-3">
+            <div class="space-y-1.5"><div class="label">Numéro</div><div class="input-lg">A</div></div>
+            <div class="col-span-2 space-y-1.5"><div class="label">Type</div><div class="input-lg">Immeuble</div></div>
+            <div class="col-span-3 space-y-1.5"><div class="label">Désignation</div><div class="input-lg">Résidence Les Lilas</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- C — Hero adresse en grand puis détails                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="C" class="py-12">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-sky-soft text-sky-600">C</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Hero adresse en grand — l'adresse en 1<sup>er</sup>, le reste suit</h2>
+      <span class="text-[12px] text-muted-fg ml-auto">l'adresse est l'info clé, on la met en énorme en haut</span>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <div class="modal mx-auto" style="max-width:780px;">
+        <div class="px-8 py-6 border-b border-border flex items-center justify-between">
+          <div>
+            <div class="text-[22px] font-bold tracking-tight">Nouveau bâtiment</div>
+            <div class="text-[13px] text-muted-fg mt-0.5">Commence par l'adresse — elle structure tout le reste.</div>
+          </div>
+          <span class="text-[24px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <!-- Hero adresse -->
+        <div class="px-8 pt-8 pb-7 bg-gradient-to-b from-sky-soft/40 to-transparent">
+          <div class="label-lg mb-3 flex items-center gap-2">
+            <span class="text-sky-600">📍</span> Adresse principale *
+          </div>
+          <div class="input-xl focus" style="height:64px; font-size:18px;">12 rue des Lilas, 75019 Paris<span class="blink ml-1">|</span></div>
+          <div class="flex items-center gap-2 mt-2 text-[13px] text-muted-fg">
+            <span class="text-emerald-600">✓ Adresse trouvée</span>
+            <span>·</span>
+            <span>48.882, 2.385</span>
+            <span>·</span>
+            <span class="cursor-pointer text-primary">Voir sur la carte</span>
+          </div>
+        </div>
+
+        <div class="px-8 py-7 space-y-6">
+          <div class="grid grid-cols-3 gap-3">
+            <div class="space-y-2">
+              <div class="label">Numéro</div>
+              <div class="input-lg placeholder">A, B, 1…</div>
+            </div>
+            <div class="col-span-2 space-y-2">
+              <div class="label">Type *</div>
+              <div class="input-lg flex justify-between">Immeuble<span class="text-muted-fg">▾</span></div>
+            </div>
+            <div class="col-span-3 space-y-2">
+              <div class="label">Désignation</div>
+              <div class="input-lg">Résidence Les Lilas</div>
+            </div>
+            <div class="space-y-2">
+              <div class="label">Étages</div>
+              <div class="input-lg">5</div>
+            </div>
+            <div class="space-y-2">
+              <div class="label">Année</div>
+              <div class="input-lg">1968</div>
+            </div>
+            <div class="space-y-2">
+              <div class="label">Complément</div>
+              <div class="input-lg placeholder">Entrée 2…</div>
+            </div>
+          </div>
+
+          <button class="text-[13px] text-primary font-semibold inline-flex items-center gap-1">+ Adresse secondaire</button>
+
+          <div class="space-y-2">
+            <div class="label">Commentaire</div>
+            <div class="input-lg placeholder" style="height:auto; min-height:80px; align-items:flex-start; padding-top:12px;">Notes…</div>
+          </div>
+        </div>
+
+        <div class="px-8 py-5 border-t border-border bg-sunken/60 flex justify-end items-center gap-3">
+          <span class="chip border border-border bg-card">Annuler</span>
+          <span class="chip-lg chip bg-primary text-primary-fg">Créer le bâtiment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- D — Cards aérées                                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section id="D" class="py-12 bg-[#e9ecf1]">
+  <div class="max-w-[1500px] mx-auto px-8 mb-6">
+    <div class="flex items-baseline gap-3">
+      <span class="pill bg-emerald-soft text-emerald-600">D</span>
+      <h2 class="text-[22px] font-bold tracking-tight">Cards aérées — chaque section dans sa carte, beaucoup d'espace</h2>
+      <span class="text-[12px] text-muted-fg ml-auto">tout visible · aspect "tableau de bord"</span>
+    </div>
+  </div>
+
+  <div class="max-w-[1500px] mx-auto px-8">
+    <div class="scrim">
+      <div class="modal mx-auto" style="max-width:920px;">
+        <div class="px-9 py-7 border-b border-border flex items-center justify-between">
+          <div>
+            <div class="text-[24px] font-bold tracking-tight">Nouveau bâtiment</div>
+            <div class="text-[13px] text-muted-fg mt-0.5">Renseigne les blocs ci-dessous · ordre libre.</div>
+          </div>
+          <span class="text-[24px] text-muted-fg cursor-pointer">×</span>
+        </div>
+
+        <div class="px-9 py-7 space-y-5 bg-bg/50">
+          <!-- Card identification -->
+          <div class="section-card section-card-elev">
+            <div class="flex items-center gap-2 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-amber-soft text-amber-600 flex items-center justify-center font-bold">1</div>
+              <div class="text-[16px] font-bold">Identification</div>
+              <span class="ml-auto pill bg-amber-soft text-amber-600">À remplir</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <div class="label">Numéro</div>
+                <div class="input-lg placeholder">A, B, 1…</div>
+              </div>
+              <div class="col-span-2 space-y-2">
+                <div class="label">Type *</div>
+                <div class="input-lg flex justify-between">Immeuble<span class="text-muted-fg">▾</span></div>
+              </div>
+              <div class="col-span-3 space-y-2">
+                <div class="label">Désignation</div>
+                <div class="input-lg">Résidence Les Lilas</div>
+              </div>
+              <div class="space-y-2">
+                <div class="label">Nb étages</div>
+                <div class="input-lg">5</div>
+              </div>
+              <div class="space-y-2">
+                <div class="label">Année</div>
+                <div class="input-lg">1968</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card adresse -->
+          <div class="section-card section-card-elev">
+            <div class="flex items-center gap-2 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-sky-soft text-sky-600 flex items-center justify-center font-bold">2</div>
+              <div class="text-[16px] font-bold">Adresse</div>
+              <span class="ml-auto pill bg-emerald-soft text-emerald-600">✓ trouvée</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="col-span-2 space-y-2">
+                <div class="label">Adresse principale *</div>
+                <div class="input-lg focus">12 rue des Lilas, 75019 Paris</div>
+              </div>
+              <div class="space-y-2">
+                <div class="label">Complément</div>
+                <div class="input-lg placeholder">Entrée 2…</div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 text-[12px] text-muted-fg">
+              <span class="text-emerald-600">✓</span>
+              <span><b class="text-fg">12 rue des Lilas</b> · 75019 Paris · 48.882, 2.385</span>
+              <button class="ml-auto text-[12px] text-primary font-semibold inline-flex items-center gap-1">+ Adresse secondaire</button>
+            </div>
+          </div>
+
+          <!-- Card notes -->
+          <div class="section-card section-card-elev">
+            <div class="flex items-center gap-2 mb-5">
+              <div class="w-8 h-8 rounded-lg bg-violet-soft text-violet-600 flex items-center justify-center font-bold">3</div>
+              <div class="text-[16px] font-bold">Notes</div>
+              <span class="ml-auto pill bg-sunken text-muted-fg">Optionnel</span>
+            </div>
+            <div class="space-y-2">
+              <div class="label">Commentaire</div>
+              <div class="input-lg placeholder" style="height:auto; min-height:90px; align-items:flex-start; padding-top:12px;">Notes complémentaires…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-9 py-5 border-t border-border bg-card flex justify-end items-center gap-3">
+          <span class="chip border border-border bg-card">Annuler</span>
+          <span class="chip-lg chip bg-primary text-primary-fg">Créer le bâtiment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<footer class="max-w-[1500px] mx-auto px-8 py-10 text-[12px] text-muted-fg">
+  <p class="mb-1"><b>A · Pleine largeur 2 col XL</b> — modale 820 px, 2 colonnes, champs h=48 px, commentaire pleine largeur. Densité moyenne, tient sans scroll.</p>
+  <p class="mb-1"><b>B · Wizard 3 étapes</b> — modale étroite 600 px, mais champs XL h=56 px et un seul focus à la fois. Onboarding-friendly, plus long en clics.</p>
+  <p class="mb-1"><b>C · Hero adresse</b> — adresse en énorme en haut (h=64 px, font 18 px), reste compact dessous. L'adresse est le pivot, on lui donne la place.</p>
+  <p><b>D · Cards aérées</b> — modale 920 px, 3 cartes empilées numérotées avec elevation. Plus aéré, ressemble à une page de réglages plutôt qu'à un formulaire.</p>
+</footer>
+
+</body>
+</html>

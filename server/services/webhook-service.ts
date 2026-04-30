@@ -7,6 +7,7 @@ export type WebhookEvent =
   | 'mission.creee'
   | 'mission.assignee'
   | 'mission.terminee'
+  | 'mission.infructueuse'
   | 'mission.annulee'
   | 'cle.deposee'
   | 'ping'

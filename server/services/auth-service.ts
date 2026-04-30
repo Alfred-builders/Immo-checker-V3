@@ -70,7 +70,7 @@ export async function verifyRefreshToken(token: string): Promise<string> {
 export async function login(email: string, password: string, ipAddress?: string | null) {
   // Check if user exists
   const userResult = await query(
-    `SELECT id, email, nom, prenom, password_hash, failed_login_attempts, locked_until, is_super_admin
+    `SELECT id, email, nom, prenom, password_hash, failed_login_attempts, locked_until, is_super_admin, est_actif
      FROM utilisateur WHERE email = $1`,
     [email.toLowerCase().trim()]
   )
@@ -80,6 +80,16 @@ export async function login(email: string, password: string, ipAddress?: string 
   }
 
   const user = userResult.rows[0]
+
+  // Globally deactivated by super-admin — block before password check to avoid
+  // leaking whether the password is correct on a disabled account.
+  if (user.est_actif === false) {
+    throw new AppError(
+      'Compte désactivé. Contactez un administrateur.',
+      'ACCOUNT_DEACTIVATED',
+      403
+    )
+  }
 
   // Check lockout
   if (user.locked_until && new Date(user.locked_until) > new Date()) {
@@ -151,7 +161,8 @@ export async function switchWorkspace(userId: string, workspaceId: string) {
      FROM workspace_user wu
      JOIN workspace w ON w.id = wu.workspace_id
      JOIN utilisateur u ON u.id = wu.user_id
-     WHERE wu.user_id = $1 AND wu.workspace_id = $2 AND w.statut = 'actif' AND wu.est_actif = true`,
+     WHERE wu.user_id = $1 AND wu.workspace_id = $2
+       AND w.statut = 'actif' AND wu.est_actif = true AND u.est_actif = true`,
     [userId, workspaceId]
   )
 

@@ -16,6 +16,16 @@ interface Props {
 
 const HHMM_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/
 
+/** Normalise une valeur entrante en "HH:MM" — retire les secondes de PostgreSQL TIME ("15:00:00"). */
+function normalize(v: string | null | undefined): string {
+  if (!v) return ''
+  const trimmed = String(v).trim()
+  // "HH:MM:SS" ou "HH:MM:SS.mmm" → "HH:MM"
+  const parts = trimmed.split(':')
+  if (parts.length >= 2) return `${parts[0].padStart(2, '0')}:${parts[1].slice(0, 2)}`
+  return trimmed
+}
+
 function isValid(v: string): boolean {
   return HHMM_RE.test(v)
 }
@@ -44,12 +54,13 @@ function autoFormat(raw: string): string {
 export function TimePicker({
   value, onChange, disabled, placeholder = '--:--', className, modal,
 }: Props) {
+  const normalizedValue = normalize(value)
   const [open, setOpen] = useState(false)
-  const [text, setText] = useState(value)
+  const [text, setText] = useState(normalizedValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Sync externe → local quand la valeur parent change.
-  useEffect(() => { setText(value) }, [value])
+  // Sync externe → local quand la valeur parent change (en strippant les secondes éventuelles).
+  useEffect(() => { setText(normalize(value)) }, [value])
 
   function commitText(v: string) {
     if (v === '') { onChange(''); return }
@@ -63,14 +74,14 @@ export function TimePicker({
   }
 
   function handleBlur() {
-    if (text !== '' && !isValid(text)) setText(value)
+    if (text !== '' && !isValid(text)) setText(normalizedValue)
   }
 
   function openPopover() {
     if (!disabled) setOpen(true)
   }
 
-  const parsed = useMemo(() => parse(value) ?? { h: 0, m: 0 }, [value])
+  const parsed = useMemo(() => parse(normalizedValue) ?? { h: 0, m: 0 }, [normalizedValue])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -91,16 +102,16 @@ export function TimePicker({
             onBlur={handleBlur}
             disabled={disabled}
             className={cn(
-              'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pr-9 text-sm shadow-xs transition-[color,box-shadow] outline-none',
-              'placeholder:text-muted-foreground',
-              'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+              'flex h-9 w-full rounded-xl border border-border/60 bg-card px-3.5 py-1 pr-9 text-sm shadow-xs transition-[color,box-shadow,border-color] outline-none',
+              'placeholder:text-muted-foreground/70 hover:border-border/90',
+              'focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/10',
               'disabled:cursor-not-allowed disabled:opacity-50',
             )}
           />
           <span
             aria-hidden
             className={cn(
-              'pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60',
+              'pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/50',
               disabled && 'opacity-50',
             )}
           >

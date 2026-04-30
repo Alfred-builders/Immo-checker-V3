@@ -280,6 +280,28 @@ router.post('/:id/organisations', requireRole('admin', 'gestionnaire'), async (r
        RETURNING *`,
       [req.params.id, organisation_id, fonction ?? 'contact_principal', est_principal ?? false]
     )
+
+    // Auto-fill: when this contact becomes the principal, propagate their name
+    // to the organisation's representant_nom (Flat Checker · avr. 2026).
+    // We only overwrite when est_principal is true; explicit edits on the PM
+    // form still win since the user can clear or change it afterwards.
+    if (est_principal === true) {
+      const contact = await query(
+        `SELECT prenom, nom FROM tiers WHERE id = $1 AND workspace_id = $2`,
+        [req.params.id, workspaceId]
+      )
+      if (contact.rows.length > 0) {
+        const { prenom, nom } = contact.rows[0]
+        const repFull = [prenom, nom].filter(Boolean).join(' ').trim()
+        if (repFull) {
+          await query(
+            `UPDATE tiers SET representant_nom = $1, updated_at = now() WHERE id = $2 AND workspace_id = $3`,
+            [repFull, organisation_id, workspaceId]
+          )
+        }
+      }
+    }
+
     sendSuccess(res, result.rows[0], 201)
   } catch (error) {
     sendError(res, error)
@@ -338,7 +360,7 @@ router.get('/:id/missions', async (req, res) => {
   try {
     const workspaceId = req.user!.workspaceId
     const result = await query(
-      `SELECT DISTINCT m.id, m.reference, m.date_planifiee, m.statut, m.statut_rdv,
+      `SELECT DISTINCT m.id, m.reference, m.date_planifiee, m.statut,
         json_build_object('id', l.id, 'designation', l.designation) as lot
        FROM mission m
        JOIN lot l ON l.id = m.lot_id

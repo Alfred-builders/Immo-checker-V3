@@ -5,6 +5,7 @@ import {
 } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 import { Input } from 'src/components/ui/input'
 import { Button } from 'src/components/ui/button'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -62,9 +63,9 @@ export function TemplatesPage() {
   }
 
   function handleArchive(piece: TypePiece) {
-    archiveMutation.mutate(piece.id, {
-      onSuccess: () => toast.success(`"${piece.nom}" archive`),
-      onError: () => toast.error('Erreur lors de l\'archivage'),
+    undoableToast({
+      message: `"${piece.nom}" supprimé`,
+      run: () => archiveMutation.mutateAsync(piece.id),
     })
   }
 

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api-client'
 import type { Batiment, BatimentDetail, Lot, LotDetail, ListResponse } from './types'
 
@@ -9,6 +9,7 @@ interface ListBatimentsParams {
   archived?: boolean
   cursor?: string
   limit?: number
+  sort?: 'recent'
 }
 
 async function fetchBatiments(params: ListBatimentsParams = {}) {
@@ -18,6 +19,7 @@ async function fetchBatiments(params: ListBatimentsParams = {}) {
   if (params.archived) searchParams.set('archived', 'true')
   if (params.cursor) searchParams.set('cursor', params.cursor)
   if (params.limit) searchParams.set('limit', String(params.limit))
+  if (params.sort) searchParams.set('sort', params.sort)
   const qs = searchParams.toString()
   return api<ListResponse<Batiment>>(`/batiments${qs ? `?${qs}` : ''}`)
 }
@@ -28,6 +30,16 @@ export function useBatiments(params: ListBatimentsParams = {}) {
     queryFn: () => fetchBatiments(params),
   })
 }
+
+export function useBatimentsInfinite(params: Omit<ListBatimentsParams, 'cursor'> = {}) {
+  return useInfiniteQuery({
+    queryKey: ['batiments', 'infinite', params],
+    queryFn: ({ pageParam }) => fetchBatiments({ ...params, cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
+  })
+}
+
 
 // ── Batiment detail ──
 export function useBatimentDetail(id: string | undefined) {

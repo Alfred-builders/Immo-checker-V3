@@ -3,6 +3,19 @@ import { query } from '../../db/index.js'
 import { sendSuccess, sendError } from '../../utils/response.js'
 import { NotFoundError } from '../../utils/errors.js'
 import { presignPdfUrl } from '../../services/s3-presign-service.js'
+import { encodeCursor, decodeCursor } from '../../utils/cursor.js'
+import { resolveId } from '../../utils/resolve-id.js'
+
+// Resolve lot `:id`: accepts UUID or `reference_interne` (e.g. "BAIL-2025-0302").
+function resolveLotId(rawId: string, workspaceId: string) {
+  return resolveId({
+    table: 'lot',
+    alternateColumn: 'reference_interne',
+    identifier: rawId,
+    workspaceId,
+    entityName: 'Lot',
+  })
+}
 
 const router = Router()
 
@@ -28,9 +41,22 @@ router.get('/', async (req, res) => {
     let where = 'WHERE l.workspace_id = $1 AND l.est_archive = false'
     let idx = 2
 
-    if (batiment_id) { where += ` AND l.batiment_id = $${idx++}`; params.push(batiment_id) }
+    if (batiment_id) {
+      const resolvedBatimentId = await resolveId({
+        table: 'batiment', alternateColumn: 'reference_interne', identifier: batiment_id,
+        workspaceId, entityName: 'Bâtiment',
+      })
+      where += ` AND l.batiment_id = $${idx++}`
+      params.push(resolvedBatimentId)
+    }
     if (search) { where += ` AND (l.designation ILIKE $${idx} OR l.reference_interne ILIKE $${idx})`; params.push(`%${search}%`); idx++ }
-    if (cursor) { where += ` AND l.id > $${idx++}`; params.push(cursor) }
+    if (cursor) {
+      const c = decodeCursor(cursor)
+      if (c) {
+        where += ` AND (l.designation, l.id) > ($${idx}, $${idx + 1})`
+        params.push(c.orderKey, c.id); idx += 2
+      }
+    }
 
     params.push(limit + 1)
     const result = await query(
@@ -43,14 +69,16 @@ router.get('/', async (req, res) => {
        JOIN batiment b ON b.id = l.batiment_id
        LEFT JOIN adresse_batiment ab ON ab.batiment_id = b.id AND ab.type = 'principale'
        ${where}
-       ORDER BY l.designation
+       ORDER BY l.designation, l.id
        LIMIT $${idx}`,
       params
     )
 
     const has_more = result.rows.length > limit
     const rows = has_more ? result.rows.slice(0, limit) : result.rows
-    sendSuccess(res, { data: rows, meta: { cursor: has_more ? rows[rows.length - 1].id : undefined, has_more } })
+    const last = rows[rows.length - 1]
+    const nextCursor = has_more && last ? encodeCursor(last.designation, last.id) : null
+    sendSuccess(res, { data: rows, meta: { cursor: nextCursor, has_more } })
   } catch (error) {
     sendError(res, error)
   }
@@ -60,13 +88,14 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const workspaceId = req.workspaceId!
+    const lotId = await resolveLotId(String(req.params.id), workspaceId)
     const result = await query(
       `SELECT l.id, l.designation, l.type_bien, l.etage, l.surface,
               l.reference_interne, l.num_cave, l.num_parking, l.created_at,
               json_build_object('id', b.id, 'designation', b.designation) AS batiment
        FROM lot l JOIN batiment b ON b.id = l.batiment_id
        WHERE l.id = $1 AND l.workspace_id = $2`,
-      [req.params.id, workspaceId]
+      [lotId, workspaceId]
     )
     if (result.rows.length === 0) throw new NotFoundError('Lot')
     sendSuccess(res, result.rows[0])
@@ -81,13 +110,20 @@ router.get('/:id/edl-inventaires', async (req, res) => {
     const workspaceId = req.workspaceId!
     const { statut, cursor, limit: rawLimit } = req.query as Record<string, string>
     const limit = Math.min(parseInt(rawLimit) || 25, 100)
+    const lotId = await resolveLotId(String(req.params.id), workspaceId)
 
-    const params: unknown[] = [req.params.id, workspaceId]
+    const params: unknown[] = [lotId, workspaceId]
     let where = 'WHERE ei.lot_id = $1 AND ei.workspace_id = $2'
     let idx = 3
 
     if (statut) { where += ` AND ei.statut = $${idx++}`; params.push(statut) }
-    if (cursor) { where += ` AND ei.id > $${idx++}`; params.push(cursor) }
+    if (cursor) {
+      const c = decodeCursor(cursor)
+      if (c) {
+        where += ` AND (ei.created_at, ei.id) < ($${idx}, $${idx + 1})`
+        params.push(c.orderKey, c.id); idx += 2
+      }
+    }
 
     params.push(limit + 1)
     const result = await query(
@@ -96,14 +132,16 @@ router.get('/:id/edl-inventaires', async (req, res) => {
               ei.pdf_url, ei.web_url, ei.pdf_url_legal, ei.web_url_legal, ei.url_verification
        FROM edl_inventaire ei
        ${where}
-       ORDER BY ei.created_at DESC
+       ORDER BY ei.created_at DESC, ei.id DESC
        LIMIT $${idx}`,
       params
     )
 
     const has_more = result.rows.length > limit
     const rows = (has_more ? result.rows.slice(0, limit) : result.rows).map(projectEdlUrls)
-    sendSuccess(res, { data: rows, meta: { cursor: has_more ? rows[rows.length - 1].id : undefined, has_more } })
+    const last = rows[rows.length - 1]
+    const nextCursor = has_more && last ? encodeCursor(last.created_at, last.id) : null
+    sendSuccess(res, { data: rows, meta: { cursor: nextCursor, has_more } })
   } catch (error) {
     sendError(res, error)
   }

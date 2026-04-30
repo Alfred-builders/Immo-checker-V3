@@ -23,6 +23,7 @@ import dashboardRoutes from './routes/dashboard.js'
 import apiKeyRoutes from './routes/api-keys.js'
 import webhookRoutes from './routes/webhooks.js'
 import notificationRoutes from './routes/notifications.js'
+import emailTemplatesRoutes from './routes/email-templates.js'
 import searchRoutes from './routes/search.js'
 import docsRouter from './routes/docs.js'
 import v1MissionsRouter from './routes/v1/missions.js'
@@ -85,6 +86,7 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/api-keys', apiKeyRoutes)
 app.use('/api/webhooks', webhookRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/email-templates', emailTemplatesRoutes)
 app.use('/api/search', searchRoutes)
 app.use('/api/docs', docsRouter)
 

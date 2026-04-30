@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Audit & propositions — Parcours Bâtiment / Lot / Mission</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: { 950: '#0b0d12', 900: '#11141b', 800: '#171b24', 700: '#222836', 600: '#2c3344' },
+          line: '#2a3142',
+          mute: '#8a93a6',
+          fg: '#e6e9ef',
+          accent: { DEFAULT: '#6366f1', soft: '#818cf8' },
+          ok: '#22c55e', warn: '#f59e0b', danger: '#ef4444', info: '#38bdf8'
+        },
+        boxShadow: {
+          raised: '0 1px 0 0 rgba(255,255,255,.04) inset, 0 6px 18px -8px rgba(0,0,0,.6)',
+          overlay: '0 1px 0 0 rgba(255,255,255,.05) inset, 0 18px 40px -12px rgba(0,0,0,.7)',
+          floating: '0 1px 0 0 rgba(255,255,255,.06) inset, 0 30px 60px -15px rgba(0,0,0,.8)'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background: #0b0d12; color: #e6e9ef; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+  .meta { font-size: 11px; color: #8a93a6; }
+  .card { background: #171b24; border: 1px solid #2a3142; border-radius: 14px; }
+  .sunken { background: #11141b; border: 1px solid #222836; border-radius: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid #2a3142; background: #11141b; color: #c8cdda; }
+  .pill-ok { color: #22c55e; border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+  .pill-warn { color: #f59e0b; border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+  .pill-danger { color: #ef4444; border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+  .pill-info { color: #38bdf8; border-color: rgba(56,189,248,.35); background: rgba(56,189,248,.08); }
+  .pill-accent { color: #c7cbff; border-color: rgba(99,102,241,.45); background: rgba(99,102,241,.12); }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; padding: 2px 6px; border-radius: 6px; border: 1px solid #2a3142; background: #11141b; color: #c8cdda; }
+  .input { background:#0f1219; border:1px solid #2a3142; border-radius:10px; height:36px; padding: 0 10px; font-size:13px; color:#e6e9ef; }
+  .input:focus { outline:2px solid rgba(99,102,241,.55); outline-offset:0; border-color:transparent; }
+  .label { font-size: 11px; font-weight: 600; color: #c8cdda; }
+  .label-req::after { content: " *"; color: #ef4444; }
+  .btn { height: 34px; padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 600; display:inline-flex; align-items:center; gap:6px; }
+  .btn-primary { background: #6366f1; color: white; }
+  .btn-primary:hover { background: #5457dd; }
+  .btn-ghost { color: #c8cdda; border:1px solid #2a3142; background:#11141b; }
+  .btn-ghost:hover { background:#171b24; }
+  .anchor { color: #818cf8; }
+  .anchor:hover { text-decoration: underline; }
+  .stripe { background: repeating-linear-gradient(45deg, rgba(245,158,11,.06) 0 8px, transparent 8px 16px); }
+  .glow { box-shadow: 0 0 0 1px rgba(99,102,241,.4), 0 12px 30px -10px rgba(99,102,241,.55); }
+  details > summary::-webkit-details-marker { display:none; }
+  details > summary { list-style: none; cursor: pointer; }
+  .step-num { width: 22px; height: 22px; border-radius: 999px; background: #2c3344; color: #c8cdda; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .step-num.active { background: #6366f1; color: white; }
+  .step-num.done { background: rgba(34,197,94,.18); color: #22c55e; }
+  .arrow { color: #4b5363; }
+  .ring-accent { box-shadow: 0 0 0 2px rgba(99,102,241,.45); }
+  .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #2c3344; border-radius: 8px; }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ─────────────── Header ─────────────── -->
+<header class="border-b border-line/80 bg-ink-900/70 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[1180px] mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-accent to-info grid place-items-center text-white font-black">IC</div>
+      <div>
+        <div class="text-sm font-semibold">ImmoChecker — Audit Design</div>
+        <div class="meta">Parcours Bâtiment / Lot / Mission · retours Flat Checker · 29 avril 2026</div>
+      </div>
+    </div>
+    <div class="hidden md:flex items-center gap-2">
+      <span class="pill pill-info">v1 · webapp</span>
+      <span class="pill">3 propositions</span>
+    </div>
+  </div>
+  <nav class="border-t border-line/60">
+    <div class="max-w-[1180px] mx-auto px-6 py-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-mute">
+      <a href="#tldr" class="anchor">TL;DR</a>
+      <a href="#feedback" class="anchor">Retours client</a>
+      <a href="#audit" class="anchor">Audit existant</a>
+      <a href="#schema" class="anchor">Schéma DB</a>
+      <a href="#proposition-a" class="anchor">Proposition A · Address-first</a>
+      <a href="#proposition-b" class="anchor">Proposition B · Numéro de bâtiment</a>
+      <a href="#proposition-c" class="anchor">Proposition C · Modale unifiée</a>
+      <a href="#decision" class="anchor">Recommandation</a>
+      <a href="#open" class="anchor">Questions ouvertes</a>
+    </div>
+  </nav>
+</header>
+
+<main class="max-w-[1180px] mx-auto px-6 py-10 space-y-16">
+
+<!-- ─────────────── TL;DR ─────────────── -->
+<section id="tldr" class="space-y-4">
+  <div class="eyebrow text-mute">TL;DR</div>
+  <h1 class="text-3xl md:text-4xl font-bold tracking-tight">« Créer un immeuble c'est chiant. »</h1>
+  <p class="text-mute max-w-3xl">
+    Le problème n'est pas le modèle de données — la hiérarchie <span class="text-fg font-semibold">Bâtiment → Lot</span> reste correcte.
+    Ce qu'il faut repenser c'est le <span class="text-fg font-semibold">parcours de création</span>, principalement à l'intérieur de
+    la modale de création de mission. L'utilisateur doit penser <span class="text-fg font-semibold">adresse</span> avant de penser
+    « bâtiment + lot ».
+  </p>
+
+  <div class="grid md:grid-cols-3 gap-4 pt-2">
+    <div class="card p-4">
+      <div class="eyebrow text-mute mb-1">Recommandation principale</div>
+      <div class="text-sm font-semibold">Proposition A — Address-first picker</div>
+      <p class="text-[12px] text-mute mt-2">Saisie de l'adresse en premier, on remonte les bâtiments existants à cette adresse. Couvre 90% des cas (un seul bâtiment) et règle l'edge case (résidence A/B/C).</p>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow text-mute mb-1">Quick wins (faisables tout de suite)</div>
+      <ul class="text-[12px] text-mute mt-2 space-y-1">
+        <li>• Désignation bâtiment → optionnelle</li>
+        <li>• Désignation lot → optionnelle</li>
+        <li>• Champ <span class="kbd">num_batiment</span> exposé en UI</li>
+      </ul>
+    </div>
+    <div class="card p-4">
+      <div class="eyebrow text-mute mb-1">À explorer (plus loin)</div>
+      <div class="text-sm font-semibold">Proposition C — Modale unifiée</div>
+      <p class="text-[12px] text-mute mt-2">Mission + Lot + Bâtiment dans une seule modale progressive. À challenger sur la complexité conditionnelle.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── Retours client ─────────────── -->
+<section id="feedback" class="space-y-4">
+  <div class="eyebrow text-mute">Retours client</div>
+  <h2 class="text-2xl font-bold">Ce que dit Flat Checker</h2>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="pill pill-danger">Friction</span>
+        <span class="text-sm font-semibold">« Créer un immeuble c'est chiant »</span>
+      </div>
+      <ul class="text-[13px] text-mute space-y-2 leading-relaxed">
+        <li>• Le workflow actuel demande de créer le bâtiment <em>avant</em> le lot — contre-intuitif.</li>
+        <li>• Sur les grosses résidences (Les Lilas A, B, C, D…), risque de doublons (« A maj / a min »).</li>
+        <li>• La désignation « Les Lilas » n'est pas systématique → ne devrait pas être obligatoire.</li>
+      </ul>
+    </div>
+
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="pill pill-info">Position Alfred</span>
+        <span class="text-sm font-semibold">UX, pas modèle de données</span>
+      </div>
+      <ul class="text-[13px] text-mute space-y-2 leading-relaxed">
+        <li>• Garder <span class="text-fg">Bâtiment → Lot</span> en BDD.</li>
+        <li>• À la création d'un lot via l'adresse : remonter les bâtiments déjà présents.</li>
+        <li>• <span class="text-fg">Désignation</span> (« Les Lilas ») et <span class="text-fg">numéro</span> (A, B, C…) = deux concepts distincts.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <div class="eyebrow text-mute mb-3">Décisions à acter</div>
+    <ul class="text-[13px] text-mute grid md:grid-cols-2 gap-x-6 gap-y-2">
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> Repenser le parcours de création lot dans la modale mission</li>
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> Edge case « plusieurs bâtiments à la même adresse » : sélecteur</li>
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> Désignation bâtiment → secondaire / non obligatoire</li>
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> Champ « numéro de bâtiment » structuré (distinct désignation)</li>
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> Désignation lot → également non obligatoire</li>
+      <li class="flex gap-2"><span class="text-accent-soft">▸</span> À la création d'un lot : remonter bâtiments à l'adresse</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────── Audit existant ─────────────── -->
+<section id="audit" class="space-y-6">
+  <div class="eyebrow text-mute">Audit existant</div>
+  <h2 class="text-2xl font-bold">Parcours actuel — où ça frotte</h2>
+
+  <!-- Flow steps -->
+  <div class="card p-5">
+    <div class="eyebrow text-mute mb-4">Création d'une mission aujourd'hui</div>
+
+    <div class="flex items-stretch gap-3 overflow-x-auto scrollbar-thin pb-2">
+      <!-- step 1 -->
+      <div class="sunken p-4 min-w-[220px] flex-1">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num">1</span><span class="text-sm font-semibold">Modale Mission</span></div>
+        <p class="text-[12px] text-mute">Admin clique « Nouvelle mission ».</p>
+      </div>
+      <div class="self-center arrow">→</div>
+      <!-- step 2 -->
+      <div class="sunken p-4 min-w-[220px] flex-1">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num">2</span><span class="text-sm font-semibold">Picker Lot</span></div>
+        <p class="text-[12px] text-mute">RecordPicker recherche par <span class="kbd">designation</span> ou <span class="kbd">référence</span> du lot.</p>
+      </div>
+      <div class="self-center arrow">→</div>
+      <!-- step 3 friction -->
+      <div class="sunken p-4 min-w-[240px] flex-1 stripe border border-warn/40">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num bg-warn/30 text-warn">!</span><span class="text-sm font-semibold">Lot inexistant → Créer</span></div>
+        <p class="text-[12px] text-mute">Sous-modale lot. <span class="text-warn">Demande d'abord un bâtiment.</span></p>
+      </div>
+      <div class="self-center arrow">→</div>
+      <!-- step 4 friction -->
+      <div class="sunken p-4 min-w-[240px] flex-1 stripe border border-warn/40">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num bg-warn/30 text-warn">!</span><span class="text-sm font-semibold">Picker Bâtiment</span></div>
+        <p class="text-[12px] text-mute">Recherche par <span class="kbd">designation</span> uniquement. <span class="text-warn">Pas par adresse.</span></p>
+      </div>
+      <div class="self-center arrow">→</div>
+      <!-- step 5 friction -->
+      <div class="sunken p-4 min-w-[260px] flex-1 stripe border border-warn/40">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num bg-warn/30 text-warn">!</span><span class="text-sm font-semibold">Créer Bâtiment</span></div>
+        <p class="text-[12px] text-mute"><span class="text-warn">Désignation requise.</span> Adresse, type, etc. Risque doublon.</p>
+      </div>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-3 gap-3 text-[12px]">
+      <div class="sunken p-3 border-warn/40"><span class="pill pill-warn">Friction 1</span><div class="mt-2 text-mute">L'admin pense « adresse » mais l'app demande « nom du bâtiment » avant tout.</div></div>
+      <div class="sunken p-3 border-warn/40"><span class="pill pill-warn">Friction 2</span><div class="mt-2 text-mute">Aucune détection de bâtiments existants → doublons systématiques.</div></div>
+      <div class="sunken p-3 border-warn/40"><span class="pill pill-warn">Friction 3</span><div class="mt-2 text-mute">A/B/C bricolés dans la désignation ou le complément d'adresse.</div></div>
+    </div>
+  </div>
+
+  <!-- File refs -->
+  <details class="card p-5">
+    <summary class="flex items-center justify-between">
+      <div class="flex items-center gap-2"><span class="eyebrow text-mute">Fichiers clés</span><span class="text-sm">Cliquer pour développer</span></div>
+      <span class="text-mute text-[12px]">+</span>
+    </summary>
+    <div class="mt-4 grid md:grid-cols-2 gap-3 text-[12px]">
+      <div class="sunken p-3 font-mono">src/features/missions/components/create-mission-modal.tsx<span class="text-mute">:267-278</span><div class="text-mute font-sans mt-1">Picker Lot dans la modale mission</div></div>
+      <div class="sunken p-3 font-mono">src/features/patrimoine/components/create-lot-modal.tsx<span class="text-mute">:147-412</span><div class="text-mute font-sans mt-1">Modale Lot + sous-form Bâtiment</div></div>
+      <div class="sunken p-3 font-mono">src/components/shared/record-picker.tsx<span class="text-mute">:26-159</span><div class="text-mute font-sans mt-1">Pattern « rechercher / créer »</div></div>
+      <div class="sunken p-3 font-mono">src/components/shared/address-autocomplete.tsx<span class="text-mute">:35-122</span><div class="text-mute font-sans mt-1">Geocoder Mapbox (FR), debounced 300ms</div></div>
+      <div class="sunken p-3 font-mono">server/routes/v1/batiments.ts<span class="text-mute">:9-51</span><div class="text-mute font-sans mt-1">GET /batiments — recherche par <span class="kbd">designation</span> seulement</div></div>
+      <div class="sunken p-3 font-mono">server/db/schema.sql<span class="text-mute">:131-188</span><div class="text-mute font-sans mt-1">Tables <span class="kbd">batiment</span>, <span class="kbd">adresse_batiment</span>, <span class="kbd">lot</span></div></div>
+    </div>
+  </details>
+</section>
+
+<!-- ─────────────── Schéma DB ─────────────── -->
+<section id="schema" class="space-y-4">
+  <div class="eyebrow text-mute">Modèle de données</div>
+  <h2 class="text-2xl font-bold">Ce qui existe déjà — et ce qui manque</h2>
+
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="card p-4">
+      <div class="text-[11px] font-mono text-accent-soft mb-2">batiment</div>
+      <ul class="text-[12px] space-y-1 font-mono">
+        <li><span class="text-fg">designation</span> <span class="pill pill-warn">requis aujourd'hui</span></li>
+        <li><span class="text-fg">type</span></li>
+        <li><span class="text-fg">num_batiment</span> <span class="pill pill-info">existe, non utilisé en UI</span></li>
+        <li><span class="text-mute">nb_etages, annee_construction…</span></li>
+      </ul>
+    </div>
+    <div class="card p-4">
+      <div class="text-[11px] font-mono text-accent-soft mb-2">adresse_batiment</div>
+      <ul class="text-[12px] space-y-1 font-mono">
+        <li><span class="text-fg">rue, code_postal, ville</span></li>
+        <li><span class="text-fg">complement</span> <span class="pill pill-warn">utilisé pour A/B aujourd'hui</span></li>
+        <li><span class="text-fg">latitude, longitude</span></li>
+        <li><span class="text-mute">type principale/secondaire</span></li>
+      </ul>
+    </div>
+    <div class="card p-4">
+      <div class="text-[11px] font-mono text-accent-soft mb-2">lot</div>
+      <ul class="text-[12px] space-y-1 font-mono">
+        <li><span class="text-fg">batiment_id</span> <span class="pill pill-info">FK</span></li>
+        <li><span class="text-fg">designation</span> <span class="pill pill-warn">requis aujourd'hui</span></li>
+        <li><span class="text-fg">type_bien, etage, surface…</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <div class="eyebrow text-mute mb-2">Bonne nouvelle</div>
+    <p class="text-[13px] text-mute">
+      <span class="text-fg font-semibold">Le champ <span class="kbd">num_batiment</span> existe déjà</span> dans la table <span class="kbd">batiment</span> (schema.sql:136). Il n'est juste pas exposé en UI.
+      Côté géocodage, l'app possède déjà un <span class="kbd">AddressAutocomplete</span> (Mapbox FR) — il est juste utilisé en interne du formulaire bâtiment, pas en porte d'entrée.
+    </p>
+    <p class="text-[13px] text-mute mt-3">
+      <span class="text-fg font-semibold">Ce qui manque vraiment</span> :
+      (1) un endpoint <span class="kbd">GET /batiments?address=...</span> ou un filtre <span class="kbd">?lat,lng</span> pour remonter les bâtiments à une adresse,
+      (2) rendre <span class="kbd">designation</span> nullable côté <span class="kbd">batiment</span> et <span class="kbd">lot</span>,
+      (3) un sélecteur structuré pour <span class="kbd">num_batiment</span>.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────── Proposition A ─────────────── -->
+<section id="proposition-a" class="space-y-6">
+  <div class="flex items-center gap-3">
+    <span class="pill pill-accent">Proposition A · recommandée</span>
+  </div>
+  <h2 class="text-2xl font-bold">Address-first picker dans la modale mission</h2>
+  <p class="text-mute max-w-3xl text-sm">
+    L'utilisateur tape une adresse. L'app remonte les bâtiments existants à cette adresse (un ou plusieurs). Il choisit l'existant, sélectionne un lot, ou crée à la volée.
+    Aucun changement de modèle de données — juste l'inversion du <em>parcours</em>.
+  </p>
+
+  <!-- Mock: Modal -->
+  <div class="card p-0 overflow-hidden">
+    <div class="px-5 py-3 border-b border-line/60 flex items-center justify-between bg-ink-900">
+      <div class="flex items-center gap-3">
+        <div class="text-sm font-semibold">Nouvelle mission</div>
+        <span class="meta">étape 1 / 4 · Adresse & lot</span>
+      </div>
+      <div class="flex items-center gap-1 meta">Esc <span class="kbd">×</span></div>
+    </div>
+
+    <div class="p-6 grid md:grid-cols-5 gap-6">
+      <!-- left: form -->
+      <div class="md:col-span-3 space-y-4">
+        <div>
+          <div class="label label-req mb-1">Adresse du bien</div>
+          <div class="relative">
+            <input class="input w-full pl-9" value="12 rue des Lilas, 75019 Paris" />
+            <svg class="absolute left-3 top-2.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a93a6" stroke-width="2"><path d="M12 22s-7-7.58-7-13a7 7 0 1 1 14 0c0 5.42-7 13-7 13Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+          <div class="meta mt-1">Géocodage Mapbox · FR · debounced 300 ms</div>
+        </div>
+
+        <!-- Suggestions: existing buildings at this address -->
+        <div class="sunken p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="eyebrow text-mute">2 bâtiments trouvés à cette adresse</div>
+            <span class="pill pill-ok">match exact</span>
+          </div>
+          <div class="space-y-2">
+            <button class="w-full text-left card p-3 hover:bg-ink-700 ring-accent flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold">Bâtiment A <span class="meta">· « Les Lilas »</span></div>
+                <div class="meta">12 rue des Lilas · 8 lots · 3 missions en cours</div>
+              </div>
+              <span class="pill">Sélectionner</span>
+            </button>
+            <button class="w-full text-left card p-3 hover:bg-ink-700 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold">Bâtiment B <span class="meta">· « Les Lilas »</span></div>
+                <div class="meta">12 rue des Lilas · 6 lots</div>
+              </div>
+              <span class="pill">Sélectionner</span>
+            </button>
+            <button class="w-full text-left sunken p-3 hover:bg-ink-800 flex items-center justify-between border-dashed">
+              <div class="flex items-center gap-2">
+                <span class="step-num">＋</span>
+                <div>
+                  <div class="text-sm font-semibold">Créer un nouveau bâtiment ici</div>
+                  <div class="meta">Numéro / désignation à préciser</div>
+                </div>
+              </div>
+              <span class="pill pill-accent">Nouveau</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Once a building is picked: lot picker -->
+        <div class="card p-3 glow">
+          <div class="flex items-center justify-between mb-2">
+            <div class="eyebrow text-accent-soft">Bâtiment A sélectionné · choix du lot</div>
+            <button class="text-[11px] text-mute hover:text-fg">Changer</button>
+          </div>
+          <input class="input w-full" placeholder="Rechercher un lot (ex: Apt 3B, T2 RDC...)" />
+          <div class="mt-2 grid grid-cols-2 gap-2 text-[12px]">
+            <button class="sunken p-2 text-left hover:bg-ink-700"><div class="font-semibold">Apt 3B · T3 65 m²</div><div class="meta">Étage 3</div></button>
+            <button class="sunken p-2 text-left hover:bg-ink-700"><div class="font-semibold">Apt 4A · T2 42 m²</div><div class="meta">Étage 4</div></button>
+            <button class="sunken p-2 text-left hover:bg-ink-700"><div class="font-semibold">Local A · Commerce</div><div class="meta">RDC</div></button>
+            <button class="sunken p-2 text-left hover:bg-ink-700 border-dashed"><div class="font-semibold flex items-center gap-1"><span>＋</span> Créer un lot ici</div><div class="meta">Sans quitter la modale</div></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- right: context preview -->
+      <aside class="md:col-span-2 space-y-3">
+        <div class="card p-4">
+          <div class="eyebrow text-mute mb-2">Aperçu</div>
+          <div class="aspect-video rounded-lg grid-bg sunken relative overflow-hidden">
+            <div class="absolute inset-0 grid place-items-center">
+              <div class="flex items-center gap-2">
+                <div class="h-2.5 w-2.5 rounded-full bg-accent ring-4 ring-accent/30"></div>
+                <div class="text-[11px] text-mute">12 rue des Lilas</div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 text-[12px] space-y-1">
+            <div class="flex justify-between"><span class="meta">Adresse</span><span>12 rue des Lilas</span></div>
+            <div class="flex justify-between"><span class="meta">Bâtiments à cette adresse</span><span>2</span></div>
+            <div class="flex justify-between"><span class="meta">Sélectionné</span><span class="text-accent-soft">Bâtiment A</span></div>
+          </div>
+        </div>
+        <div class="card p-4">
+          <div class="eyebrow text-mute mb-2">Anti-doublons</div>
+          <ul class="text-[12px] text-mute space-y-1">
+            <li>• Match adresse normalisée (Mapbox)</li>
+            <li>• Comparaison <span class="kbd">num_batiment</span> insensible à la casse</li>
+            <li>• Avertissement si désignation similaire (Levenshtein)</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <div class="px-5 py-3 border-t border-line/60 flex items-center justify-between bg-ink-900">
+      <button class="btn btn-ghost">Annuler</button>
+      <div class="flex items-center gap-2">
+        <span class="meta">Étape 1 / 4</span>
+        <button class="btn btn-primary">Continuer →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- before / after -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <div class="eyebrow text-danger mb-2">Avant</div>
+      <p class="text-sm">Mission → cherche Lot par nom → si absent, crée Lot → demande Bâtiment par <em>nom</em> → si absent, crée Bâtiment (désignation requise).</p>
+      <div class="meta mt-3">5 étapes mentales · 0 détection de doublons</div>
+    </div>
+    <div class="card p-5 glow">
+      <div class="eyebrow text-accent-soft mb-2">Après · Proposition A</div>
+      <p class="text-sm">Mission → tape adresse → choisit bâtiment existant (ou crée si vraiment nouveau) → choisit lot ou crée lot → continue.</p>
+      <div class="meta mt-3">2 décisions au lieu de 5 · doublons bloqués par défaut</div>
+    </div>
+  </div>
+
+  <!-- Acceptance criteria -->
+  <details class="card p-5">
+    <summary class="flex items-center justify-between">
+      <span class="eyebrow text-mute">Critères d'acceptation</span>
+      <span class="text-mute">+</span>
+    </summary>
+    <ul class="mt-4 text-[13px] text-mute space-y-2 leading-relaxed">
+      <li>• La modale mission ouvre sur un champ <span class="kbd">adresse</span> en focus, pas sur un champ <span class="kbd">lot</span>.</li>
+      <li>• Une fois l'adresse géocodée, l'API retourne tous les bâtiments dans un rayon de 25 m (lat/lng) <strong>OU</strong> exact match <span class="kbd">rue + cp + ville</span>.</li>
+      <li>• Si 0 bâtiment trouvé → CTA primaire « Créer un nouveau bâtiment ici » avec adresse pré-remplie.</li>
+      <li>• Si 1 bâtiment trouvé → présélectionné + bouton « ce n'est pas celui-là, créer un nouveau ».</li>
+      <li>• Si 2+ bâtiments trouvés → liste avec <span class="kbd">num_batiment</span> mis en avant, désignation en secondaire.</li>
+      <li>• La création d'un bâtiment depuis cette modale ne demande que : <span class="kbd">type</span> + <span class="kbd">num_batiment</span> (optionnel) + <span class="kbd">designation</span> (optionnel).</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ─────────────── Proposition B ─────────────── -->
+<section id="proposition-b" class="space-y-6">
+  <div class="flex items-center gap-3">
+    <span class="pill pill-accent">Proposition B · à coupler avec A</span>
+  </div>
+  <h2 class="text-2xl font-bold">Numéro de bâtiment structuré (A/B/C…)</h2>
+  <p class="text-mute max-w-3xl text-sm">
+    Séparer <span class="text-fg">numéro</span> et <span class="text-fg">désignation</span> dans le formulaire bâtiment.
+    Le numéro est court, structuré, optionnel. La désignation est libre, descriptive, optionnelle.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-5">
+    <!-- before -->
+    <div class="card p-5">
+      <div class="eyebrow text-danger mb-3">Avant</div>
+      <div class="space-y-3">
+        <div>
+          <div class="label label-req">Désignation du bâtiment</div>
+          <input class="input w-full" value="Les Lilas A" />
+          <div class="meta mt-1 text-warn">Mélange « nom » + « numéro » → risque doublon (« Les Lilas a » vs « Les Lilas A »).</div>
+        </div>
+        <div>
+          <div class="label">Complément d'adresse</div>
+          <input class="input w-full" value="Bât. A" />
+          <div class="meta mt-1 text-warn">Concept « numéro » bricolé ici aussi.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- after -->
+    <div class="card p-5 glow">
+      <div class="eyebrow text-accent-soft mb-3">Après</div>
+      <div class="space-y-3">
+        <div>
+          <div class="label">Numéro / lettre du bâtiment <span class="meta">(optionnel)</span></div>
+          <div class="flex items-center gap-2">
+            <input class="input w-20 text-center text-base font-semibold" value="A" />
+            <div class="text-[11px] text-mute">A · B · C · 1 · 2 · …</div>
+          </div>
+          <div class="meta mt-1">Champ structuré — utilisé pour distinguer plusieurs bâtiments à la même adresse.</div>
+        </div>
+        <div>
+          <div class="label">Désignation <span class="meta">(optionnel)</span></div>
+          <input class="input w-full" placeholder="Les Lilas, Résidence du Parc…" value="Les Lilas" />
+          <div class="meta mt-1">Libre. Affichage secondaire dans les listes.</div>
+        </div>
+        <div class="sunken p-3 mt-2">
+          <div class="eyebrow text-mute mb-1">Affichage généré</div>
+          <div class="text-sm font-semibold">Bâtiment A <span class="meta font-normal">· Les Lilas</span></div>
+          <div class="meta">12 rue des Lilas, 75019 Paris</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DB / migration note -->
+  <div class="card p-5">
+    <div class="eyebrow text-mute mb-2">Côté schéma · changements minimes</div>
+    <ul class="text-[13px] text-mute space-y-2">
+      <li>• <span class="kbd">batiment.designation</span> : <span class="pill pill-warn">NOT NULL</span> → <span class="pill pill-ok">NULL</span></li>
+      <li>• <span class="kbd">batiment.num_batiment</span> : <span class="pill pill-ok">existe déjà</span> — juste à exposer en UI et indexer</li>
+      <li>• <span class="kbd">lot.designation</span> : <span class="pill pill-warn">NOT NULL</span> → <span class="pill pill-ok">NULL</span> + fallback affichage <span class="kbd">étage + emplacement</span></li>
+      <li>• Index conseillé : <span class="kbd">UNIQUE (adresse normalisée, num_batiment)</span> par workspace pour bloquer les doublons stricts.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────── Proposition C ─────────────── -->
+<section id="proposition-c" class="space-y-6">
+  <div class="flex items-center gap-3">
+    <span class="pill pill-info">Proposition C · piste alternative</span>
+  </div>
+  <h2 class="text-2xl font-bold">Modale unifiée Mission + Lot + Bâtiment</h2>
+  <p class="text-mute max-w-3xl text-sm">
+    Une seule modale progressive qui adapte ses étapes selon le contexte. Plus puissante mais plus complexe à concevoir et à tester.
+    À garder pour V1.1 si la Proposition A ne suffit pas.
+  </p>
+
+  <!-- progressive stepper -->
+  <div class="card p-5">
+    <div class="flex items-center gap-2 mb-5">
+      <div class="flex items-center gap-2"><span class="step-num done">✓</span><span class="text-sm">Adresse</span></div>
+      <div class="h-px flex-1 bg-line"></div>
+      <div class="flex items-center gap-2"><span class="step-num done">✓</span><span class="text-sm">Bâtiment</span></div>
+      <div class="h-px flex-1 bg-line"></div>
+      <div class="flex items-center gap-2"><span class="step-num active">3</span><span class="text-sm">Lot</span></div>
+      <div class="h-px flex-1 bg-line"></div>
+      <div class="flex items-center gap-2"><span class="step-num">4</span><span class="text-sm text-mute">Mission</span></div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3">
+      <div class="sunken p-4">
+        <div class="eyebrow text-mute mb-1">Étape 1 · Adresse</div>
+        <div class="text-sm">Si déjà connue : auto-skip vers étape 3.</div>
+      </div>
+      <div class="sunken p-4">
+        <div class="eyebrow text-mute mb-1">Étape 2 · Bâtiment</div>
+        <div class="text-sm">Si 1 seul existant : auto-skip vers étape 3 (avec « changer »).</div>
+      </div>
+      <div class="sunken p-4">
+        <div class="eyebrow text-mute mb-1">Étape 3 · Lot</div>
+        <div class="text-sm">Sélection ou création inline (étage, surface, type).</div>
+      </div>
+    </div>
+
+    <div class="mt-5 grid md:grid-cols-2 gap-4 text-[13px]">
+      <div class="sunken p-3">
+        <div class="eyebrow text-ok mb-1">Avantages</div>
+        <ul class="text-mute space-y-1"><li>• Parcours unique pour tous les cas</li><li>• Saisie minimale grâce aux skips conditionnels</li><li>• Pas de modales empilées</li></ul>
+      </div>
+      <div class="sunken p-3">
+        <div class="eyebrow text-warn mb-1">Risques</div>
+        <ul class="text-mute space-y-1"><li>• Logique de skip à tester (matrice 2×2×N)</li><li>• Perte de contexte si l'utilisateur revient en arrière</li><li>• Forme & validation Zod plus lourde</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── Recommandation ─────────────── -->
+<section id="decision" class="space-y-6">
+  <div class="eyebrow text-mute">Recommandation</div>
+  <h2 class="text-2xl font-bold">Plan d'attaque conseillé</h2>
+
+  <div class="card p-0 overflow-hidden">
+    <div class="grid md:grid-cols-3 divide-x divide-line/60">
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num active">1</span><span class="text-sm font-semibold">Quick wins (1-2 jours)</span></div>
+        <ul class="text-[12px] text-mute space-y-1.5">
+          <li>• Migration : <span class="kbd">designation</span> nullable sur <span class="kbd">batiment</span> et <span class="kbd">lot</span></li>
+          <li>• Exposer <span class="kbd">num_batiment</span> dans le form bâtiment</li>
+          <li>• Affichage liste : <span class="kbd">Bât. {num} · {designation}</span></li>
+        </ul>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num active">2</span><span class="text-sm font-semibold">Address-first (3-5 jours)</span></div>
+        <ul class="text-[12px] text-mute space-y-1.5">
+          <li>• Endpoint <span class="kbd">GET /batiments?address=...</span> ou <span class="kbd">?lat,lng</span></li>
+          <li>• Refonte modale mission : adresse en step 1</li>
+          <li>• Composant <span class="kbd">&lt;BatimentByAddressPicker /&gt;</span> réutilisable</li>
+          <li>• Tests : 0 / 1 / 2+ bâtiments à l'adresse</li>
+        </ul>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="step-num">3</span><span class="text-sm font-semibold">Modale unifiée (V1.1)</span></div>
+        <ul class="text-[12px] text-mute space-y-1.5">
+          <li>• À planifier après mesure de l'usage</li>
+          <li>• Décision sur la base des frictions résiduelles observées</li>
+          <li>• Risque de sur-engineering si A suffit</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <div class="eyebrow text-mute mb-3">Décision matrix</div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[12px]">
+        <thead class="text-mute">
+          <tr class="border-b border-line/60">
+            <th class="text-left py-2 pr-4">Critère</th>
+            <th class="text-left py-2 px-3">A · Address-first</th>
+            <th class="text-left py-2 px-3">B · Numéro structuré</th>
+            <th class="text-left py-2 px-3">C · Modale unifiée</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-line/40"><td class="py-2 pr-4 text-mute">Effort</td><td class="px-3">Moyen</td><td class="px-3">Faible</td><td class="px-3">Élevé</td></tr>
+          <tr class="border-b border-line/40"><td class="py-2 pr-4 text-mute">Couvre le retour client</td><td class="px-3 text-ok">100%</td><td class="px-3 text-ok">100% sur A/B/C</td><td class="px-3 text-warn">Partiel</td></tr>
+          <tr class="border-b border-line/40"><td class="py-2 pr-4 text-mute">Risque doublons</td><td class="px-3 text-ok">Bloque</td><td class="px-3 text-ok">Réduit</td><td class="px-3">Selon implémentation</td></tr>
+          <tr class="border-b border-line/40"><td class="py-2 pr-4 text-mute">Impact backend</td><td class="px-3">Endpoint à ajouter</td><td class="px-3">Migration nullable</td><td class="px-3">Refonte form</td></tr>
+          <tr><td class="py-2 pr-4 text-mute">Verdict</td><td class="px-3 text-accent-soft font-semibold">À shipper</td><td class="px-3 text-accent-soft font-semibold">À shipper</td><td class="px-3 text-mute">À reconsidérer V1.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── Open questions ─────────────── -->
+<section id="open" class="space-y-4">
+  <div class="eyebrow text-mute">Questions ouvertes</div>
+  <h2 class="text-2xl font-bold">À trancher avant dev</h2>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card p-4">
+      <div class="text-sm font-semibold mb-1">Bâtiments non lettrés</div>
+      <p class="text-[12px] text-mute">Si la résidence n'utilise ni lettre ni numéro, faut-il afficher « Bâtiment principal » par défaut ou laisser vide ? Hypothèse : si <span class="kbd">num_batiment</span> est vide ET désignation vide → fallback « Bâtiment unique » dans la liste.</p>
+    </div>
+    <div class="card p-4">
+      <div class="text-sm font-semibold mb-1">Maison individuelle</div>
+      <p class="text-[12px] text-mute">CLAUDE.md dit « 1 Bâtiment + 1 Lot ». L'address-first picker doit auto-skip la sélection bâtiment si type = maison.</p>
+    </div>
+    <div class="card p-4">
+      <div class="text-sm font-semibold mb-1">Fallback affichage du lot sans désignation</div>
+      <p class="text-[12px] text-mute">Si <span class="kbd">lot.designation</span> est vide, afficher <span class="kbd">{type_bien} · étage {etage} · {emplacement_palier}</span>. À valider avec le client.</p>
+    </div>
+    <div class="card p-4">
+      <div class="text-sm font-semibold mb-1">Tolérance géographique</div>
+      <p class="text-[12px] text-mute">Match strict <span class="kbd">rue + cp + ville</span> ou rayon GPS de 25 m ? Le strict est plus simple côté UX (pas d'erreurs d'arrondi) mais risque de rater une saisie « 12 r. des Lilas » vs « 12 rue des Lilas ». Recommandation : strict sur l'adresse normalisée Mapbox.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-line/60 pt-6 pb-12 meta">
+  <div>Document généré pour discussion interne · ImmoChecker · 29 avril 2026</div>
+  <div>Audit basé sur la branche <span class="kbd">feat/coherence-statuts-mission</span></div>
+</footer>
+
+</main>
+</body>
+</html>

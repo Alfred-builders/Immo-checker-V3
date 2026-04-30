@@ -2,6 +2,7 @@ import { query } from '../db/index.js'
 
 export type AuditAction =
   | 'workspace.created'
+  | 'workspace.updated'
   | 'workspace.suspended'
   | 'workspace.reactivated'
   | 'workspace.status_changed'
@@ -9,7 +10,9 @@ export type AuditAction =
   | 'user.promoted_super_admin'
   | 'user.demoted_super_admin'
   | 'user.deactivated'
+  | 'user.reactivated'
   | 'user.force_password_reset'
+  | 'user.sessions_revoked'
 
 export type AuditTargetType = 'workspace' | 'user' | 'invitation'
 

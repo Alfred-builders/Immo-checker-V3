@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function EditBuildingForm({ batiment, onSave, onCancel }: Props) {
-  const [designation, setDesignation] = useState(batiment.designation)
+  const [designation, setDesignation] = useState(batiment.designation ?? '')
   const [type, setType] = useState(batiment.type)
   const [numBatiment, setNumBatiment] = useState(batiment.num_batiment || '')
   const [nbEtages, setNbEtages] = useState(batiment.nb_etages?.toString() || '')
@@ -23,7 +23,7 @@ export function EditBuildingForm({ batiment, onSave, onCancel }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     onSave({
-      designation,
+      designation: designation.trim() || undefined,
       type,
       num_batiment: numBatiment || undefined,
       nb_etages: nbEtages ? parseInt(nbEtages) : undefined,
@@ -35,10 +35,16 @@ export function EditBuildingForm({ batiment, onSave, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
-        {/* Désignation */}
-        <div className="col-span-2 space-y-2">
-          <Label>Désignation *</Label>
-          <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Residence Les Lilas" required />
+        {/* Numéro / lettre — structuré, distingue plusieurs bâtiments à la même adresse */}
+        <div className="space-y-2">
+          <Label>Numéro / lettre</Label>
+          <Input value={numBatiment} onChange={(e) => setNumBatiment(e.target.value)} placeholder="A, B, 1…" maxLength={50} />
+        </div>
+
+        {/* Désignation — optionnelle */}
+        <div className="space-y-2">
+          <Label>Désignation</Label>
+          <Input value={designation} onChange={(e) => setDesignation(e.target.value)} placeholder="Les Lilas, Résidence du Parc…" />
         </div>
 
         {/* Type */}
@@ -54,12 +60,6 @@ export function EditBuildingForm({ batiment, onSave, onCancel }: Props) {
               <SelectItem value="autre">Autre</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Num batiment */}
-        <div className="space-y-2">
-          <Label>N batiment</Label>
-          <Input value={numBatiment} onChange={(e) => setNumBatiment(e.target.value)} placeholder="Bat. A" />
         </div>
 
         {/* Nb etages */}

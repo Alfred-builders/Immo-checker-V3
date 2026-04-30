@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api-client'
 import type { Tiers, TiersDetail, TiersStats, ListResponse } from './types'
 
@@ -9,18 +9,35 @@ interface ListTiersParams {
   archived?: boolean
 }
 
+function buildTiersQuery(params: ListTiersParams, cursor?: string) {
+  const sp = new URLSearchParams()
+  if (params.search) sp.set('search', params.search)
+  if (params.type_personne) sp.set('type_personne', params.type_personne)
+  if (params.role) sp.set('role', params.role)
+  if (params.archived) sp.set('archived', 'true')
+  if (cursor) sp.set('cursor', cursor)
+  return sp.toString()
+}
+
 export function useTiers(params: ListTiersParams = {}) {
   return useQuery({
     queryKey: ['tiers', params],
     queryFn: () => {
-      const sp = new URLSearchParams()
-      if (params.search) sp.set('search', params.search)
-      if (params.type_personne) sp.set('type_personne', params.type_personne)
-      if (params.role) sp.set('role', params.role)
-      if (params.archived) sp.set('archived', 'true')
-      const qs = sp.toString()
+      const qs = buildTiersQuery(params)
       return api<ListResponse<Tiers>>(`/tiers${qs ? `?${qs}` : ''}`)
     },
+  })
+}
+
+export function useTiersInfinite(params: ListTiersParams = {}) {
+  return useInfiniteQuery({
+    queryKey: ['tiers', 'infinite', params],
+    queryFn: ({ pageParam }) => {
+      const qs = buildTiersQuery(params, pageParam as string | undefined)
+      return api<ListResponse<Tiers>>(`/tiers${qs ? `?${qs}` : ''}`)
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => (last.meta.has_more ? last.meta.cursor : undefined),
   })
 }
 
@@ -72,7 +89,14 @@ export function useLinkOrganisation() {
   return useMutation({
     mutationFn: ({ tiersId, ...data }: { tiersId: string; organisation_id: string; fonction?: string; est_principal?: boolean }) =>
       api(`/tiers/${tiersId}/organisations`, { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['tiers-detail', v.tiersId] }),
+    // Invalidate BOTH sides: the contact's detail and the organisation's detail.
+    // The server may have updated the morale's representant_nom on est_principal=true,
+    // so the morale's detail must refetch.
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['tiers-detail', v.tiersId] })
+      qc.invalidateQueries({ queryKey: ['tiers-detail', v.organisation_id] })
+      qc.invalidateQueries({ queryKey: ['tiers'] })
+    },
   })
 }
 
@@ -81,7 +105,11 @@ export function useUnlinkOrganisation() {
   return useMutation({
     mutationFn: ({ tiersId, orgId }: { tiersId: string; orgId: string }) =>
       api(`/tiers/${tiersId}/organisations/${orgId}`, { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tiers-detail'] }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['tiers-detail', v.tiersId] })
+      qc.invalidateQueries({ queryKey: ['tiers-detail', v.orgId] })
+      qc.invalidateQueries({ queryKey: ['tiers'] })
+    },
   })
 }
 

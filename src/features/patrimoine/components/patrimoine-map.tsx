@@ -4,6 +4,7 @@ import { SpinnerGap } from '@phosphor-icons/react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Batiment } from '../types'
+import { formatBatimentLabel } from '../labels'
 import { MapStyleSwitcher, MAP_STYLES, type MapStyleId } from 'src/components/shared/map-style-switcher'
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -31,7 +32,7 @@ function buildGeoJSON(batiments: Batiment[]): GeoJSON.FeatureCollection {
       geometry: { type: 'Point', coordinates: [adr.longitude, adr.latitude] },
       properties: {
         id: bat.id,
-        designation: bat.designation,
+        designation: formatBatimentLabel(bat),
         type: bat.type,
         type_label: typeLabels[bat.type] || bat.type,
         rue: adr.rue,
@@ -204,22 +205,34 @@ export function PatrimoineMap({ batiments }: Props) {
 
     // Build multi-building card HTML (cluster at same location)
     function multiBatimentHtml(featuresList: any[]) {
-      const first = featuresList[0].properties
-      const addrStr = `${first?.rue ?? ''}, ${first?.code_postal ?? ''} ${first?.ville ?? ''}`
+      // Adresses uniques sur l'ensemble du cluster — si toutes identiques, header partagé.
+      const addrOf = (p: any) => `${p?.rue ?? ''}, ${p?.code_postal ?? ''} ${p?.ville ?? ''}`.trim()
+      const uniqueAddrs = Array.from(new Set(featuresList.map(f => addrOf(f.properties))))
+      const allSame = uniqueAddrs.length <= 1
+      const headerSubline = allSame
+        ? (uniqueAddrs[0] || '')
+        : `${uniqueAddrs.length} adresses différentes`
+
       const rows = featuresList.map((f) => {
         const p = f.properties
         const color = p?.color ?? '#9ca3af'
         const missionsTag = p?.missions_a_venir > 0
           ? `<span style="font-size: 11px; color: #2563eb; font-weight: 500;">${p.missions_a_venir} mission(s)</span>`
           : ''
+        // Adresse de la carte : on l'affiche sur chaque ligne quand le cluster
+        // mélange plusieurs adresses, sinon redondant avec le header.
+        const addrLine = !allSame
+          ? `<div style="margin-top: 2px; font-size: 11px; color: #6b7280;">${addrOf(p) || '—'}</div>`
+          : ''
         return `
-          <div class="immo-mission-row" onclick="window.__batMapNav__('${p?.id}','${(p?.designation ?? '').replace(/'/g, "\\'")}')" style="display: flex; align-items: center; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
-            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0;"></div>
+          <div class="immo-mission-row" onclick="window.__batMapNav__('${p?.id}','${(p?.designation ?? '').replace(/'/g, "\\'")}')" style="display: flex; align-items: flex-start; gap: 8px; padding: 7px 4px; cursor: pointer; border-radius: 6px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; flex-shrink: 0; margin-top: 4px;"></div>
             <div style="flex: 1; min-width: 0;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span style="font-size: 11px; font-weight: 600; color: #111827;">${p?.designation ?? ''}</span>
                 <span style="font-size: 11px; background: #f0f0f0; padding: 1px 5px; border-radius: 4px;">${p?.type_label ?? ''}</span>
               </div>
+              ${addrLine}
               <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px; font-size: 11px; color: #6b7280;">
                 <span>${p?.nb_lots ?? 0} lots</span>
                 ${missionsTag}
@@ -232,7 +245,7 @@ export function PatrimoineMap({ batiments }: Props) {
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <div>
               <div style="font-size: 13px; font-weight: 600; color: #111827;">${featuresList.length} batiments</div>
-              <div style="font-size: 11px; color: #6b7280;">${addrStr}</div>
+              <div style="font-size: 11px; color: #6b7280;">${headerSubline}</div>
             </div>
             <button onclick="event.stopPropagation(); window.__batMapPin__()" class="immo-pin-btn" title="Epingler" style="background: none; border: none; cursor: pointer; color: #9ca3af; padding: 2px; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
               ${pinSvg}

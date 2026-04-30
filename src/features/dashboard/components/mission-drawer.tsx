@@ -3,35 +3,34 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
   Calendar, Clock, User, Users, MapPin, BuildingOffice, House,
   FileText, Key, Warning, CaretRight, UserPlus, ChatText,
-  ArrowSquareOut, FilePdf, Globe, Scales, Plus, DotsThreeVertical, Prohibit, Archive,
+  ArrowSquareOut, FilePdf, Globe, Scales, Plus, Prohibit,
 } from '@phosphor-icons/react'
 import { Sheet, SheetContent } from 'src/components/ui/sheet'
 import { Button } from 'src/components/ui/button'
 import { Input } from 'src/components/ui/input'
 import { TimePicker } from 'src/components/ui/time-picker'
+import { DurationPicker } from 'src/components/ui/duration-picker'
+import { addMinutesToTime, diffMinutes } from 'src/lib/time'
 import { Label } from 'src/components/ui/label'
 import { Textarea } from 'src/components/ui/textarea'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from 'src/components/ui/select'
 import { Skeleton } from 'src/components/ui/skeleton'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from 'src/components/ui/dropdown-menu'
 import { TechPicker } from 'src/components/shared/tech-picker'
-import { ConfirmDialog } from 'src/components/shared/confirm-dialog'
+import { DatePicker } from 'src/components/shared/date-picker'
 import { CancelMissionModal } from '../../missions/components/cancel-mission-modal'
 import {
-  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians, useAddEDLToMission, useArchiveMission,
+  useMissionDetail, useUpdateMission, useAssignTechnician, useUpdateInvitation, useWorkspaceTechnicians,
 } from '../../missions/api'
 import {
   sensLabels, sensColors,
-  statutRdvLabels, statutInvitationLabels,
+  statutInvitationLabels,
   getPendingActions,
 } from '../../missions/types'
-import type { StatutRdv, SensEDL, TypeEDL } from '../../missions/types'
 import { MissionStatusBadge } from '../../missions/components/mission-status-badge'
 import { formatDate, formatTime } from 'src/lib/formatters'
+import { formatLotLabel } from 'src/features/patrimoine/labels'
 import { cn } from 'src/lib/cn'
 import { toast } from 'sonner'
 
@@ -42,26 +41,20 @@ const typeBienLabels: Record<string, string> = { appartement: 'Appartement', mai
 const typeCleLabels: Record<string, string> = { cle_principale: 'Clé principale', badge: 'Badge', boite_aux_lettres: 'BAL', parking: 'Parking', cave: 'Cave', digicode: 'Digicode', autre: 'Autre' }
 const statutCleLabels: Record<string, string> = { remise: 'Remise', a_deposer: 'À déposer', deposee: 'Déposée' }
 
-// ── Status colours ──
+// Wording explicite pour le badge invitation à côté du tech (Tony §3.5 retours avril 2026
+// — "indiquer explicitement qu'il s'agit du technicien")
+const INVITATION_BADGE_LABELS: Record<string, string> = {
+  en_attente: 'Invitation technicien en attente',
+  accepte: 'Invitation technicien acceptée',
+  refuse: 'Invitation technicien refusée',
+}
 
-const STATUT_RDV_LABEL = {
-  a_confirmer: 'À confirmer',
-  confirme: 'Confirmé',
-  reporte: 'Reporté',
-} as const
-
-const STATUT_RDV_DOT = {
-  a_confirmer: 'bg-amber-500',
-  confirme: 'bg-emerald-500',
-  reporte: 'bg-rose-500',
-} as const
-
-// ── Input style ──
+// ── Input style ── (aligné avec DatePicker / SelectTrigger : rounded-xl, bg-card)
 
 const ghost = cn(
-  'bg-white border border-border/60 rounded-lg shadow-xs',
+  'bg-card border border-border/60 rounded-xl shadow-xs',
   'hover:border-border/90',
-  'focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
+  'focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
   'transition-colors text-[13px] h-9',
 )
 
@@ -206,36 +199,29 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
   // Form state
   const [datePlanifiee,    setDatePlanifiee]    = useState('')
   const [heureDebut,       setHeureDebut]       = useState('')
-  const [heureFin,         setHeureFin]         = useState('')
-  const [statutRdv,        setStatutRdv]        = useState<string>('')
+  const [dureeMin,         setDureeMin]         = useState<number | null>(null)
   const [commentaire,      setCommentaire]      = useState('')
   const [planningDirty,    setPlanningDirty]    = useState(false)
   const [saving,           setSaving]           = useState(false)
-  const [showRevalidation, setShowRevalidation] = useState(false)
   const [assigning,        setAssigning]        = useState(false)
   const [showTechPicker,   setShowTechPicker]   = useState(false)
-  const [showAddEdl,       setShowAddEdl]       = useState(false)
-  const [addEdlSens,       setAddEdlSens]       = useState<SensEDL>('entree')
-  const [addEdlType,       setAddEdlType]       = useState<TypeEDL>('edl')
-  const [addEdlSaving,     setAddEdlSaving]     = useState(false)
   const [showCancelModal,  setShowCancelModal]  = useState(false)
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
-  const addEdl = useAddEDLToMission()
-  const archiveMission = useArchiveMission()
 
   useEffect(() => {
     if (mission) {
+      const debut = mission.heure_debut || ''
+      const fin = mission.heure_fin || ''
+      const duree = debut && fin ? diffMinutes(debut, fin) : null
       setDatePlanifiee((mission.date_planifiee || '').slice(0, 10))
-      setHeureDebut(mission.heure_debut || '')
-      setHeureFin(mission.heure_fin || '')
-      setStatutRdv(mission.statut_rdv || '')
+      setHeureDebut(debut)
+      setDureeMin(duree && duree > 0 ? duree : null)
       setCommentaire(mission.commentaire || '')
       setPlanningDirty(false)
     }
   }, [mission])
 
   // Reset on new mission
-  useEffect(() => { setActiveSection('planning'); setShowTechPicker(false); setShowAddEdl(false) }, [missionId])
+  useEffect(() => { setActiveSection('planning'); setShowTechPicker(false) }, [missionId])
 
   // IntersectionObserver — highlight nav tab based on scroll
   useEffect(() => {
@@ -290,32 +276,27 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
   function handlePlanningChange(field: string, value: string) {
     if (field === 'date_planifiee') setDatePlanifiee(value)
     if (field === 'heure_debut')    setHeureDebut(value)
-    if (field === 'heure_fin')      setHeureFin(value)
-    if (field === 'statut_rdv')     setStatutRdv(value)
     setPlanningDirty(true)
   }
 
-  const planningDateChanged = mission && (
-    datePlanifiee !== (mission.date_planifiee || '').slice(0, 10) ||
-    heureDebut    !== (mission.heure_debut || '') ||
-    heureFin      !== (mission.heure_fin || '')
-  )
-  const techAccepted = mission?.technicien?.statut_invitation === 'accepte'
+  function handleDureeChange(v: number | null) {
+    setDureeMin(v)
+    setPlanningDirty(true)
+  }
 
-  async function doSavePlanning(revalidate: boolean) {
+  const computedHeureFin = heureDebut && dureeMin
+    ? (addMinutesToTime(heureDebut, dureeMin) ?? '')
+    : ''
+
+  async function handleSavePlanning() {
     if (!mission) return
     setSaving(true)
     try {
-      await updateMission.mutateAsync({ id: mission.id, date_planifiee: datePlanifiee, heure_debut: heureDebut || undefined, heure_fin: heureFin || undefined, statut_rdv: statutRdv as StatutRdv })
-      if (revalidate && mission.technicien) await updateInvitation.mutateAsync({ missionId: mission.id, statut_invitation: 'en_attente' })
-      setPlanningDirty(false); setShowRevalidation(false); toast.success('Planning mis à jour')
+      await updateMission.mutateAsync({ id: mission.id, date_planifiee: datePlanifiee, heure_debut: heureDebut || undefined, heure_fin: computedHeureFin || undefined })
+      // Auto-réinvitation côté serveur — décision Cadrage FC 28/04/2026.
+      setPlanningDirty(false); toast.success('Planning mis à jour')
     } catch { toast.error('Erreur lors de la mise à jour') }
     finally { setSaving(false) }
-  }
-
-  function handleSavePlanning() {
-    if (planningDateChanged && techAccepted) { setShowRevalidation(true); return }
-    doSavePlanning(false)
   }
 
   async function handleSaveComment() {
@@ -342,17 +323,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
     finally { setAssigning(false) }
   }
 
-  async function handleAddEdl() {
-    if (!mission) return
-    setAddEdlSaving(true)
-    try {
-      await addEdl.mutateAsync({ missionId: mission.id, type: addEdlType, sens: addEdlSens })
-      setShowAddEdl(false); setAddEdlSens('entree'); setAddEdlType('edl')
-      toast.success('EDL ajouté')
-    } catch { toast.error("Erreur lors de l'ajout") }
-    finally { setAddEdlSaving(false) }
-  }
-
   function formatAddress(adresse: { rue: string; ville: string; code_postal: string } | null) {
     if (!adresse) return null
     return `${adresse.rue}, ${adresse.code_postal} ${adresse.ville}`
@@ -362,14 +332,13 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose() }}>
       <SheetContent
         showCloseButton={false}
-        className="sm:max-w-[480px] p-0 flex flex-col overflow-hidden border-l border-border/30"
-        style={{ backgroundColor: '#fafafa' }}
+        className="sm:max-w-[520px] p-0 flex flex-col overflow-hidden border-l border-border/30 bg-card"
         side="right"
       >
         {isLoading || !mission ? <DrawerSkeleton /> : (
           <>
             {/* ═══ HEADER ═══ */}
-            <div className="shrink-0">
+            <div className="shrink-0 border-b border-border/40">
               <div className="px-6 pt-5 pb-4">
                 {/* Reference + status + actions */}
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -380,46 +349,23 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
                     <MissionStatusBadge mission={mission} />
                     {(() => {
-                      // Tony §3 : Annuler/Supprimer désactivés pour missions passées et terminées.
+                      // Tony §3 : Annuler désactivé pour missions déjà annulées ou passées + terminées (EDL signés = légal).
                       const today = new Date().toISOString().slice(0, 10)
                       const datePlanifSlice = (mission.date_planifiee || '').slice(0, 10)
                       const isPast = !!datePlanifSlice && datePlanifSlice < today
-                      const isPastTerminated = isPast && isTerminated
-                      const cancelDisabled = isCancelled || isPastTerminated
-                      const archiveDisabled = isPastTerminated
-                      const allDisabled = cancelDisabled && archiveDisabled
+                      const cancelDisabled = isCancelled || (isPast && isTerminated)
+                      if (cancelDisabled) return null
                       return (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-                              aria-label="Actions sur la mission"
-                              title={allDisabled ? 'Mission passée et terminée — aucune action disponible' : 'Actions'}
-                            >
-                              <DotsThreeVertical className="h-4 w-4" weight="bold" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuItem
-                              onSelect={() => setShowCancelModal(true)}
-                              disabled={cancelDisabled}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Prohibit className="h-4 w-4 mr-2" />
-                              Annuler la mission
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onSelect={() => setShowArchiveConfirm(true)}
-                              disabled={archiveDisabled}
-                            >
-                              <Archive className="h-4 w-4 mr-2" />
-                              Archiver la mission
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowCancelModal(true)}
+                          className="h-8 px-2.5 rounded-full text-[12px] font-medium text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                          title="Annuler la mission"
+                        >
+                          <Prohibit className="h-3.5 w-3.5 mr-1" />
+                          Annuler
+                        </Button>
                       )
                     })()}
                   </div>
@@ -427,9 +373,9 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
 
                 {/* Meta chips */}
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium rounded-md px-2.5 py-1 ${mission.date_planifiee ? 'text-muted-foreground bg-muted/40' : 'text-orange-700 bg-orange-50 dark:text-orange-300 dark:bg-orange-950/40'}`}>
                     <Calendar className="h-3 w-3 shrink-0" />
-                    {formatDate(mission.date_planifiee)}
+                    {mission.date_planifiee ? formatDate(mission.date_planifiee) : 'À planifier'}
                   </span>
                   {(mission.heure_debut || mission.heure_fin) && (
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground bg-muted/40 rounded-md px-2.5 py-1">
@@ -483,7 +429,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                       className={cn(
                         'flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150',
                         activeSection === id
-                          ? 'bg-background text-primary shadow-sm'
+                          ? 'bg-card text-primary shadow-sm'
                           : 'text-muted-foreground/60 hover:text-muted-foreground',
                       )}
                     >
@@ -496,13 +442,11 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   ))}
                 </div>
               </div>
-
-              <div className="h-px bg-border/25" />
             </div>
 
             {/* ═══ SCROLLABLE ONE-PAGER ═══ */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
-              <div className="px-6 py-5 space-y-8">
+              <div className="px-6 py-2 divide-y divide-border/40 [&>*]:py-6 [&>*:first-child]:pt-4 [&>*:last-child]:pb-4">
 
                 {/* ── Planning ── */}
                 <div
@@ -513,78 +457,47 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   <div className="space-y-3">
                     <div className="space-y-1.5">
                       <Label className="text-[11px] font-semibold text-muted-foreground/55">Date</Label>
-                      <Input
-                        type="date"
+                      <DatePicker
                         value={datePlanifiee}
-                        onChange={(e) => handlePlanningChange('date_planifiee', e.target.value)}
-                        onClick={(e) => !isLocked && (e.currentTarget as HTMLInputElement).showPicker?.()}
+                        onChange={(v) => handlePlanningChange('date_planifiee', v)}
                         disabled={isLocked}
-                        className={cn(ghost, !isLocked && 'cursor-pointer')}
+                        className={ghost}
+                        modal
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-muted-foreground/55">Début</Label>
-                        <TimePicker
-                          value={heureDebut}
-                          onChange={(v) => handlePlanningChange('heure_debut', v)}
-                          disabled={isLocked}
-                          modal
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-muted-foreground/55">Fin</Label>
-                        <TimePicker
-                          value={heureFin}
-                          onChange={(v) => handlePlanningChange('heure_fin', v)}
-                          disabled={isLocked}
-                          modal
-                        />
-                      </div>
-                    </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[11px] font-semibold text-muted-foreground/55">Statut RDV</Label>
-                      <Select value={statutRdv} onValueChange={(v) => handlePlanningChange('statut_rdv', v)} disabled={isLocked}>
-                        <SelectTrigger className={cn(ghost, 'w-full')}>
-                          <SelectValue placeholder="Statut du RDV">
-                            <span className="inline-flex items-center gap-2">
-                              <span className={cn('h-2 w-2 rounded-full shrink-0', STATUT_RDV_DOT[statutRdv as keyof typeof STATUT_RDV_DOT])} />
-                              {STATUT_RDV_LABEL[statutRdv as keyof typeof STATUT_RDV_LABEL]}
-                            </span>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(Object.keys(STATUT_RDV_LABEL) as Array<keyof typeof STATUT_RDV_LABEL>).map((key) => (
-                            <SelectItem key={key} value={key}>
-                              <span className="inline-flex items-center gap-2">
-                                <span className={cn('h-2 w-2 rounded-full shrink-0', STATUT_RDV_DOT[key])} />
-                                {STATUT_RDV_LABEL[key]}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-[11px] font-semibold text-muted-foreground/55">Début</Label>
+                          <TimePicker
+                            value={heureDebut}
+                            onChange={(v) => handlePlanningChange('heure_debut', v)}
+                            disabled={isLocked}
+                            modal
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[11px] font-semibold text-muted-foreground/55">Durée</Label>
+                          <DurationPicker
+                            value={dureeMin}
+                            onChange={handleDureeChange}
+                            disabled={isLocked}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/70">
+                        {heureDebut && dureeMin
+                          ? <>Heure de fin : <span className="font-semibold text-foreground/80">{computedHeureFin}</span></>
+                          : 'Renseigne l\'heure de début et la durée pour calculer l\'heure de fin.'}
+                      </p>
                     </div>
-
-                    {planningDirty && !isLocked && !showRevalidation && (
+                    {planningDirty && !isLocked && (
                       <Button size="sm" onClick={handleSavePlanning} disabled={saving} className="w-full h-9">
                         {saving ? 'Enregistrement…' : 'Enregistrer le planning'}
                       </Button>
                     )}
-                    {showRevalidation && (
-                      <div className="rounded-xl bg-amber-50 border border-amber-200/50 px-4 py-3 space-y-2.5 dark:bg-amber-950/20">
-                        <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">Le technicien a accepté — que faire ?</p>
-                        <div className="flex gap-2">
-                          <Button size="xs" variant="outline" onClick={() => doSavePlanning(true)}  disabled={saving}>Revalidation</Button>
-                          <Button size="xs"                   onClick={() => doSavePlanning(false)} disabled={saving}>Confirmer</Button>
-                          <Button size="xs" variant="ghost"   onClick={() => setShowRevalidation(false)}>Annuler</Button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
-
-                <div className="h-px bg-border/20" />
 
                 {/* ── Équipe ── */}
                 <div
@@ -624,7 +537,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                             mission.technicien.statut_invitation === 'accepte' ? 'bg-emerald-500' :
                             mission.technicien.statut_invitation === 'refuse'  ? 'bg-red-500' : 'bg-amber-400'
                           }
-                          badge={statutInvitationLabels[mission.technicien.statut_invitation]}
+                          badge={INVITATION_BADGE_LABELS[mission.technicien.statut_invitation]}
                           badgeClass={invitPillClass(mission.technicien.statut_invitation)}
                         />
                         {mission.technicien.statut_invitation === 'en_attente' && !isLocked && (
@@ -644,7 +557,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                           <p className="text-[12px] text-muted-foreground/40 italic">Non assigné</p>
                         </div>
                         {showTechPicker && (
-                          <div className="rounded-xl border border-border/25 bg-white px-2 py-2">
+                          <div className="rounded-xl border border-border/25 bg-card px-2 py-2">
                             <TechPicker
                               technicians={technicians}
                               onSelect={handleAssignTechnician}
@@ -726,8 +639,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   </div>
                 </div>
 
-                <div className="h-px bg-border/20" />
-
                 {/* ── Bien ── */}
                 <div
                   ref={(el) => { sectionRefs.current.bien = el }}
@@ -741,7 +652,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                         <House className="h-4 w-4 text-blue-500 dark:text-blue-400" weight="duotone" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold truncate group-hover:text-primary transition-colors">{mission.lot.designation}</p>
+                        <p className="text-[13px] font-semibold truncate group-hover:text-primary transition-colors">{formatLotLabel(mission.lot)}</p>
                         <p className="text-[11px] text-muted-foreground">
                           {typeBienLabels[mission.lot.type_bien] || mission.lot.type_bien}
                           {mission.lot.etage   && ` · Étage ${mission.lot.etage}`}
@@ -770,8 +681,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   </div>
                 </div>
 
-                <div className="h-px bg-border/20" />
-
                 {/* ── Documents ── */}
                 <div
                   ref={(el) => { sectionRefs.current.documents = el }}
@@ -794,43 +703,45 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                         <p className="text-[12px] italic">Aucun EDL associé</p>
                       </div>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-2">
                         {mission.edls.map((edl) => {
                           const isSigne       = edl.statut === 'signe'
                           const isInfructueux = edl.statut === 'infructueux'
-                          const cardBg = isSigne       ? 'bg-emerald-50/70 border-emerald-100/80 dark:bg-emerald-950/20 dark:border-emerald-900/40'
-                                       : isInfructueux ? 'bg-red-50/70 border-red-100/80 dark:bg-red-950/20 dark:border-red-900/40'
-                                       : 'bg-sky-50/70 border-sky-100/80 dark:bg-sky-950/20 dark:border-sky-900/40'
-                          const statusColor = isSigne ? 'text-emerald-600 dark:text-emerald-400'
-                                           : isInfructueux ? 'text-red-500' : 'text-sky-500'
-                          const statusDotBg = isSigne ? 'bg-emerald-500' : isInfructueux ? 'bg-red-500' : 'bg-sky-400'
+                          const accent = isSigne
+                            ? { text: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500' }
+                            : isInfructueux
+                              ? { text: 'text-red-700 dark:text-red-400', dot: 'bg-red-500' }
+                              : { text: 'text-sky-700 dark:text-sky-400', dot: 'bg-sky-500' }
                           return (
-                            <div key={edl.id} className={cn('rounded-2xl border overflow-hidden', cardBg)}>
+                            <div
+                              key={edl.id}
+                              className="rounded-2xl border border-border/40 bg-card px-3 py-3 shadow-xs transition-shadow hover:shadow-elevation-raised"
+                            >
                               {/* Header */}
-                              <div className="flex items-center justify-between px-4 pt-3.5 pb-3">
-                                <div className="flex items-center gap-2">
-                                  <span className={cn('text-[11px] font-bold px-2.5 py-1 rounded-full', sensColors[edl.sens])}>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={cn('text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0', sensColors[edl.sens])}>
                                     {sensLabels[edl.sens]}
                                   </span>
-                                  <span className="text-[13px] font-semibold text-foreground">
+                                  <span className="text-[13px] font-semibold text-foreground truncate">
                                     {edl.type === 'inventaire' ? 'Inventaire' : 'État des lieux'}
                                   </span>
                                 </div>
-                                <div className={cn('flex items-center gap-1.5 text-[11px] font-semibold', statusColor)}>
-                                  <span className={cn('h-1.5 w-1.5 rounded-full', statusDotBg)} />
+                                <div className={cn('flex items-center gap-1.5 text-[11px] font-semibold shrink-0', accent.text)}>
+                                  <span className={cn('h-1.5 w-1.5 rounded-full', accent.dot)} />
                                   {statutEdlLabels[edl.statut] || edl.statut}
                                 </div>
                               </div>
 
                               {/* Locataires */}
                               {edl.locataires.length > 0 && (
-                                <div className="px-4 pb-2.5 flex flex-wrap gap-1">
+                                <div className="mt-2 flex flex-wrap gap-1">
                                   {edl.locataires.map((l) => (
                                     <span key={l.tiers_id} className={cn(
-                                      'text-[11px] font-semibold px-2 py-0.5 rounded-full',
+                                      'text-[11px] font-medium px-2 py-0.5 rounded-full',
                                       l.role_locataire === 'entrant'
-                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
-                                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                        : 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
                                     )}>
                                       {l.prenom ? `${l.prenom} ${l.nom}` : l.nom}
                                     </span>
@@ -839,20 +750,25 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                               )}
 
                               {/* Document links */}
-                              <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+                              <div className="mt-3 flex flex-wrap gap-1.5">
                                 {([
                                   { url: edl.url_pdf,       Icon: FilePdf, label: 'PDF',       color: 'text-red-500'    },
                                   { url: edl.url_web,       Icon: Globe,   label: 'Web',       color: 'text-blue-500'   },
                                   { url: edl.url_pdf_legal, Icon: Scales,  label: 'PDF légal', color: 'text-violet-500' },
                                   { url: edl.url_web_legal, Icon: Globe,   label: 'Web légal', color: 'text-violet-500' },
                                 ] as const).map(({ url, Icon: LIcon, label, color }) => url ? (
-                                  <a key={label} href={url} target="_blank" rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-white/60 hover:border-border/30 shadow-xs transition-all">
+                                  <a
+                                    key={label}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-muted/40 hover:bg-muted/70 border border-transparent hover:border-border/60 transition-colors"
+                                  >
                                     <LIcon className={cn('h-3.5 w-3.5 shrink-0', color)} weight="duotone" />
-                                    <span className="text-foreground/70">{label}</span>
+                                    <span className="text-foreground/80">{label}</span>
                                   </a>
                                 ) : (
-                                  <span key={label} className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-white/30 border border-white/20 text-muted-foreground/30 cursor-not-allowed select-none">
+                                  <span key={label} className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full text-muted-foreground/30 cursor-not-allowed select-none">
                                     <LIcon className="h-3.5 w-3.5 shrink-0" />{label}
                                   </span>
                                 ))}
@@ -893,8 +809,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                   )}
                 </div>
 
-                <div className="h-px bg-border/20" />
-
                 {/* ── Commentaire (no tab, always at bottom) ── */}
                 <div>
                   <SectionHeading Icon={ChatText}>Commentaire</SectionHeading>
@@ -906,9 +820,9 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
                       rows={4}
                       className={cn(
                         'resize-none text-[13px] w-full rounded-xl shadow-xs',
-                        'bg-white border border-border/60',
+                        'bg-card border border-border/60',
                         'hover:border-border/90',
-                        'focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
+                        'focus:border-primary/60 focus:ring-2 focus:ring-primary/10',
                         'transition-colors',
                       )}
                     />
@@ -926,7 +840,7 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
             </div>
 
             {/* ═══ STICKY FOOTER ═══ */}
-            <div className="shrink-0 border-t border-border/25 px-6 py-4" style={{ backgroundColor: '#fafafa' }}>
+            <div className="shrink-0 border-t border-border/40 px-6 py-4">
               <Button
                 variant="outline"
                 className="w-full h-10 justify-between text-[13px] font-semibold rounded-xl"
@@ -956,27 +870,6 @@ export function MissionDrawer({ missionId, open, onClose }: { missionId: string 
         />
       )}
 
-      {/* Archive mission confirm */}
-      {mission && (
-        <ConfirmDialog
-          open={showArchiveConfirm}
-          onOpenChange={setShowArchiveConfirm}
-          title="Archiver la mission ?"
-          description="La mission sera masquée des listes et des recherches. Les EDL signés (s'il y en a) bloqueront l'archivage. Cette action est réversible depuis les archives."
-          confirmLabel={archiveMission.isPending ? 'Archivage...' : 'Archiver'}
-          variant="destructive"
-          onConfirm={async () => {
-            try {
-              await archiveMission.mutateAsync({ id: mission.id })
-              toast.success('Mission archivée')
-              setShowArchiveConfirm(false)
-              onClose()
-            } catch (err: any) {
-              toast.error(err.message || 'Erreur lors de l\'archivage')
-            }
-          }}
-        />
-      )}
     </Sheet>
   )
 }

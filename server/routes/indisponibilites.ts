@@ -336,10 +336,17 @@ technicianConflictRouter.get('/:userId/conflicts', async (req, res) => {
       throw new AppError('Parametre date requis (YYYY-MM-DD)', 'VALIDATION_ERROR', 400)
     }
 
-    // Missions on the same day (not cancelled)
+    // Missions on the same day (not cancelled). Returns lot.type_bien, nb_pieces
+    // and meuble for the dropdown's per-mission details (US-827bis).
     const missions = await query(
       `SELECT m.id, m.reference, m.date_planifiee, m.heure_debut, m.heure_fin, m.statut,
-        json_build_object('id', l.id, 'designation', l.designation) as lot,
+        json_build_object(
+          'id', l.id,
+          'designation', l.designation,
+          'type_bien', l.type_bien,
+          'nb_pieces', l.nb_pieces,
+          'meuble', l.meuble
+        ) as lot,
         (SELECT concat_ws(', ', ab.rue, ab.code_postal || ' ' || ab.ville)
          FROM adresse_batiment ab
          WHERE ab.batiment_id = l.batiment_id AND ab.type = 'principale'

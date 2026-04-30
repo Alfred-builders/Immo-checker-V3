@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { Archive, ArrowCounterClockwise, Plus, PencilSimple, Warning, Trash, ClipboardText, SpinnerGap, Check, MagnifyingGlass } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Plus, PencilSimple, Warning, Trash, ClipboardText, SpinnerGap, Check, MagnifyingGlass } from '@phosphor-icons/react'
 import { Button } from 'src/components/ui/button'
 import { Badge } from 'src/components/ui/badge'
 import { Skeleton } from 'src/components/ui/skeleton'
@@ -24,7 +24,9 @@ import { FloatingSaveBar } from '../../../components/shared/floating-save-bar'
 import { ResizeHandle, useResizableColumns } from '../../../components/shared/resizable-columns'
 import { CreateLotModal } from './create-lot-modal'
 import { ConfirmDialog } from '../../../components/shared/confirm-dialog'
+import { formatBatimentLabel, formatLotLabel } from '../labels'
 import { toast } from 'sonner'
+import { undoableToast } from 'src/lib/undoable-toast'
 
 const typeLabels: Record<string, string> = {
   immeuble: 'Immeuble', maison: 'Maison', local_commercial: 'Local commercial', mixte: 'Mixte', autre: 'Autre',
@@ -53,10 +55,10 @@ export function BuildingDetailPage() {
 
   // Auto-set breadcrumbs when data loads (survives page refresh)
   useEffect(() => {
-    if (batiment?.designation && !(location.state as any)?.breadcrumbs) {
-      navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation }] } })
+    if (batiment && !(location.state as any)?.breadcrumbs) {
+      navigate(location.pathname, { replace: true, state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: formatBatimentLabel(batiment) }] } })
     }
-  }, [batiment?.designation])
+  }, [batiment?.id, batiment?.designation, batiment?.num_batiment])
 
   // Track visit pour l'historique Cmd+K.
   useEffect(() => {
@@ -65,7 +67,7 @@ export function BuildingDetailPage() {
     addRecent({
       id: batiment.id,
       type: 'batiment',
-      label: batiment.designation,
+      label: formatBatimentLabel(batiment),
       subtitle: ville || undefined,
       to: `/app/patrimoine/batiments/${batiment.id}`,
     })
@@ -79,6 +81,7 @@ export function BuildingDetailPage() {
 
   const [formData, setFormData] = useState({
     designation: '',
+    num_batiment: '',
     type: '',
     nb_etages: '',
     annee_construction: '',
@@ -94,6 +97,7 @@ export function BuildingDetailPage() {
   function batimentToForm(b: typeof batiment) {
     return {
       designation: b?.designation || '',
+      num_batiment: b?.num_batiment || '',
       type: b?.type || '',
       nb_etages: b?.nb_etages?.toString() || '',
       annee_construction: b?.annee_construction?.toString() || '',
@@ -134,7 +138,8 @@ export function BuildingDetailPage() {
       // Save building info
       await updateMutation.mutateAsync({
         id: batiment!.id,
-        designation: formData.designation,
+        designation: formData.designation.trim() || null,
+        num_batiment: formData.num_batiment.trim() || null,
         type: formData.type,
         nb_etages: formData.nb_etages ? parseInt(formData.nb_etages) : null,
         annee_construction: formData.annee_construction ? parseInt(formData.annee_construction) : null,
@@ -202,10 +207,19 @@ export function BuildingDetailPage() {
 
   async function handleArchive() {
     if (!id) return
-    try {
-      await updateMutation.mutateAsync({ id, est_archive: !batiment!.est_archive })
-      toast.success(batiment!.est_archive ? 'Bâtiment restauré' : 'Bâtiment archivé')
-    } catch (err: any) { toast.error(err.message || 'Erreur') }
+    // Restauration = action positive non destructive → toast simple immédiat.
+    if (batiment!.est_archive) {
+      try {
+        await updateMutation.mutateAsync({ id, est_archive: false })
+        toast.success('Bâtiment restauré')
+      } catch (err: any) { toast.error(err.message || 'Erreur') }
+      return
+    }
+    // Suppression = pattern Gmail avec undo.
+    undoableToast({
+      message: 'Bâtiment supprimé',
+      run: () => updateMutation.mutateAsync({ id, est_archive: true }),
+    })
   }
 
   return (
@@ -218,11 +232,11 @@ export function BuildingDetailPage() {
               {editing ? (
                 <Input value={formData.designation} onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} className="text-xl font-semibold h-auto py-1 px-2 border-primary/30 bg-primary/[0.03] max-w-md" />
               ) : (
-                <h1 className="text-xl font-semibold text-foreground">{batiment.designation}</h1>
+                <h1 className="text-xl font-semibold text-foreground">{formatBatimentLabel(batiment)}</h1>
               )}
             </div>
             <div className="mt-1 flex items-center gap-2">
-              {batiment.est_archive && <Badge variant="destructive" className="text-[11px]">Archivé</Badge>}
+              {batiment.est_archive && <Badge variant="destructive" className="text-[11px]">Supprimé</Badge>}
             </div>
           </div>
         </div>
@@ -246,8 +260,8 @@ export function BuildingDetailPage() {
             className={batiment.est_archive ? 'gap-1.5 border-border/60 hover:border-foreground/20 hover:bg-accent' : 'gap-1.5 border-destructive/30 text-destructive/80 hover:text-destructive hover:bg-destructive/5 hover:border-destructive/50'}
             onClick={() => setShowArchiveConfirm(true)}
           >
-            {batiment.est_archive ? <ArrowCounterClockwise className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-            {batiment.est_archive ? 'Restaurer' : 'Archiver'}
+            {batiment.est_archive ? <ArrowCounterClockwise className="h-3.5 w-3.5" /> : <Trash className="h-3.5 w-3.5" />}
+            {batiment.est_archive ? 'Restaurer' : 'Supprimer'}
           </Button>
         </div>
       </div>
@@ -255,7 +269,7 @@ export function BuildingDetailPage() {
       {batiment.est_archive && (
         <div className="flex items-center gap-2 px-3 py-2.5 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-xs">
           <Warning className="h-3.5 w-3.5 shrink-0" />
-          Ce bâtiment est archivé.
+          Ce bâtiment est supprimé.
         </div>
       )}
 
@@ -273,8 +287,11 @@ export function BuildingDetailPage() {
                 <SelectContent>{Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
               </Select>
             </InfoRow>
-            <InfoRow label="Désignation" editing={editing} value={batiment.designation}>
-              <Input value={formData.designation} onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} className="h-8 w-40 text-sm" />
+            <InfoRow label="Numéro / lettre" editing={editing} value={batiment.num_batiment || '--'}>
+              <Input value={(formData as any).num_batiment ?? ''} onChange={(e) => setFormData(prev => ({ ...prev, num_batiment: e.target.value }))} placeholder="A, B, 1…" className="h-8 w-40 text-sm" />
+            </InfoRow>
+            <InfoRow label="Désignation" editing={editing} value={batiment.designation || '--'}>
+              <Input value={formData.designation} onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} placeholder="Les Lilas…" className="h-8 w-40 text-sm" />
             </InfoRow>
             <InfoRow label="Nb étages" editing={editing} value={batiment.nb_etages ?? '--'}>
               <Input type="number" value={formData.nb_etages} onChange={(e) => setFormData(prev => ({ ...prev, nb_etages: e.target.value }))} className="h-8 w-40 text-sm" />
@@ -422,8 +439,8 @@ export function BuildingDetailPage() {
         {lots && lots.length > 0 ? (
           <div className="divide-y divide-border/30">
             {lots.map((lot) => (
-              <div key={lot.id} className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/patrimoine/lots/${lot.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: batiment.designation, href: `/app/patrimoine/batiments/${batiment.id}` }, { label: lot.designation }] } })}>
-                <div className="shrink-0 text-sm font-medium text-foreground truncate" style={{ width: lotCols.colWidths.designation }}>{lot.designation}</div>
+              <div key={lot.id} className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors duration-200 cursor-pointer" onClick={() => navigate(`/app/patrimoine/lots/${lot.id}`, { state: { breadcrumbs: [{ label: 'Parc immobilier', href: '/app/patrimoine' }, { label: formatBatimentLabel(batiment), href: `/app/patrimoine/batiments/${batiment.id}` }, { label: formatLotLabel(lot) }] } })}>
+                <div className="shrink-0 text-sm font-medium text-foreground truncate" style={{ width: lotCols.colWidths.designation }}>{formatLotLabel(lot)}</div>
                 <div className="shrink-0" style={{ width: lotCols.colWidths.type }}>
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] capitalize">{lot.type_bien.replace('_', ' ')}</Badge>
                 </div>
@@ -460,29 +477,35 @@ export function BuildingDetailPage() {
         onConfirm={async () => {
           if (addrDeleteIdx === null) return
           const addr = addrForms[addrDeleteIdx]
-          setAddrDeleting(true)
-          try {
-            if (!addr.isNew) {
-              await deleteAddr.mutateAsync({ batimentId: batiment!.id, adresseId: addr.id })
-            }
-            setAddrForms(prev => prev.filter((_, i) => i !== addrDeleteIdx))
-            setAddrDeleteIdx(null)
-            toast.success('Adresse supprimée')
-          } catch (err: any) {
-            toast.error(err.message || 'Erreur lors de la suppression')
-          } finally {
-            setAddrDeleting(false)
+          const idx = addrDeleteIdx
+          // Retrait optimiste immédiat de l'UI.
+          setAddrForms(prev => prev.filter((_, i) => i !== idx))
+          setAddrDeleteIdx(null)
+          if (addr.isNew) {
+            // Brouillon non persisté — pas d'API à différer.
+            toast.success('Adresse retirée', { position: 'bottom-left' })
+            return
           }
+          undoableToast({
+            message: 'Adresse supprimée',
+            run: () => deleteAddr.mutateAsync({ batimentId: batiment!.id, adresseId: addr.id }),
+            onUndo: () => setAddrForms(prev => {
+              // Re-insère à l'index d'origine (clamp si la liste a changé).
+              const next = [...prev]
+              next.splice(Math.min(idx, next.length), 0, addr)
+              return next
+            }),
+          })
         }}
       />
       <ConfirmDialog
         open={showArchiveConfirm}
         onOpenChange={setShowArchiveConfirm}
-        title={batiment.est_archive ? 'Restaurer ce bâtiment ?' : 'Archiver ce bâtiment ?'}
+        title={batiment.est_archive ? 'Restaurer ce bâtiment ?' : 'Supprimer ce bâtiment ?'}
         description={batiment.est_archive
           ? 'Le bâtiment et ses lots redeviendront visibles dans les listes et les recherches.'
           : 'Le bâtiment et ses lots seront masqués des listes, recherches et pickers. Les missions existantes restent consultables.'}
-        confirmLabel={batiment.est_archive ? 'Restaurer' : 'Archiver'}
+        confirmLabel={batiment.est_archive ? 'Restaurer' : 'Supprimer'}
         variant={batiment.est_archive ? 'default' : 'destructive'}
         onConfirm={handleArchive}
       />
@@ -623,7 +646,7 @@ const BATIMENT_MISSIONS_PREF_KEY = 'batiment_missions_list'
 const BATIMENT_MISSIONS_PREFS_DEFAULTS = {
   visible_columns: MISSION_COLUMNS.filter((c) => c.defaultVisible).map((c) => c.id),
   column_order: MISSION_COLUMNS.map((c) => c.id),
-  filters: { period: 'all' as PeriodFilter, statut: 'all', rdv: 'all' },
+  filters: { period: 'all' as PeriodFilter, statut: 'all' },
   sort: { col: 'date', dir: 'desc' as SortDir },
 }
 
@@ -679,20 +702,13 @@ function BatimentMissionsTable({ batimentId }: { batimentId: string }) {
     {
       id: 'statut', label: 'Statut', type: 'select',
       options: [
-        { value: 'a_traiter', label: 'À traiter' },
-        { value: 'prete', label: 'Prête' },
-        { value: 'terminee', label: 'Terminée' },
+        { value: 'a_planifier', label: 'À planifier' },
+        { value: 'planifie', label: 'Planifié' },
+        { value: 'finalisee', label: 'Finalisée' },
+        { value: 'infructueuse', label: 'Infructueuse' },
         { value: 'annulee', label: 'Annulée' },
       ],
       getValue: (m: Mission) => getStatutMission(m),
-    },
-    {
-      id: 'statut_rdv', label: 'Statut RDV', type: 'select',
-      options: [
-        { value: 'a_confirmer', label: 'À confirmer' },
-        { value: 'confirme', label: 'Confirmé' },
-        { value: 'reporte', label: 'Reporté' },
-      ],
     },
     { id: 'avec_inventaire', label: 'Inventaire', type: 'boolean', getValue: (m: Mission) => m.avec_inventaire },
     { id: 'date_planifiee', label: 'Date mission', type: 'date' },
@@ -704,7 +720,6 @@ function BatimentMissionsTable({ batimentId }: { batimentId: string }) {
     batiment_id: batimentId,
     search: search || undefined,
     statut_affichage: filters.statut !== 'all' ? (filters.statut as StatutMission) : undefined,
-    statut_rdv: filters.rdv !== 'all' ? (filters.rdv as any) : undefined,
     ...periodDates,
     limit: 100,
   })
@@ -750,7 +765,6 @@ function BatimentMissionsTable({ batimentId }: { batimentId: string }) {
   const hasActiveFilters =
     !!search ||
     filters.statut !== 'all' ||
-    filters.rdv !== 'all' ||
     filters.period !== 'all' ||
     dynamicFilters.length > 0
 
@@ -783,22 +797,14 @@ function BatimentMissionsTable({ batimentId }: { batimentId: string }) {
           </SelectContent>
         </Select>
         <Select value={filters.statut} onValueChange={(v) => updateFilters({ statut: v })}>
-          <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+          <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="a_traiter">À traiter</SelectItem>
-            <SelectItem value="prete">Prête</SelectItem>
-            <SelectItem value="terminee">Terminée</SelectItem>
+            <SelectItem value="a_planifier">À planifier</SelectItem>
+            <SelectItem value="planifie">Planifié</SelectItem>
+            <SelectItem value="finalisee">Finalisée</SelectItem>
+            <SelectItem value="infructueuse">Infructueuse</SelectItem>
             <SelectItem value="annulee">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filters.rdv} onValueChange={(v) => updateFilters({ rdv: v })}>
-          <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Statut RDV" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les RDV</SelectItem>
-            <SelectItem value="a_confirmer">À confirmer</SelectItem>
-            <SelectItem value="confirme">Confirmé</SelectItem>
-            <SelectItem value="reporte">Reporté</SelectItem>
           </SelectContent>
         </Select>
         <DynamicFilter fields={filterFields} filters={dynamicFilters} onChange={setDynamicFilters} />

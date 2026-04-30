@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod/v4'
 import { query } from '../../db/index.js'
 import { validate } from '../../middleware/validate.js'
-import { sendSuccess, sendError } from '../../utils/response.js'
+import { sendSuccess, sendList, sendError } from '../../utils/response.js'
 import { AppError, NotFoundError } from '../../utils/errors.js'
 import { logAudit } from '../../services/audit-service.js'
 import { sendInvitationEmail } from '../../services/email-service.js'
@@ -12,7 +12,8 @@ const router = Router()
 // GET /api/super-admin/workspaces
 router.get('/', async (req, res) => {
   try {
-    const { search, type, statut } = req.query
+    const { search, type, statut, cursor, limit: rawLimit } = req.query
+    const limit = Math.min(parseInt(rawLimit as string) || 25, 100)
     const filters: string[] = []
     const params: unknown[] = []
     let i = 1
@@ -23,6 +24,14 @@ router.get('/', async (req, res) => {
     }
     if (type) { filters.push(`w.type_workspace = $${i}`); params.push(type); i++ }
     if (statut) { filters.push(`w.statut = $${i}`); params.push(statut); i++ }
+    if (cursor) {
+      filters.push(`(w.created_at, w.id) < (
+        (SELECT created_at FROM workspace WHERE id = $${i}),
+        $${i}
+      )`)
+      params.push(cursor)
+      i++
+    }
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : ''
 
     const result = await query(
@@ -32,11 +41,14 @@ router.get('/', async (req, res) => {
               (SELECT COUNT(*)::int FROM mission m WHERE m.workspace_id = w.id AND m.est_archive = false) AS missions_count,
               (SELECT COUNT(*)::int FROM batiment b WHERE b.workspace_id = w.id AND b.est_archive = false) AS batiments_count
        FROM workspace w ${where}
-       ORDER BY w.created_at DESC
-       LIMIT 200`,
-      params
+       ORDER BY w.created_at DESC, w.id DESC
+       LIMIT $${i}`,
+      [...params, limit + 1]
     )
-    sendSuccess(res, { data: result.rows, total: result.rows.length })
+    const hasMore = result.rows.length > limit
+    const data = hasMore ? result.rows.slice(0, limit) : result.rows
+    const nextCursor = hasMore ? data[data.length - 1].id : undefined
+    sendList(res, data, { cursor: nextCursor, has_more: hasMore })
   } catch (error) {
     sendError(res, error)
   }
@@ -46,7 +58,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const wsResult = await query(
-      `SELECT w.*,
+      `SELECT w.*, w.suspended_reason, w.suspended_at,
               (SELECT COUNT(*)::int FROM workspace_user wu WHERE wu.workspace_id = w.id AND wu.est_actif = true) AS members_count,
               (SELECT COUNT(*)::int FROM mission m WHERE m.workspace_id = w.id) AS missions_count,
               (SELECT COUNT(*)::int FROM batiment b WHERE b.workspace_id = w.id) AS batiments_count,
@@ -136,22 +148,89 @@ router.post('/', validate(createSchema), async (req, res) => {
   }
 })
 
-// PATCH /api/super-admin/workspaces/:id — update statut
-const updateStatutSchema = z.object({
-  statut: z.enum(['actif', 'suspendu', 'trial']),
-})
-router.patch('/:id', validate(updateStatutSchema), async (req, res) => {
+// PATCH /api/super-admin/workspaces/:id — update identité (nom, SIRET, contact, adresse, type)
+// Le statut se gère via /suspend & /reactivate (motif obligatoire à la suspension).
+const updateWorkspaceSchema = z.object({
+  nom: z.string().min(1).max(255).optional(),
+  type_workspace: z.enum(['societe_edl', 'bailleur', 'agence']).optional(),
+  siret: z.string().max(14).nullable().optional(),
+  email: z.string().email().nullable().optional(),
+  telephone: z.string().max(20).nullable().optional(),
+  adresse: z.string().max(500).nullable().optional(),
+  code_postal: z.string().max(10).nullable().optional(),
+  ville: z.string().max(255).nullable().optional(),
+  // Statut transitions go through dedicated endpoints — refuse here.
+}).refine((d) => Object.keys(d).length > 0, { message: 'Aucun champ à mettre à jour' })
+
+router.patch('/:id', validate(updateWorkspaceSchema), async (req, res) => {
   try {
-    const { statut } = req.body as z.infer<typeof updateStatutSchema>
+    const d = req.body as z.infer<typeof updateWorkspaceSchema>
+    const sets: string[] = []
+    const params: unknown[] = []
+    let i = 1
+    for (const [k, v] of Object.entries(d)) {
+      sets.push(`${k} = $${i}`)
+      params.push(v)
+      i++
+    }
+    sets.push(`updated_at = now()`)
+    params.push(req.params.id)
+
     const result = await query(
-      `UPDATE workspace SET statut = $1, updated_at = now() WHERE id = $2 RETURNING *`,
-      [statut, req.params.id]
+      `UPDATE workspace SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
+      params
     )
     if (result.rows.length === 0) throw new NotFoundError('Workspace')
-    const action = statut === 'suspendu' ? 'workspace.suspended'
-      : statut === 'actif' ? 'workspace.reactivated'
-      : 'workspace.status_changed'
-    await logAudit(req.user!.userId, action, 'workspace', String(req.params.id), { new_statut: statut })
+
+    await logAudit(req.user!.userId, 'workspace.updated', 'workspace', String(req.params.id), {
+      nom: result.rows[0].nom,
+      changed: Object.keys(d),
+    })
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// POST /api/super-admin/workspaces/:id/suspend — suspendre avec motif
+const suspendSchema = z.object({
+  reason: z.string().min(3, 'Motif requis (3 caractères min.)').max(500),
+})
+router.post('/:id/suspend', validate(suspendSchema), async (req, res) => {
+  try {
+    const { reason } = req.body as z.infer<typeof suspendSchema>
+    const result = await query(
+      `UPDATE workspace
+       SET statut = 'suspendu', suspended_reason = $1, suspended_at = now(), updated_at = now()
+       WHERE id = $2
+       RETURNING *`,
+      [reason.trim(), req.params.id]
+    )
+    if (result.rows.length === 0) throw new NotFoundError('Workspace')
+    await logAudit(req.user!.userId, 'workspace.suspended', 'workspace', String(req.params.id), {
+      nom: result.rows[0].nom,
+      reason: reason.trim(),
+    })
+    sendSuccess(res, result.rows[0])
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// POST /api/super-admin/workspaces/:id/reactivate — réactiver (purge motif)
+router.post('/:id/reactivate', async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE workspace
+       SET statut = 'actif', suspended_reason = NULL, suspended_at = NULL, updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id]
+    )
+    if (result.rows.length === 0) throw new NotFoundError('Workspace')
+    await logAudit(req.user!.userId, 'workspace.reactivated', 'workspace', String(req.params.id), {
+      nom: result.rows[0].nom,
+    })
     sendSuccess(res, result.rows[0])
   } catch (error) {
     sendError(res, error)

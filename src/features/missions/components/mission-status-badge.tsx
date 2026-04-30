@@ -10,7 +10,7 @@ import {
 type Variant = 'default' | 'compact'
 
 interface Props {
-  mission: Pick<Mission, 'statut' | 'statut_rdv' | 'technicien'>
+  mission: Pick<Mission, 'statut' | 'date_planifiee'>
   variant?: Variant
   className?: string
 }

@@ -393,19 +393,19 @@ async function seed() {
     // Helper: insert mission + EDL + optional tech + optional locataire
     async function createMission(opts: {
       lotIdx: number, date: string, heure_debut?: string, heure_fin?: string,
-      statut: string, statut_rdv: string, avec_inventaire: boolean,
+      statut: string, avec_inventaire: boolean,
       techUserId?: string, techStatut?: string,
       edlSens: string, edlStatut?: string, edlType?: string,
-      commentaire?: string, motif_annulation?: string,
+      commentaire?: string, motif_annulation?: string, motif_infructueux?: string,
       locataireIdx?: number, locataireRole?: string,
       date_realisation?: string, date_signature?: string,
     }) {
       const mRes = await client.query(
-        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, commentaire, motif_annulation)
+        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire, commentaire, motif_annulation, motif_infructueux)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
         [workspaceId, lotIds[opts.lotIdx], adminId, nextRef(), opts.date,
-         opts.heure_debut ?? null, opts.heure_fin ?? null, opts.statut, opts.statut_rdv,
-         opts.avec_inventaire, opts.commentaire ?? null, opts.motif_annulation ?? null]
+         opts.heure_debut ?? null, opts.heure_fin ?? null, opts.statut,
+         opts.avec_inventaire, opts.commentaire ?? null, opts.motif_annulation ?? null, opts.motif_infructueux ?? null]
       )
       const missionId = mRes.rows[0].id
 
@@ -452,19 +452,19 @@ async function seed() {
     const todayStr = dateOffset(0)
 
     // ── Missions: Today ──
-    await createMission({ lotIdx: 0, date: todayStr, heure_debut: '09:00', heure_fin: '12:00', statut: 'planifiee', statut_rdv: 'confirme', avec_inventaire: true, techUserId: techId, edlSens: 'sortie', commentaire: 'Changement de locataire - entrée + sortie', locataireIdx: 3, locataireRole: 'sortant' })
+    await createMission({ lotIdx: 0, date: todayStr, heure_debut: '09:00', heure_fin: '12:00', statut: 'planifiee', avec_inventaire: true, techUserId: techId, edlSens: 'sortie', commentaire: 'Changement de locataire - entrée + sortie', locataireIdx: 3, locataireRole: 'sortant' })
     const todayMissions = [
-      { lotIdx: 5, h1: '08:30', h2: '10:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 4 },
-      { lotIdx: 9, h1: '10:30', h2: '12:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'entree', loc: 7 },
-      { lotIdx: 3, h1: '14:00', h2: '15:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
-      { lotIdx: 11, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 8 },
-      { lotIdx: 17, h1: '16:00', h2: '17:30', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'sortie', loc: 5 },
+      { lotIdx: 5, h1: '08:30', h2: '10:00', statut: 'planifiee', inv: false, tech: techId, sens: 'entree', loc: 4 },
+      { lotIdx: 9, h1: '10:30', h2: '12:00', statut: 'planifiee', inv: true, tech: tech2Id, sens: 'entree', loc: 7 },
+      { lotIdx: 3, h1: '14:00', h2: '15:30', statut: 'planifiee', inv: false, tech: null, sens: 'sortie' },
+      { lotIdx: 11, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: tech3Id, sens: 'entree', loc: 8 },
+      { lotIdx: 17, h1: '16:00', h2: '17:30', statut: 'planifiee', inv: false, tech: techId, sens: 'sortie', loc: 5 },
     ]
     for (const tm of todayMissions) {
       const mRes = await client.query(
-        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire)
-         VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8, $9) RETURNING id`,
-        [workspaceId, lotIds[tm.lotIdx], adminId, nextRef(), tm.h1, tm.h2, tm.statut, tm.rdv, tm.inv]
+        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, $6, $7, $8) RETURNING id`,
+        [workspaceId, lotIds[tm.lotIdx], adminId, nextRef(), tm.h1, tm.h2, tm.statut, tm.inv]
       )
       if (tm.tech) {
         await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [mRes.rows[0].id, tm.tech])
@@ -483,20 +483,20 @@ async function seed() {
 
     // ── Missions: This week (upcoming) ──
     const weekMissions = [
-      { lotIdx: 1, days: 1, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: tech2Id, sens: 'sortie', loc: 3 },
-      { lotIdx: 6, days: 1, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: techId, sens: 'entree', loc: 8 },
-      { lotIdx: 2, days: 2, h1: '08:00', h2: '10:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'entree' },
-      { lotIdx: 12, days: 2, h1: '10:30', h2: '12:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'sortie', loc: 9 },
-      { lotIdx: 7, days: 3, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree', loc: 4 },
-      { lotIdx: 15, days: 3, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
-      { lotIdx: 4, days: 4, h1: '08:30', h2: '10:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'sortie' },
-      { lotIdx: 13, days: 4, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'confirme', inv: false, tech: tech3Id, sens: 'entree', loc: 0 },
+      { lotIdx: 1, days: 1, h1: '09:00', h2: '11:00', statut: 'planifiee', inv: true, tech: tech2Id, sens: 'sortie', loc: 3 },
+      { lotIdx: 6, days: 1, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: techId, sens: 'entree', loc: 8 },
+      { lotIdx: 2, days: 2, h1: '08:00', h2: '10:00', statut: 'planifiee', inv: false, tech: null, sens: 'entree' },
+      { lotIdx: 12, days: 2, h1: '10:30', h2: '12:00', statut: 'planifiee', inv: false, tech: tech3Id, sens: 'sortie', loc: 9 },
+      { lotIdx: 7, days: 3, h1: '09:00', h2: '11:00', statut: 'planifiee', inv: true, tech: techId, sens: 'entree', loc: 4 },
+      { lotIdx: 15, days: 3, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: null, sens: 'sortie' },
+      { lotIdx: 4, days: 4, h1: '08:30', h2: '10:30', statut: 'planifiee', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'sortie' },
+      { lotIdx: 13, days: 4, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: tech3Id, sens: 'entree', loc: 0 },
     ]
     for (const wm of weekMissions) {
       const mRes = await client.query(
-        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire)
-         VALUES ($1, $2, $3, $4, CURRENT_DATE + $5::int * INTERVAL '1 day', $6, $7, $8, $9, $10) RETURNING id`,
-        [workspaceId, lotIds[wm.lotIdx], adminId, nextRef(), wm.days, wm.h1, wm.h2, wm.statut, wm.rdv, wm.inv]
+        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE + $5::int * INTERVAL '1 day', $6, $7, $8, $9) RETURNING id`,
+        [workspaceId, lotIds[wm.lotIdx], adminId, nextRef(), wm.days, wm.h1, wm.h2, wm.statut, wm.inv]
       )
       if (wm.tech) {
         await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, $3)`, [mRes.rows[0].id, wm.tech, (wm as any).techStatut ?? 'accepte'])
@@ -515,21 +515,21 @@ async function seed() {
 
     // ── Missions: Next 2 weeks ──
     const futureMissions = [
-      { lotIdx: 8, days: 5, h1: '09:30', h2: '11:30', statut: 'planifiee', rdv: 'confirme', inv: true, tech: techId, sens: 'entree' },
-      { lotIdx: 10, days: 5, h1: '14:00', h2: '15:30', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'entree' },
-      { lotIdx: 0, days: 7, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'reporte', inv: false, tech: techId, sens: 'sortie', comment: 'Reporté à la demande du propriétaire' },
-      { lotIdx: 14, days: 7, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'entree' },
-      { lotIdx: 16, days: 8, h1: '10:00', h2: '12:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
-      { lotIdx: 19, days: 9, h1: '08:00', h2: '10:00', statut: 'planifiee', rdv: 'a_confirmer', inv: true, tech: null, sens: 'entree' },
-      { lotIdx: 1, days: 10, h1: '10:00', h2: '12:00', statut: 'planifiee', rdv: 'a_confirmer', inv: true, tech: null, sens: 'entree' },
-      { lotIdx: 18, days: 12, h1: '09:00', h2: '11:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'sortie' },
-      { lotIdx: 7, days: 14, h1: '14:00', h2: '16:00', statut: 'planifiee', rdv: 'a_confirmer', inv: false, tech: null, sens: 'entree' },
+      { lotIdx: 8, days: 5, h1: '09:30', h2: '11:30', statut: 'planifiee', inv: true, tech: techId, sens: 'entree' },
+      { lotIdx: 10, days: 5, h1: '14:00', h2: '15:30', statut: 'planifiee', inv: false, tech: null, sens: 'entree' },
+      { lotIdx: 0, days: 7, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: techId, sens: 'sortie', comment: 'Reporté à la demande du propriétaire' },
+      { lotIdx: 14, days: 7, h1: '09:00', h2: '11:00', statut: 'planifiee', inv: false, tech: tech2Id, techStatut: 'en_attente', sens: 'entree' },
+      { lotIdx: 16, days: 8, h1: '10:00', h2: '12:00', statut: 'planifiee', inv: false, tech: null, sens: 'sortie' },
+      { lotIdx: 19, days: 9, h1: '08:00', h2: '10:00', statut: 'planifiee', inv: true, tech: null, sens: 'entree' },
+      { lotIdx: 1, days: 10, h1: '10:00', h2: '12:00', statut: 'planifiee', inv: true, tech: null, sens: 'entree' },
+      { lotIdx: 18, days: 12, h1: '09:00', h2: '11:00', statut: 'planifiee', inv: false, tech: null, sens: 'sortie' },
+      { lotIdx: 7, days: 14, h1: '14:00', h2: '16:00', statut: 'planifiee', inv: false, tech: null, sens: 'entree' },
     ]
     for (const fm of futureMissions) {
       const mRes = await client.query(
-        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, commentaire)
-         VALUES ($1, $2, $3, $4, CURRENT_DATE + $5::int * INTERVAL '1 day', $6, $7, $8, $9, $10, $11) RETURNING id`,
-        [workspaceId, lotIds[fm.lotIdx], adminId, nextRef(), fm.days, fm.h1, fm.h2, fm.statut, fm.rdv, fm.inv, (fm as any).comment ?? null]
+        `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire, commentaire)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE + $5::int * INTERVAL '1 day', $6, $7, $8, $9, $10) RETURNING id`,
+        [workspaceId, lotIds[fm.lotIdx], adminId, nextRef(), fm.days, fm.h1, fm.h2, fm.statut, fm.inv, (fm as any).comment ?? null]
       )
       if (fm.tech) {
         await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, $3)`, [mRes.rows[0].id, fm.tech, (fm as any).techStatut ?? 'accepte'])
@@ -546,8 +546,8 @@ async function seed() {
     // ── Missions: Past (terminées & annulées) ──
     // Terminée: yesterday
     const mYesterday = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, commentaire)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '1 day', '09:00', '11:00', 'terminee', 'confirme', false, 'RAS - état correct') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire, commentaire)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '1 day', '09:00', '11:00', 'terminee', false, 'RAS - état correct') RETURNING id`,
       [workspaceId, lotIds[9], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [mYesterday.rows[0].id, tech2Id])
@@ -555,8 +555,8 @@ async function seed() {
 
     // Terminée: 3 days ago
     const m3d = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, commentaire)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '3 days', '10:00', '11:30', 'terminee', 'confirme', false, 'Quelques traces d''usure normales') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire, commentaire)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '3 days', '10:00', '11:30', 'terminee', false, 'Quelques traces d''usure normales') RETURNING id`,
       [workspaceId, lotIds[1], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [m3d.rows[0].id, tech2Id])
@@ -564,8 +564,8 @@ async function seed() {
 
     // Terminée: last week
     const mLastWeek = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire, commentaire)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '6 days', '14:00', '16:00', 'terminee', 'confirme', true, 'Inventaire complet réalisé') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire, commentaire)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '6 days', '14:00', '16:00', 'terminee', true, 'Inventaire complet réalisé') RETURNING id`,
       [workspaceId, lotIds[6], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [mLastWeek.rows[0].id, techId])
@@ -574,8 +574,8 @@ async function seed() {
 
     // Terminée: 2 weeks ago
     const m2w = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '14 days', '09:00', '11:00', 'terminee', 'confirme', false) RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '14 days', '09:00', '11:00', 'terminee', false) RETURNING id`,
       [workspaceId, lotIds[13], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [m2w.rows[0].id, tech3Id])
@@ -583,8 +583,8 @@ async function seed() {
 
     // Terminée: March
     const mMarch = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire)
-       VALUES ($1, $2, $3, $4, '2026-03-15', '09:00', '11:00', 'terminee', 'confirme', false) RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire)
+       VALUES ($1, $2, $3, $4, '2026-03-15', '09:00', '11:00', 'terminee', false) RETURNING id`,
       [workspaceId, lotIds[3], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [mMarch.rows[0].id, tech2Id])
@@ -592,8 +592,8 @@ async function seed() {
 
     // Terminée: February
     const mFeb = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, statut_rdv, avec_inventaire)
-       VALUES ($1, $2, $3, $4, '2026-02-20', '10:00', '12:00', 'terminee', 'confirme', false) RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, heure_debut, heure_fin, statut, avec_inventaire)
+       VALUES ($1, $2, $3, $4, '2026-02-20', '10:00', '12:00', 'terminee', false) RETURNING id`,
       [workspaceId, lotIds[8], adminId, nextRef()]
     )
     await client.query(`INSERT INTO mission_technicien (mission_id, user_id, est_principal, statut_invitation) VALUES ($1, $2, true, 'accepte')`, [mFeb.rows[0].id, techId])
@@ -601,24 +601,24 @@ async function seed() {
 
     // Annulée: recent
     const mAnnulee1 = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, statut_rdv, avec_inventaire, motif_annulation)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '2 days', 'annulee', 'a_confirmer', false, 'Locataire absent - report demandé') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, avec_inventaire, motif_annulation)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE - INTERVAL '2 days', 'annulee', false, 'Locataire absent - report demandé') RETURNING id`,
       [workspaceId, lotIds[3], adminId, nextRef()]
     )
     await client.query(`INSERT INTO edl_inventaire (workspace_id, mission_id, lot_id, type, sens, statut) VALUES ($1, $2, $3, 'edl', 'entree', 'infructueux')`, [workspaceId, mAnnulee1.rows[0].id, lotIds[3]])
 
     // Annulée: old
     const mAnnulee2 = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, statut_rdv, avec_inventaire, motif_annulation)
-       VALUES ($1, $2, $3, $4, '2026-03-28', 'annulee', 'a_confirmer', false, 'Propriétaire a annulé la vente') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, avec_inventaire, motif_annulation)
+       VALUES ($1, $2, $3, $4, '2026-03-28', 'annulee', false, 'Propriétaire a annulé la vente') RETURNING id`,
       [workspaceId, lotIds[10], adminId, nextRef()]
     )
     await client.query(`INSERT INTO edl_inventaire (workspace_id, mission_id, lot_id, type, sens, statut) VALUES ($1, $2, $3, 'edl', 'sortie', 'infructueux')`, [workspaceId, mAnnulee2.rows[0].id, lotIds[10]])
 
     // Annulée: another
     const mAnnulee3 = await client.query(
-      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, statut_rdv, avec_inventaire, motif_annulation)
-       VALUES ($1, $2, $3, $4, '2026-04-05', 'annulee', 'reporte', false, 'Dégât des eaux - report sine die') RETURNING id`,
+      `INSERT INTO mission (workspace_id, lot_id, created_by, reference, date_planifiee, statut, avec_inventaire, motif_annulation)
+       VALUES ($1, $2, $3, $4, '2026-04-05', 'annulee', false, 'Dégât des eaux - report sine die') RETURNING id`,
       [workspaceId, lotIds[15], adminId, nextRef()]
     )
     await client.query(`INSERT INTO edl_inventaire (workspace_id, mission_id, lot_id, type, sens, statut) VALUES ($1, $2, $3, 'edl', 'entree', 'infructueux')`, [workspaceId, mAnnulee3.rows[0].id, lotIds[15]])

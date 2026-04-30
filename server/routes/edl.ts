@@ -147,8 +147,9 @@ router.patch('/:id', requireRole('admin', 'gestionnaire'), validate(updateEdlSch
           [edl.mission_id]
         )
         if (parseInt(pendingEdl.rows[0].cnt) === 0) {
+          // terminee_at set pour le feed d'activité — audit Tony §8
           await client.query(
-            `UPDATE mission SET statut = 'terminee', updated_at = now() WHERE id = $1 AND statut NOT IN ('terminee', 'annulee')`,
+            `UPDATE mission SET statut = 'terminee', terminee_at = now(), updated_at = now() WHERE id = $1 AND statut NOT IN ('terminee', 'annulee')`,
             [edl.mission_id]
           )
           // Dispatch mission.terminee webhook (after commit)
